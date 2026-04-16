@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IQ Metric - Poznaj swój potencjał</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-soft': 'pulse-soft 4s ease-in-out infinite',
+                        'draw': 'draw 1.5s ease-out forwards',
+                        'spin-soft': 'spin-soft 15s linear infinite',
+                        'neural-drift': 'neural-drift 20s ease-in-out infinite',
+                        'fade-in': 'fade-in 0.5s ease-out forwards',
+                        'slide-in-from-bottom': 'slide-in-from-bottom 0.5s ease-out forwards',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px) scale(1)' },
+                            '50%': { transform: 'translateY(-10px) scale(1.02)' },
+                        },
+                        'pulse-soft': {
+                            '0%, 100%': { opacity: '0.4' },
+                            '50%': { opacity: '0.8' },
+                        },
+                        draw: {
+                            'from': { 'stroke-dashoffset': '100' },
+                            'to': { 'stroke-dashoffset': '0' },
+                        },
+                        'spin-soft': {
+                            'from': { transform: 'rotate(0deg)' },
+                            'to': { transform: 'rotate(360deg)' },
+                        },
+                        'neural-drift': {
+                            '0%, 100%': { transform: 'translate(0, 0)' },
+                            '50%': { transform: 'translate(10px, -15px)' },
+                        },
+                        'fade-in': {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        'slide-in-from-bottom': {
+                            '0%': { transform: 'translateY(16px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        @media print {
+            .no-print { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, ::before, ::after {
+                animation-delay: -1ms !important;
+                animation-duration: 1ms !important;
+                animation-iteration-count: 1 !important;
+                background-attachment: initial !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0s !important;
+                transition-delay: 0s !important;
+            }
+            .animate-spin-soft, .animate-neural-drift, .animate-fade-in, .animate-slide-in-from-bottom {
+                animation: none !important;
+            }
+        }
+        .dot-grid {
+            background-image: radial-gradient(#2563eb33 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .dark .dot-grid {
+            background-image: radial-gradient(#7fb6ff22 1px, transparent 1px);
+        }
+        /* Maska dla BackgroundMotif - czysty środek */
+        .neural-mask {
+            mask-image: radial-gradient(circle at center, transparent 10%, black 75%);
+            -webkit-mask-image: radial-gradient(circle at center, transparent 10%, black 75%);
+        }
+        /* Custom animation utility classes */
+        .animate-in {
+            animation-fill-mode: forwards;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.12.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 overflow-x-hidden">
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

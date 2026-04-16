@@ -1,0 +1,7 @@
+{
+  "name": "IQ Metric - Profesjonalny Test Inteligencji",
+  "description": "Edukacyjna platforma do pomiaru predyspozycji poznawczych z pełnym raportem psychometrycznym i certyfikatem.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
