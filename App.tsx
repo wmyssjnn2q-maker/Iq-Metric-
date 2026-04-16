@@ -158,7 +158,7 @@ const BrandLogo = ({ size = "nav", className = "" }: { size?: "nav" | "footer" |
         />
       </div>
       <span className={`font-display font-bold tracking-tight text-slate-900 dark:text-white ${isNav ? 'text-xl' : isFooter ? 'text-2xl' : 'text-4xl'}`}>
-        IQ Metric
+        IQ SIGMA
       </span>
     </div>
   );
@@ -590,7 +590,7 @@ const Footer = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => (
             Niezależna platforma psychometryczna oferująca nowoczesne narzędzia do ewaluacji predyspozycji poznawczych. Profesjonalna analiza struktury inteligencji.
           </p>
         </div>
-        <p className="text-xs mt-8">© 2024 IQ Metric Polska. Wszelkie prawa zastrzeżone.</p>
+        <p className="text-xs mt-8">© 2024 IQ SIGMA Polska. Wszelkie prawa zastrzeżone.</p>
       </div>
       <div>
         <h4 className="text-white font-semibold mb-4">Produkt</h4>
@@ -1824,7 +1824,7 @@ const CertificateTemplate = ({ data, userName }: { data: ReportData, userName: s
       
       <div className="text-center mb-12">
         <h1 className="text-6xl font-black text-slate-900 tracking-tight uppercase mb-4">Certyfikat IQ</h1>
-        <p className="text-2xl text-slate-500 uppercase tracking-widest">Wystawiony przez IQ Metric Polska</p>
+        <p className="text-2xl text-slate-500 uppercase tracking-widest">Wystawiony przez IQ SIGMA Polska</p>
       </div>
 
       <div className="text-center mb-16">
