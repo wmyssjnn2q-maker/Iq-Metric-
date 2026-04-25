@@ -962,9 +962,9 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
             {[
-              { title: 'Matryce Logiczne', desc: 'Wykorzystujemy autorskie wzorce wektorowe SVG do badania inteligencji płynnej, oparte na najbardziej uznanych modelach psychometrycznych (Raven, Cattell).', icon: <Logos.BrainGrid size={40} className="animate-spin-soft" /> },
+              { title: 'Matryce Logiczne', desc: 'Wykorzystujemy autorskie wzorce wektorowe SVG do badania inteligencji płynnej, oparte na najbardziej uznanych modelach psychometrycznych (Raven, Cattell).', icon: <Grid3X3 className="w-full h-full" strokeWidth={1.5} /> },
               { title: 'Szybka Analiza', desc: 'Zaawansowany silnik obliczeniowy przelicza Twoje wyniki w czasie rzeczywistym, uwzględniając czasy reakcji na każde z pytań, co zwiększa rzetelność pomiaru.', icon: <Icons.Clock /> },
-              { title: 'Naukowy Model CHC', desc: 'Nasze testy są projektowane w oparciu o hierarchiczny model inteligencji Cattella-Horna-Carrolla, uznawany za światowy standard w psychologii poznawczej.', icon: <Icons.Chart /> }
+              { title: 'Naukowy Model CHC', desc: 'Nasze testy są projektowane w oparciu o hierarchiczny model inteligencji Cattella-Horna-Carrolla, uznawany za światowy standard w psychologii poznawczej.', icon: <Atom className="w-full h-full animate-pulse" strokeWidth={1.5} /> }
             ].map((f, i) => (
               <motion.div 
                 key={i} 
