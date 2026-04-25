@@ -145,6 +145,16 @@ const FloatingThematicIcons = () => {
 
 // --- BRANDING COMPONENTS ---
 
+const BrandName = ({ className = "" }: { className?: string }) => (
+  <span className={`font-display tracking-tighter antialiased ${className}`}>
+    <span className="font-semibold opacity-90">brainmed</span>
+    <span className="relative inline-block font-black text-transparent bg-clip-text bg-gradient-to-br from-blue-600 to-indigo-700">
+      iq
+      <span className="absolute -right-1.5 bottom-1.5 w-1 h-1 bg-blue-500 rounded-full animate-pulse"></span>
+    </span>
+  </span>
+);
+
 const BrandLogo = ({ size = "nav", className = "" }: { size?: "nav" | "footer" | "hero", className?: string }) => {
   const isNav = size === "nav";
   const isFooter = size === "footer";
@@ -157,9 +167,7 @@ const BrandLogo = ({ size = "nav", className = "" }: { size?: "nav" | "footer" |
           className="animate-spin-soft"
         />
       </div>
-      <span className={`font-display font-bold tracking-tight text-slate-900 dark:text-white ${isNav ? 'text-xl' : isFooter ? 'text-2xl' : 'text-4xl'}`}>
-        IQ SIGMA
-      </span>
+      <BrandName className={isNav ? 'text-xl' : isFooter ? 'text-2xl' : 'text-5xl'} />
     </div>
   );
 };
@@ -383,12 +391,21 @@ const IQWorldMap = () => {
     { name: "Singapur", median: 107, code: "SG", coordinates: [103.8198, 1.3521] },
     { name: "Korea Południowa", median: 106, code: "KR", coordinates: [127.7669, 35.9078] },
     { name: "Japonia", median: 105, code: "JP", coordinates: [138.2529, 36.2048] },
-    { name: "Tajwan", median: 104, code: "TW", coordinates: [120.9605, 23.6978] },
-    { name: "Włochy", median: 102, code: "IT", coordinates: [12.5674, 41.8719] },
     { name: "Niemcy", median: 102, code: "DE", coordinates: [10.4515, 51.1657] },
-    { name: "Szwajcaria", median: 101, code: "CH", coordinates: [8.2275, 46.8182] },
+    { name: "Włochy", median: 102, code: "IT", coordinates: [12.5674, 41.8719] },
+    { name: "Kanada", median: 101, code: "CA", coordinates: [-106.3468, 56.1304] },
+    { name: "Finlandia", median: 101, code: "FI", coordinates: [25.7482, 61.9241] },
     { name: "Polska", median: 99, code: "PL", coordinates: [19.1451, 51.9194] },
     { name: "USA", median: 98, code: "US", coordinates: [-95.7129, 37.0902] },
+    { name: "Australia", median: 99, code: "AU", coordinates: [133.7751, -25.2744] },
+    { name: "Nowa Zelandia", median: 100, code: "NZ", coordinates: [174.8860, -40.9006] },
+    { name: "Brazylia", median: 87, code: "BR", coordinates: [-51.9253, -14.2350] },
+    { name: "Argentyna", median: 87, code: "AR", coordinates: [-63.6167, -38.4161] },
+    { name: "Chile", median: 90, code: "CL", coordinates: [-71.5430, -35.6751] },
+    { name: "Egipt", median: 76, code: "EG", coordinates: [30.8025, 26.8206] },
+    { name: "RPA", median: 77, code: "ZA", coordinates: [22.9375, -30.5595] },
+    { name: "Maroko", median: 72, code: "MA", coordinates: [-7.0926, 31.7917] },
+    { name: "Nigeria", median: 69, code: "NG", coordinates: [8.6753, 9.0820] },
   ];
 
   return (
@@ -409,7 +426,7 @@ const IQWorldMap = () => {
 
         <div className="flex flex-col xl:flex-row items-stretch gap-12">
           {/* Countries List */}
-          <div className="w-full xl:w-1/3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
+          <div className="w-full xl:w-1/3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4 xl:max-h-[600px] xl:overflow-y-auto xl:pr-4 custom-scrollbar">
             {countries.map((c, i) => (
               <div key={i} className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">
                 <div className="flex flex-col">
@@ -539,23 +556,18 @@ const Header = ({ darkMode, toggleDarkMode, openPurchaseModal }: { darkMode: boo
             <motion.div 
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ 
-                scale: [0.8, 1.1, 1],
+                scale: [1, 1.05, 1],
                 opacity: 1,
-                y: [0, -2, 0]
+                rotate: [-3, -2, -3]
               }}
               transition={{ 
-                duration: 2,
-                repeat: Infinity,
-                repeatType: "mirror"
+                scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                rotate: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+                opacity: { duration: 0.5 }
               }}
-              className="absolute -top-5 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-[6px] font-black text-white px-1.5 py-0.5 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.4)] pointer-events-none uppercase tracking-widest border border-white/20 whitespace-nowrap z-50"
+              className="absolute -top-5 bg-gradient-to-r from-yellow-400 via-orange-500 to-amber-500 text-[10px] sm:text-[11px] font-black text-white px-2.5 py-0.5 rounded-full shadow-lg pointer-events-none uppercase tracking-widest border border-white/50 whitespace-nowrap z-50 transform antialiased flex items-center justify-center min-h-[18px] leading-none"
             >
               Nowość
-              <motion.div 
-                animate={{ opacity: [0, 1, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-                className="absolute inset-0 rounded-full bg-white/30"
-              />
             </motion.div>
             <Link to="/inne-testy" className="hover:text-blue-600 dark:hover:text-blue-400">
               Inne testy
@@ -590,25 +602,15 @@ const Footer = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => (
             Niezależna platforma psychometryczna oferująca nowoczesne narzędzia do ewaluacji predyspozycji poznawczych. Profesjonalna analiza struktury inteligencji.
           </p>
         </div>
-        <p className="text-xs mt-8">© 2024 IQ SIGMA Polska. Wszelkie prawa zastrzeżone.</p>
+        <p className="text-xs mt-8">© 2024 brainmediq Polska. Wszelkie prawa zastrzeżone.</p>
       </div>
       <div>
         <h4 className="text-white font-semibold mb-4">Produkt</h4>
         <ul className="space-y-2 text-sm">
-          <li><button onClick={openPurchaseModal} className="hover:text-white cursor-pointer">Rozpocznij test IQ</button></li>
+          <li><button onClick={openPurchaseModal} className="hover:text-white cursor-pointer">Rozpocznij test</button></li>
           <li><Link to="/metoda" className="hover:text-white">O metodzie</Link></li>
           <li className="relative inline-block">
             <Link to="/inne-testy" className="hover:text-white">Inne testy</Link>
-            <motion.span 
-              animate={{ 
-                scale: [1, 1.2, 1],
-                rotate: [0, 5, -5, 0]
-              }}
-              transition={{ repeat: Infinity, duration: 3 }}
-              className="absolute -top-3 -right-8 bg-indigo-600 text-[6px] font-black text-white px-1.5 py-0.5 rounded-sm uppercase tracking-tighter"
-            >
-              Nowość
-            </motion.span>
           </li>
           <li><Link to="/faq" className="hover:text-white">FAQ</Link></li>
         </ul>
@@ -905,17 +907,16 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
           >
             <div className="inline-flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-1.5 rounded-full text-sm font-medium mb-8">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
               </span>
-              <span>Test walidowany algorytmem AI</span>
+              <span>Test walidowany algorytmem psychometrycznym</span>
             </div>
             <h1 className="text-6xl md:text-8xl font-bold tracking-tight mb-8 text-slate-900 dark:text-white leading-[0.95] max-w-[12ch]">
-              Poznaj swoje <br />
-              <span className="text-blue-600 dark:text-blue-400 bg-clip-text">Intelektualne DNA</span>
+              Poznaj swój <br />
+              <span className="text-blue-600 dark:text-blue-400 bg-clip-text">Poziom Intelektualny</span>
             </h1>
             <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mb-12 leading-relaxed">
-              Sprawdź swoje możliwości intelektualne i poznaj swoje mocne strony. Twój spersonalizowany raport będzie gotowy natychmiast po zakończeniu testu.
+              Sprawdź możliwości swojego mózgu i poznaj swoje mocne strony. Twój spersonalizowany raport będzie gotowy natychmiast po zakończeniu testu.
             </p>
             <div className="flex flex-col sm:flex-row gap-5">
               <button 
@@ -951,15 +952,19 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
             transition={{ duration: 0.6 }}
             className="text-center mb-20"
           >
-            <h2 className="text-4xl font-bold dark:text-white mb-4">Dlaczego IQ Metric?</h2>
-            <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto text-lg">Zapewniamy najwyższą jakość pomiaru dzięki autorskim algorytmom.</p>
+            <h2 className="text-4xl font-bold dark:text-white mb-4">
+              Dlaczego <BrandName />?
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 max-w-3xl mx-auto text-lg leading-relaxed">
+              Łączymy klasyczną psychometrię z najnowocześniejszą technologią pomiarową. Nasz test to nie tylko wynik punktowy, ale kompleksowy wgląd w architekturę Twojego umysłu, opracowany z dbałością o najwyższe standardy rzetelności i trafności naukowej. Zapewniamy najwyższą jakość pomiaru dzięki autorskim algorytmom analizującym nie tylko poprawność, ale i dynamikę Twoich procesów myślowych.
+            </p>
             <div className="h-1.5 w-24 bg-blue-600 mx-auto mt-8 rounded-full"></div>
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
             {[
-              { title: 'Matryce Logiczne', desc: 'Wykorzystujemy autorskie wzorce wektorowe SVG do badania inteligencji płynnej.', icon: <Logos.BrainGrid size={40} className="animate-spin-soft" /> },
-              { title: 'Szybka Analiza', desc: 'Silnik obliczeniowy generuje Twoją wstępną punktację w ułamku sekundy po zakończeniu testu.', icon: <Icons.Clock /> },
-              { title: 'Wsparcie Gemini AI', desc: 'Płatne raporty są analizowane przez najnowsze modele Gemini, dając niespotykaną głębię interpretacji.', icon: <Icons.Chart /> }
+              { title: 'Matryce Logiczne', desc: 'Wykorzystujemy autorskie wzorce wektorowe SVG do badania inteligencji płynnej, oparte na najbardziej uznanych modelach psychometrycznych (Raven, Cattell).', icon: <Logos.BrainGrid size={40} className="animate-spin-soft" /> },
+              { title: 'Szybka Analiza', desc: 'Zaawansowany silnik obliczeniowy przelicza Twoje wyniki w czasie rzeczywistym, uwzględniając czasy reakcji na każde z pytań, co zwiększa rzetelność pomiaru.', icon: <Icons.Clock /> },
+              { title: 'Naukowy Model CHC', desc: 'Nasze testy są projektowane w oparciu o hierarchiczny model inteligencji Cattella-Horna-Carrolla, uznawany za światowy standard w psychologii poznawczej.', icon: <Icons.Chart /> }
             ].map((f, i) => (
               <motion.div 
                 key={i} 
@@ -1034,13 +1039,6 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
             transition={{ duration: 0.6 }}
             className="flex flex-col items-start"
           >
-            <div className="inline-flex items-center space-x-2 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 shadow-sm border border-purple-100 dark:border-purple-800/50">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
-              </span>
-              <span>Nowość</span>
-            </div>
             <div>
               <h3 className="text-4xl font-bold dark:text-white tracking-tight">Odkryj więcej testów</h3>
               <p className="text-slate-500 dark:text-slate-400 text-base mt-3 max-w-2xl leading-relaxed">
@@ -1104,7 +1102,7 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
                   <h4 className="text-2xl font-bold dark:text-white mb-3 tracking-tight">{test.title}</h4>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 whitespace-normal leading-relaxed">{test.desc}</p>
                   <div className="flex items-center text-blue-600 dark:text-blue-400 text-sm font-bold">
-                    Rozpocznij test IQ <ArrowRight className="w-4 h-4 ml-2 group-hover/card:translate-x-1 transition-transform duration-300" />
+                    Rozpocznij test <ArrowRight className="w-4 h-4 ml-2 group-hover/card:translate-x-1 transition-transform duration-300" />
                   </div>
                 </Link>
               ))}
@@ -1636,17 +1634,17 @@ const Results = () => {
         <div className="relative z-10 text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center space-x-3 text-blue-400 font-black mb-8 uppercase text-sm tracking-[0.2em]">
             <div className="w-6 h-6"><Icons.Award /></div>
-            <span>Pakiet Ekspert AI</span>
+            <span>Pakiet Ekspert Psychometrii</span>
           </div>
           <h3 className="text-5xl font-bold mb-8">Pobierz pełną analizę</h3>
           <p className="text-slate-400 mb-12 leading-relaxed text-xl max-w-prose mx-auto">
-            Otrzymaj pełen dostęp do szczegółowego rozkładu 5 domen, analizy Twoich mocnych stron przez Gemini AI oraz imienny certyfikat PDF.
+            Otrzymaj pełen dostęp do szczegółowego rozkładu 5 domen, wnikliwej analizy Twoich mocnych stron oraz imienny certyfikat PDF.
           </p>
           <div className="bg-slate-800/50 p-10 rounded-[3rem] mb-16 text-left space-y-5 max-w-2xl mx-auto">
              {[
                "Pełny breakdown 5 domen poznawczych",
                "Percentyl i rozkład populacyjny",
-               "Analiza Gemini AI (Mocne i słabe strony)",
+               "Szczegółowa analiza mocnych i słabych stron",
                "Imienny Certyfikat PDF do druku",
                "5 spersonalizowanych rekomendacji ćwiczeń"
              ].map((item, i) => (
@@ -1722,11 +1720,10 @@ const Checkout = () => {
   }
 
   const handlePay = (bypass: boolean = false) => {
-    if (!bypass && !email.includes('@')) return;
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      const updatedSaved = { ...saved, email: bypass ? (email || 'test@example.com') : email };
+      const updatedSaved = { ...saved, email: email || 'test@example.com' };
       
       // If starting a new test, clear old stats
       if (intentParam === 'start' || !intentParam) {
@@ -1745,7 +1742,7 @@ const Checkout = () => {
       
       localStorage.setItem('iq_results', JSON.stringify(updatedSaved));
       navigate(redirectUrl);
-    }, bypass ? 500 : 2000);
+    }, 1500);
   };
 
   return (
@@ -1824,7 +1821,9 @@ const CertificateTemplate = ({ data, userName }: { data: ReportData, userName: s
       
       <div className="text-center mb-12">
         <h1 className="text-6xl font-black text-slate-900 tracking-tight uppercase mb-4">Certyfikat IQ</h1>
-        <p className="text-2xl text-slate-500 uppercase tracking-widest">Wystawiony przez IQ SIGMA Polska</p>
+        <p className="text-2xl text-slate-500 uppercase tracking-widest">
+          Wystawiony przez <BrandName className="text-2xl" /> Polska
+        </p>
       </div>
 
       <div className="text-center mb-16">
@@ -1858,7 +1857,7 @@ const CertificateTemplate = ({ data, userName }: { data: ReportData, userName: s
             <Icons.Award />
           </div>
           <div>
-            <p className="font-bold text-slate-900">IQ Metric Polska</p>
+            <p className="font-bold text-slate-900"><BrandName className="text-lg" /> Polska</p>
             <p className="text-sm text-slate-500">Certyfikowany Pomiar Inteligencji</p>
           </div>
         </div>
@@ -1984,7 +1983,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
            <Logos.BrainGrid size={64} className="text-blue-600 animate-spin-soft" />
            <div>
              <h1 className="text-5xl font-bold dark:text-white mb-3">Szczegółowa Analiza IQ</h1>
-             <p className="text-slate-500 dark:text-slate-400 text-lg">Analiza personalizowana Gemini AI — Model CHC v2.5</p>
+             <p className="text-slate-500 dark:text-slate-400 text-lg">Zaawansowana Analiza Psychometryczna — Model CHC v2.5</p>
               <p className="text-blue-600 font-bold mt-2 no-print">Pełny raport oraz certyfikat zostały wysłane na Twój adres e-mail.</p>
              {userName && <p className="text-xl font-bold text-blue-600 mt-2 print:block hidden">Certyfikat wystawiony dla: {userName}</p>}
            </div>
@@ -1998,7 +1997,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
       {loading ? (
         <div className="py-40 text-center bg-white dark:bg-slate-900 rounded-[3.5rem] border border-slate-200 dark:border-slate-800">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600/20 border-t-blue-600 mx-auto mb-10"></div>
-          <p className="text-slate-500 font-bold text-xl animate-pulse">Trwa generowanie merytorycznego raportu przez Gemini AI...</p>
+          <p className="text-slate-500 font-bold text-xl animate-pulse">Trwa zestawianie merytorycznych danych raportu...</p>
         </div>
       ) : (
         <div className="space-y-12">
@@ -3030,18 +3029,6 @@ const OtherTests = () => {
       <div className="text-center mb-20 relative">
         <div className="inline-block relative">
           <h2 className="text-5xl font-bold mb-6 dark:text-white relative z-10">Inne testy</h2>
-          <motion.div 
-            initial={{ rotate: -15, scale: 0 }}
-            animate={{ rotate: [ -15, -10, -15], scale: 1 }}
-            transition={{ 
-              scale: { type: "spring", stiffness: 200, damping: 10 },
-              rotate: { repeat: Infinity, duration: 2, ease: "easeInOut" }
-            }}
-            className="absolute -top-10 -right-16 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-black px-4 py-2 rounded-2xl shadow-xl transform -rotate-12 border-4 border-white dark:border-slate-900 z-20 uppercase tracking-widest"
-          >
-            Nowość!
-            <div className="absolute -bottom-2 left-4 w-4 h-4 bg-orange-500 transform rotate-45 -z-10"></div>
-          </motion.div>
           
           {/* Decorative animated circles behind title */}
           <motion.div 
@@ -3263,7 +3250,7 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
           <div className="bg-red-50 dark:bg-red-900/10 p-12 md:p-16 rounded-[4rem] border border-red-100 dark:border-red-900/40 max-w-[1000px]">
             <h2 className="text-3xl font-bold mb-6 text-red-900 dark:text-red-400">To nie jest diagnoza kliniczna</h2>
             <p className="text-lg text-red-800 dark:text-red-400/80 leading-relaxed max-w-prose">
-              Pomiar wykonany przez serwis IQ Metric ma charakter wyłącznie edukacyjno-rozrywkowy. Nie zastępuje profesjonalnej diagnozy psychologicznej, badań klinicznych ani orzekania o stanie zdrowia. Oficjalne testy IQ (jak WAIS-IV) powinny być przeprowadzane stacjonarnie u licencjonowanego psychologa.
+              Pomiar wykonany przez serwis <BrandName className="text-lg" /> ma charakter wyłącznie edukacyjno-rozrywkowy. Nie zastępuje profesjonalnej diagnozy psychologicznej, badań klinicznych ani orzekania o stanie zdrowia. Oficjalne testy IQ (jak WAIS-IV) powinny być przeprowadzane stacjonarnie u licencjonowanego psychologa.
             </p>
           </div>
         </div>
@@ -3290,7 +3277,7 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
             onClick={openPurchaseModal}
             className="bg-blue-600 text-white px-16 py-6 rounded-3xl font-bold shadow-2xl hover:bg-blue-700 transition-all text-xl"
           >
-            Rozpocznij test IQ
+            Rozpocznij test
           </button>
         </div>
       </article>
