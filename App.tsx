@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Grid3X3, Target, Zap, ArrowRight, Search, Cpu, Dna, Lightbulb, Atom } from 'lucide-react';
+import { Users, Grid3X3, Target, Zap, ArrowRight, Search, Cpu, Dna, Lightbulb, Atom, LayoutDashboard, TrendingUp, ShieldCheck, Briefcase, Layout, BarChart3, Globe, Rocket, Award, BadgeCheck, Fingerprint, Star, ArrowUpCircle, CheckCircle2, Brain, Percent, PieChart, BrainCircuit, Activity, Trophy, AreaChart, ClipboardList, Check, Clock, Sun, Moon, AlertTriangle, Lock, Mail } from 'lucide-react';
 import { HashRouter, Routes, Route, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import { 
   ComposableMap, 
@@ -199,39 +199,35 @@ const DomainBar = ({ label, value, desc, level, animate }: { label: string; valu
   </div>
 );
 
-const PercentileAxis = ({ val, animate }: { val: number; animate: boolean }) => (
-  <div className="relative py-12">
-    <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden relative">
-      {/* Background fill animation */}
+const PercentileAxis = ({ val, animate, label, hideScale }: { val: number; animate: boolean; label?: string; hideScale?: boolean }) => (
+  <div className="relative py-14">
+    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden relative">
       <div 
-        className="absolute inset-y-0 left-0 bg-blue-600 opacity-10 transition-transform duration-1000 ease-out origin-left no-print"
+        className="absolute inset-y-0 left-0 bg-blue-600/20 transition-transform duration-1000 ease-out origin-left no-print"
         style={{ transform: animate ? `scaleX(${val / 100})` : 'scaleX(0)' }}
       ></div>
     </div>
-    <div className="flex justify-between mt-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-      <span>0</span>
-      <span>25</span>
-      <span>50 (Średnia)</span>
-      <span>75</span>
-      <span>99</span>
-    </div>
+    
+    {!hideScale && (
+      <div className="flex justify-between mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+        <span>Słabszy niż większość</span>
+        <span>Przeciętny (50)</span>
+        <span>Wybitny</span>
+      </div>
+    )}
+
     <div 
-      className="absolute top-0 transition-all duration-1000 ease-out flex flex-col items-center no-print"
+      className="absolute top-0 transition-all duration-1000 ease-out flex flex-col items-center"
       style={{ 
         left: animate ? `${val}%` : '0%', 
         opacity: animate ? 1 : 0, 
         transform: 'translateX(-50%)' 
       }}
     >
-      <div className="bg-blue-600 text-white text-[10px] font-black px-2 py-1 rounded shadow-lg mb-2 whitespace-nowrap">TY: {val}%</div>
-      <div className="w-0.5 h-12 bg-blue-600"></div>
-    </div>
-    <div 
-      className="hidden print:flex absolute top-0 flex-col items-center"
-      style={{ left: `${val}%`, transform: 'translateX(-50%)' }}
-    >
-      <div className="bg-blue-600 text-white text-[10px] font-black px-2 py-1 rounded mb-2 whitespace-nowrap">TY: {val}%</div>
-      <div className="w-0.5 h-12 bg-blue-600"></div>
+      <div className="bg-blue-600 text-white text-[11px] font-black px-3 py-1.5 rounded-full shadow-xl mb-2 whitespace-nowrap">
+        {label || `${val}. percentyl`}
+      </div>
+      <div className="w-1 h-14 bg-blue-600 rounded-full"></div>
     </div>
   </div>
 );
@@ -660,9 +656,9 @@ const HomepageReportPreview = ({ openPurchaseModal }: { openPurchaseModal: () =>
       confidenceInterval: [108, 116]
     },
     analysis: {
-      summary: "Twój wynik (112) plasuje Cię w górnych granicach normy. Wykazujesz szczególną biegłość w zadaniach wymagających szybkiej syntezy danych wzrokowych i logicznej dedukcji.",
-      strengths: ["Szybkie rozpoznawanie wzorców", "Wysoka odporność na dystraktory", "Biegłość w analogiach słownych"],
-      weaknesses: ["Rotacja mentalna brył złożonych", "Pamięć operacyjna w ciągach mieszanych"],
+      summary: "Twój wynik (112) jest bardzo wysoki. Świetnie radzisz sobie z logicznym myśleniem i szybkim kojarzeniem faktów w codziennych sytuacjach.",
+      strengths: ["Bardzo szybkie łączenie faktów", "Łatwe wyłapywanie reguł i wzorców", "Skuteczne oddzielanie ważnych informacji od szumu"],
+      weaknesses: ["Wyobraźnia przestrzenna przy trudniejszych bryłach", "Tempo pracy przy wielu rzeczach naraz"],
       careerPaths: ["Analityk Danych", "Architekt Systemów", "Strateg Biznesowy"],
       personalityTraits: ["Analityczność", "Skrupulatność", "Kreatywne rozwiązywanie problemów"],
       recommendations: [
@@ -704,7 +700,7 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
                 <div className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-80">Wynik IQ</div>
               </div>
               <div className="flex-1">
-                <h4 className="text-xl font-bold mb-2">Interpretacja ogólna</h4>
+                <h4 className="text-xl font-bold mb-2 flex items-center gap-2"><Brain size={20} className="text-blue-500" /> Interpretacja ogólna</h4>
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic max-w-prose">
                   "{analysis?.summary || `Twój wynik (${stats.iqScore}) plasuje Cię powyżej przeciętnej. Wykazujesz biegłość w zadaniach analitycznych.`}"
                 </p>
@@ -712,44 +708,44 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
             </div>
             {(data.isMax || data.isPro) && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm">
-                    <h5 className="font-bold mb-3 flex items-center text-sm"><div className="w-4 h-4 mr-2 text-blue-600"><Icons.Check /></div> Mocne strony</h5>
-                    <ul className="text-xs space-y-2 text-slate-500">
-                      {analysis?.strengths.map((s, i) => <li key={i}>• {s}</li>) || (
-                        <><li>• Szybkie rozpoznawanie wzorców</li><li>• Logiczna dedukcja</li></>
-                      )}
-                    </ul>
-                  </div>
-                  <div className="p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm">
-                    <h5 className="font-bold mb-3 flex items-center text-sm text-slate-400"><div className="w-4 h-4 mr-2"><Icons.Clock /></div> Do rozwoju</h5>
-                    <ul className="text-xs space-y-2 text-slate-500">
-                      {analysis?.weaknesses.map((w, i) => <li key={i}>• {w}</li>) || (
-                        <><li>• Rotacja mentalna brył</li><li>• Pamięć operacyjna</li></>
-                      )}
-                    </ul>
-                  </div>
-                </div>
-                {analysis && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-6 bg-blue-50/50 dark:bg-blue-900/5 border border-blue-100 dark:border-blue-800/50 rounded-2xl">
-                      <h5 className="font-bold mb-3 text-sm flex items-center"><div className="w-4 h-4 mr-2 text-blue-600"><Icons.Award /></div> Kariera</h5>
-                      <div className="flex flex-wrap gap-2">
-                        {analysis.careerPaths.map((c, i) => (
-                          <span key={i} className="text-[10px] font-bold bg-white dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-700">{c}</span>
-                        ))}
-                      </div>
+                    <div className="p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm">
+                      <h5 className="font-bold mb-3 flex items-center text-sm"><div className="w-4 h-4 mr-2 text-blue-600"><Star size={16} /></div> Mocne strony</h5>
+                      <ul className="text-xs space-y-2 text-slate-500">
+                        {analysis?.strengths.map((s, i) => <li key={i}>• {s}</li>) || (
+                          <><li>• Szybkie wyciąganie trafnych wniosków</li><li>• Łatwe dostrzeganie ukrytych powiązań</li></>
+                        )}
+                      </ul>
                     </div>
-                    <div className="p-6 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl">
-                      <h5 className="font-bold mb-3 text-sm flex items-center"><div className="w-4 h-4 mr-2 text-slate-400"><Icons.Brain /></div> Cechy</h5>
-                      <div className="flex flex-wrap gap-2">
-                        {analysis.personalityTraits.map((t, i) => (
-                          <span key={i} className="text-[10px] font-bold bg-white dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-700">{t}</span>
-                        ))}
-                      </div>
+                    <div className="p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm">
+                      <h5 className="font-bold mb-3 flex items-center text-sm text-slate-400"><div className="w-4 h-4 mr-2"><TrendingUp size={16} /></div> Do rozwoju</h5>
+                      <ul className="text-xs space-y-2 text-slate-500">
+                        {analysis?.weaknesses.map((w, i) => <li key={i}>• {w}</li>) || (
+                          <><li>• Wyobraźnia przestrzenna (bryły 3D)</li><li>• Czas reakcji przy nagłych zmianach</li></>
+                        )}
+                      </ul>
                     </div>
                   </div>
-                )}
+                  {analysis && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="p-6 bg-blue-50/50 dark:bg-blue-900/5 border border-blue-100 dark:border-blue-800/50 rounded-2xl">
+                        <h5 className="font-bold mb-3 text-sm flex items-center"><div className="w-4 h-4 mr-2 text-blue-600"><Briefcase size={16} /></div> Kariera</h5>
+                        <div className="flex flex-wrap gap-2">
+                          {analysis.careerPaths.map((c, i) => (
+                            <span key={i} className="text-[10px] font-bold bg-white dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-700">{c}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="p-6 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl">
+                        <h5 className="font-bold mb-3 text-sm flex items-center"><div className="w-4 h-4 mr-2 text-slate-400"><Fingerprint size={16} /></div> Cechy</h5>
+                        <div className="flex flex-wrap gap-2">
+                          {analysis.personalityTraits.map((t, i) => (
+                            <span key={i} className="text-[10px] font-bold bg-white dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-700">{t}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
               </>
             )}
           </div>
@@ -757,6 +753,9 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
       case "domeny":
         return (
           <div className="space-y-6 animate-in animate-slide-in-from-bottom duration-500">
+            <h4 className="font-bold text-center flex items-center justify-center gap-2 text-slate-800 dark:text-slate-100">
+              <BrainCircuit size={20} className="text-blue-500" /> Szczegółowy profil domen
+            </h4>
             <DomainBar label="Wzorce i matryce" value={stats.domainScores.MATRIX} desc="Identyfikacja trendów wizualnych" level={stats.domainScores.MATRIX > 80 ? "Wysoki" : "Średni"} animate={animate} />
             <DomainBar label="Logika i wnioskowanie" value={stats.domainScores.LOGIC} desc="Dedukcja i synteza" level={stats.domainScores.LOGIC > 80 ? "Wysoki" : "Średni"} animate={animate} />
             <DomainBar label="Przestrzeń" value={stats.domainScores.SPATIAL} desc="Rotacja i składanie brył" level={stats.domainScores.SPATIAL > 80 ? "Wysoki" : "Średni"} animate={animate} />
@@ -768,13 +767,11 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
         return (
           <div className="space-y-8 animate-in animate-slide-in-from-bottom duration-500">
             <div className="bg-slate-50 dark:bg-slate-800/50 p-8 rounded-3xl">
-              <h4 className="font-bold text-center mb-4">Percentyl: {stats.percentile}%</h4>
+              <h4 className="font-bold text-center mb-4 flex items-center justify-center gap-2">
+                <Percent size={20} className="text-blue-500" /> Percentyl: {stats.percentile}%
+              </h4>
               <p className="text-xs text-slate-500 text-center mb-8">Jesteś sprawniejszy poznawczo niż {stats.percentile}% populacji w naszym modelu referencyjnym.</p>
-              <PercentileAxis val={stats.percentile} animate={animate} />
-            </div>
-            <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-2xl border border-blue-100 dark:border-blue-800">
-              <h5 className="font-bold text-xs uppercase tracking-widest text-blue-800 dark:text-blue-300 mb-2">Pamiętaj</h5>
-              <p className="text-[11px] text-blue-700/80 leading-relaxed italic max-w-prose">Percentyl zależy od przyjętego modelu norm. W pełnym raporcie wyjaśniamy szczegóły kalibracji i wpływ demografii na wyniki.</p>
+              <PercentileAxis val={stats.percentile} animate={animate} label={`Twój wynik: ${stats.percentile}%`} />
             </div>
           </div>
         );
@@ -787,8 +784,12 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
           { title: "Szybkie Czytanie", time: "15 min", diff: "Średni", desc: "Trening poszerzania pola widzenia i szybkiego skanowania tekstu." }
         ];
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in animate-slide-in-from-bottom duration-500">
-            {recs.map((rec, i) => (
+          <div className="space-y-6 animate-in animate-slide-in-from-bottom duration-500">
+            <h4 className="font-bold text-center flex items-center justify-center gap-2 text-slate-800 dark:text-slate-100">
+              <Rocket size={20} className="text-blue-500" /> Plan rozwoju poznawczego
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {recs.map((rec, i) => (
               <div key={i} className="p-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm hover:translate-y-[-2px] transition-transform">
                 <h5 className="font-bold text-sm mb-1">{rec.title}</h5>
                 <div className="flex gap-2 mb-3">
@@ -798,6 +799,7 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
                 <p className="text-[11px] text-slate-500 leading-relaxed">{rec.desc}</p>
               </div>
             ))}
+            </div>
           </div>
         );
       case "certyfikat":
@@ -840,13 +842,13 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
   };
 
   const tabs = [
-    { id: "podsumowanie", label: "Podsumowanie", icon: <Icons.Brain /> },
+    { id: "podsumowanie", label: "Podsumowanie", icon: <LayoutDashboard size={16} /> },
     ...(data.isMax || data.isPro ? [
-      { id: "domeny", label: "Profil Domen", icon: <Icons.Chart /> },
-      { id: "percentyl", label: "Percentyl", icon: <Icons.Award /> },
-      { id: "rekomendacje", label: "Rozwój", icon: <Icons.Sun /> }
+      { id: "domeny", label: "Profil Domen", icon: <BrainCircuit size={16} /> },
+      { id: "percentyl", label: "Percentyl", icon: <Percent size={16} /> },
+      { id: "rekomendacje", label: "Rozwój", icon: <Rocket size={16} /> }
     ] : []),
-    { id: "certyfikat", label: "Certyfikat", icon: <Icons.Lock /> }
+    { id: "certyfikat", label: "Certyfikat", icon: <Award size={16} /> }
   ];
 
   return (
@@ -855,7 +857,7 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
       <aside className="md:w-64 bg-slate-50 dark:bg-slate-800/40 border-r border-slate-100 dark:border-slate-800 p-6">
         <div className="mb-10 hidden md:block">
           <div className="flex items-center space-x-2 text-blue-600 mb-2">
-            <div className="w-4 h-4"><Icons.Award /></div>
+            <div className="w-4 h-4"><BadgeCheck size={16} /></div>
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">{data.isPaid ? 'Pełny Raport' : 'Raport Przykład'}</span>
           </div>
           <h3 className="text-xl font-bold dark:text-white leading-tight">Twój potencjał <br />w pigułce</h3>
@@ -963,7 +965,7 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
             {[
               { title: 'Matryce Logiczne', desc: 'Wykorzystujemy autorskie wzorce wektorowe SVG do badania inteligencji płynnej, oparte na najbardziej uznanych modelach psychometrycznych (Raven, Cattell).', icon: <Grid3X3 className="w-full h-full" strokeWidth={1.5} /> },
-              { title: 'Szybka Analiza', desc: 'Zaawansowany silnik obliczeniowy przelicza Twoje wyniki w czasie rzeczywistym, uwzględniając czasy reakcji na każde z pytań, co zwiększa rzetelność pomiaru.', icon: <Icons.Clock /> },
+              { title: 'Szybka Analiza', desc: 'Zaawansowany silnik obliczeniowy przelicza Twoje wyniki w czasie rzeczywistym, uwzględniając czasy reakcji na każde z pytań, co zwiększa rzetelność pomiaru.', icon: <Zap className="w-full h-full" strokeWidth={1.5} /> },
               { title: 'Naukowy Model CHC', desc: 'Nasze testy są projektowane w oparciu o hierarchiczny model inteligencji Cattella-Horna-Carrolla, uznawany za światowy standard w psychologii poznawczej.', icon: <Atom className="w-full h-full animate-pulse" strokeWidth={1.5} /> }
             ].map((f, i) => (
               <motion.div 
@@ -1220,7 +1222,7 @@ const TestSession = () => {
       isFinished: false
     });
 
-    setTimeLeft(qCount * 60); 
+    setTimeLeft(15 * 60); 
   }, []);
 
   const startRealTest = () => {
@@ -1280,16 +1282,6 @@ const TestSession = () => {
     const endTime = Date.now();
     const durationMs = endTime - state.startTime!;
     
-    // Anti-spam: Jeśli użytkownik rozwiązał 30 pytań w mniej niż 45 sekund (średnio 1.5s na pytanie), odrzuć test
-    if (durationMs < 45000) {
-      localStorage.setItem('iq_results', JSON.stringify({
-        invalid: 'too_fast',
-        timestamp: Date.now()
-      }));
-      navigate('/wynik');
-      return;
-    }
-
     const results = finalAnswers || state.answers;
     const stats = calculateStats(state.questions, results);
     
@@ -1633,12 +1625,12 @@ const Results = () => {
         <div className="absolute inset-0 opacity-10 dot-grid pointer-events-none"></div>
         <div className="relative z-10 text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center space-x-3 text-blue-400 font-black mb-8 uppercase text-sm tracking-[0.2em]">
-            <div className="w-6 h-6"><Icons.Award /></div>
+            <div className="w-6 h-6"><Award /></div>
             <span>Pakiet Ekspert Psychometrii</span>
           </div>
           <h3 className="text-5xl font-bold mb-8">Pobierz pełną analizę</h3>
           <p className="text-slate-400 mb-12 leading-relaxed text-xl max-w-prose mx-auto">
-            Otrzymaj pełen dostęp do szczegółowego rozkładu 5 domen, wnikliwej analizy Twoich mocnych stron oraz imienny certyfikat PDF.
+            Otrzymaj pełen dostęp do szczegółowego rozkładu 5 domen, wnikliwej analizy Twoich mocnych stron oraz imienny certyfikat.
           </p>
           <div className="bg-slate-800/50 p-10 rounded-[3rem] mb-16 text-left space-y-5 max-w-2xl mx-auto">
              {[
@@ -1648,7 +1640,7 @@ const Results = () => {
                "Imienny Certyfikat PDF do druku",
                "5 spersonalizowanych rekomendacji ćwiczeń"
              ].map((item, i) => (
-               <div key={i} className="flex items-center text-lg font-medium"><div className="w-5 h-5 text-blue-500 mr-5 shrink-0"><Icons.Check /></div>{item}</div>
+               <div key={i} className="flex items-center text-lg font-medium"><div className="w-5 h-5 text-blue-500 mr-5 shrink-0"><CheckCircle2 /></div>{item}</div>
              ))}
           </div>
           <div className="flex flex-col items-center gap-5">
@@ -1690,7 +1682,7 @@ const Checkout = () => {
   let price = '4,99';
   
   if (isPro) {
-    productName = 'Analiza Ekspercka PRO + Raport PDF';
+    productName = 'Analiza Ekspercka PRO + Certyfikat';
     price = '9,99';
   }
   
@@ -2044,7 +2036,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
               disabled={isPrinting}
               className={`bg-blue-600 text-white px-16 py-6 rounded-3xl font-bold transition-all shadow-2xl shadow-blue-200 flex items-center space-x-5 text-lg ${isPrinting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'}`}
             >
-              <div className="w-6 h-6">{isPrinting ? <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white"></div> : <Icons.Award />}</div>
+              <div className="w-6 h-6">{isPrinting ? <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white"></div> : <Award size={24} />}</div>
               <span>{isPrinting ? 'Generowanie PDF...' : 'Drukuj / Zapisz Certyfikat PDF'}</span>
             </button>
           </div>
@@ -3087,9 +3079,9 @@ const FAQ = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
       {[
         { q: "Czy test jest w pełni anonimowy?", a: "Tak, Twoje dane osobowe nie są wymagane do rozpoczęcia testu. Adres e-mail prosimy podać jedynie w celu przesłania gotowego raportu i certyfikatu po zakończeniu badania." },
-        { q: "Ile trwa test i ile ma pytań?", a: "Czas trwania i liczba pytań zależą od wybranego badania. Standardowy test IQ oraz Analiza PRO składają się z 30 zadań (ok. 30 min). Inne testy specjalistyczne, jak test osobowości (15 pytań) czy testy szybkości reakcji, mają własne, krótsze ramy czasowe." },
+        { q: "Ile trwa test i ile ma pytań?", a: "Czas trwania i liczba pytań zależą od wybranego badania. Standardowy test IQ oraz Analiza PRO składają się z 30 zadań (ok. 15 min). Inne testy specjalistyczne, jak test osobowości (15 pytań) czy testy szybkości reakcji, mają własne, krótsze ramy czasowe." },
         { q: "Czym różni się wersja Standard od Analizy PRO?", a: "Wersja Standard zawiera wynik punktowy i certyfikat. Analiza PRO to rozszerzony raport badający 5 kluczowych domen poznawczych, Twój percentyl na tle populacji oraz spersonalizowane wskazówki rozwojowe." },
-        { q: "Jak i kiedy otrzymam swój wynik?", a: "Wynik zobaczysz na ekranie natychmiast po zakończeniu testu. Pełny raport w formacie PDF oraz certyfikat zostaną wysłane na Twój adres e-mail w ciągu kilku minut od zakupu." },
+        { q: "Jak i kiedy otrzymam swój wynik?", a: "Wynik zobaczysz na ekranie natychmiast po zakończeniu testu. Pełny dostęp do analizy oraz certyfikat zostaną odblokowane w profilu i wysłane na Twój adres e-mail w ciągu kilku minut od zakupu." },
         { q: "Czy certyfikat jest uznawany oficjalnie?", a: "Nasz test opiera się na uznanych metodach psychometrycznych, jednak certyfikat ma charakter edukacyjno-rozwojowy. Nie zastępuje on diagnozy klinicznej ani oficjalnych testów Mensy." },
         { q: "Co jeśli nie otrzymałem e-maila z raportem?", a: "Najpierw sprawdź folder SPAM. Jeśli raportu nadal nie ma, skontaktuj się z naszym wsparciem pod adresem kontakt@iq-metric.pl – prześlemy go ponownie niezwłocznie." },
         { q: "Czy mogę powtórzyć test?", a: "Możesz powtórzyć test, jednak pamiętaj, że efekt uczenia się może sztucznie zawyżyć wynik. Dla rzetelnej oceny zalecamy zachowanie odstępu czasowego." },
@@ -3125,10 +3117,9 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
     { id: "co-mierzymy", title: "1. Co mierzy ten test?" },
     { id: "format-czas", title: "2. Format i czas" },
     { id: "jak-liczymy", title: "3. Jak liczymy wynik" },
-    { id: "percentyl-def", title: "4. Percentyl" },
-    { id: "analiza-pro", title: "5. Analiza PRO" },
-    { id: "nie-diagnoza", title: "6. To nie jest diagnoza" },
-    { id: "slownik", title: "7. Słownik pojęć" }
+    { id: "analiza-pro", title: "4. Analiza PRO" },
+    { id: "nie-diagnoza", title: "5. To nie jest diagnoza" },
+    { id: "slownik", title: "6. Słownik pojęć" }
   ];
 
   return (
@@ -3173,8 +3164,8 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
               <p className="text-sm text-slate-500 leading-relaxed">Test składa się z 30 zadań podzielonych na 5 domen poznawczych (matryce, ciągi liczbowe, analogie, wyobraźnia przestrzenna, logika).</p>
             </div>
             <div className="p-8 bg-white dark:bg-slate-900 border rounded-3xl shadow-sm">
-              <h4 className="font-bold text-lg mb-3">Limit czasu (30 min)</h4>
-              <p className="text-sm text-slate-500 leading-relaxed">Masz średnio 1 minutę na zadanie. Czas ten wymusza sprawne procesowanie informacji, co jest kluczowym elementem inteligencji płynnej.</p>
+              <h4 className="font-bold text-lg mb-3">Limit czasu (15 min)</h4>
+              <p className="text-sm text-slate-500 leading-relaxed">Masz średnio 30 sekund na zadanie. Czas ten wymusza sprawne procesowanie informacji, co jest kluczowym elementem inteligencji płynnej.</p>
             </div>
           </div>
         </div>
@@ -3195,22 +3186,6 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
           <p className="text-base text-slate-500 leading-relaxed italic mt-12 max-w-prose">
             Powyższa infografika przedstawia uproszczony schemat procesowania danych psychometrycznych przez nasz autorski silnik obliczeniowy.
           </p>
-        </div>
-
-        <div id="percentyl-def" className="scroll-mt-32">
-          <h2 className="text-4xl font-bold mb-8 dark:text-white">Percentyl</h2>
-          <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-10 max-w-prose">
-            Percentyl wskazuje, jaki odsetek populacji uzyskał wynik niższy od Twojego. Wartość ta jest wyliczana przy użyciu aproksymacji dystrybuanty rozkładu normalnego (krzywej Gaussa).
-          </p>
-          
-          <BellCurveInfographic />
-
-          <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-10 max-w-prose">
-            Większość populacji (ok. 68%) uzyskuje wyniki w przedziale 85-115 IQ. Wyniki powyżej 130 IQ są uznawane za wybitne i występują u mniej niż 2.3% osób.
-          </p>
-          <div className="max-w-[800px]">
-             <PercentileAxis val={50} animate={true} />
-          </div>
         </div>
 
         <div id="analiza-pro" className="scroll-mt-32">
@@ -3241,7 +3216,7 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
               <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg">
                 <Icons.Check className="w-6 h-6" />
               </div>
-              <span>Pełny raport PDF (ok. 12 stron) wysyłany na e-mail</span>
+              <span>Pełna analiza wszystkich 5 domen poznawczych</span>
             </div>
           </div>
         </div>

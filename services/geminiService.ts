@@ -11,48 +11,42 @@ export const generateDetailedReport = async (stats: UserStats): Promise<Detailed
   const getFallback = (score: number): DetailedAnalysis => {
     if (score >= 120) {
       return {
-        summary: `Twój wybitny wynik (${score}) plasuje Cię w górnych 10% populacji. Wykazujesz nadzwyczajne zdolności w zakresie myślenia abstrakcyjnego i rozwiązywania złożonych problemów logicznych.`,
-        strengths: ["Zaawansowana synteza danych", "Wybitna wyobraźnia przestrzenna", "Szybka adaptacja poznawcza"],
-        weaknesses: ["Skłonność do nadmiernej analizy", "Niecierpliwość przy prostych zadaniach"],
+        summary: `Twój wynik (${score}) jest wybitny! Masz bardzo jasny umysł i błyskawicznie rozwiązujesz nawet najtrudniejsze zagadki logiczne.`,
+        strengths: ["Błyskawiczne łączenie faktów", "Świetna intuicja i wyobraźnia", "Bardzo szybkie uczenie się"],
+        weaknesses: ["Zbyt głębokie analizowanie prostych spraw", "Niecierpliwość przy powolnych zadaniach"],
         recommendations: [
-          { title: "Teoria Gier", time: "20 min", diff: "Wysoki", desc: "Analiza strategii w grach o sumie niezerowej." },
-          { title: "Programowanie Funkcyjne", time: "30 min", diff: "Wysoki", desc: "Nauka paradygmatów deklaratywnych dla rozwoju logiki." },
-          { title: "Szachy - Strategia", time: "15 min", diff: "Średni", desc: "Analiza końcówek i planowania długofalowego." },
-          { title: "Kryptografia", time: "20 min", diff: "Wysoki", desc: "Łamanie szyfrów podstawieniowych i blokowych." },
-          { title: "Filozofia Analityczna", time: "15 min", diff: "Średni", desc: "Analiza argumentacji i błędów logicznych." }
+          { title: "Teoria Gier", time: "20 min", diff: "Wysoki", desc: "Poznaj zasady podejmowania najlepszych decyzji." },
+          { title: "Programowanie", time: "30 min", diff: "Wysoki", desc: "Trenuj czystą logikę poprzez pisanie kodu." },
+          { title: "Filozofia", time: "15 min", diff: "Średni", desc: "Rozwijaj precyzyjne myślenie i argumentację." }
         ],
-        careerPaths: ["Naukowiec", "Główny Architekt IT", "Strateg Biznesowy"],
-        personalityTraits: ["Wysoka otwartość", "Innowacyjność", "Niezależność myślenia"]
+        careerPaths: ["Architekt Systemów", "Strateg", "Naukowiec"],
+        personalityTraits: ["Otwartość", "Innowacyjność", "Niezależność"]
       };
     } else if (score >= 90) {
       return {
-        summary: `Twój wynik (${score}) jest w pełni satysfakcjonujący i mieści się w szerokiej normie. Posiadasz solidny fundament do nauki nowych umiejętności i sprawnego funkcjonowania w wymagającym środowisku.`,
-        strengths: ["Dobra pamięć robocza", "Logiczne wyciąganie wniosków", "Rozpoznawanie wzorców"],
-        weaknesses: ["Złożona rotacja 3D", "Presja czasu w zadaniach abstrakcyjnych"],
+        summary: `Twój wynik (${score}) jest bardzo solidny. Dobrze radzisz sobie z codziennymi wyzwaniami i szybko przyswajasz nową wiedzę.`,
+        strengths: ["Logiczne i uporządkowane myślenie", "Dobre dostrzeganie schematów", "Jasne wyciąganie wniosków"],
+        weaknesses: ["Trudniejsze zadania przestrzenne (3D)", "Praca pod bardzo dużą presją czasu"],
         recommendations: [
-          { title: "Trening Matryc", time: "10 min", diff: "Średni", desc: "Zadania oparte na zmianie dwóch zmiennych jednocześnie." },
-          { title: "Sudoku Expert", time: "15 min", diff: "Średni", desc: "Rozwijanie eliminacji logicznej i dedukcji." },
-          { title: "Pamięć Operacyjna", time: "5 min", diff: "Niski", desc: "Ciągi cyfr wstecznie i naprzemiennie." },
-          { title: "Analiza Tekstu", time: "10 min", diff: "Średni", desc: "Wyłapywanie niespójności w artykułach naukowych." },
-          { title: "Szybkie Czytanie", time: "15 min", diff: "Średni", desc: "Trening poszerzania pola widzenia i szybkiego skanowania tekstu." }
+          { title: "Trening Matryc", time: "10 min", diff: "Średni", desc: "Ćwicz dostrzeganie reguł zmieniających się naraz." },
+          { title: "Sudoku", time: "15 min", diff: "Średni", desc: "Idealny trening dla logicznego myślenia." },
+          { title: "Zagadki Logiczne", time: "10 min", diff: "Średni", desc: "Rozwiązywanie problemów o różnej trudności." }
         ],
-        careerPaths: ["Menedżer Projektu", "Inżynier", "Specjalista ds. Analiz"],
-        personalityTraits: ["Sumienność", "Stabilność", "Praktyczne podejście"]
+        careerPaths: ["Manager", "Analityk", "Inżynier"],
+        personalityTraits: ["Zrównoważenie", "Skrupulatność", "Praktyczność"]
       };
     } else {
       return {
-        summary: `Twój wynik (${score}) wskazuje na potencjał do rozwoju w obszarach myślenia analitycznego. Skupienie się na systematycznym treningu poznawczym pozwoli Ci znacząco poprawić sprawność operacyjną mózgu.`,
-        strengths: ["Praktyczne rozwiązywanie problemów", "Uwaga selektywna", "Podstawowe analogie"],
-        weaknesses: ["Abstrakcyjne matryce logiczne", "Szybkość przetwarzania danych"],
+        summary: `Twój wynik (${score}) to dobry początek. Masz konkretne podejście do życia, a regularny trening pomoże Ci jeszcze bardziej wyostrzyć myślenie.`,
+        strengths: ["Praktyczne rozwiązywanie problemów", "Dbałość o ważne szczegóły", "Dobre wyczucie relacji między faktami"],
+        weaknesses: ["Szybka analiza dużej ilości danych", "Zadania oparte na czystej logice"],
         recommendations: [
-          { title: "Podstawy Logiki", time: "10 min", diff: "Niski", desc: "Proste sylogizmy i relacje między zbiorami." },
-          { title: "Puzzle Przestrzenne", time: "15 min", diff: "Niski", desc: "Układanie brył z rzutów bocznych." },
-          { title: "Trening Skupienia", time: "5 min", diff: "Niski", desc: "Eliminowanie dystraktorów w zadaniach typu Stroop." },
-          { title: "Arytmetyka Mentalna", time: "10 min", diff: "Niski", desc: "Szybkie liczenie w pamięci bez użycia kartki." },
-          { title: "Gry Słowne", time: "15 min", diff: "Niski", desc: "Rozwijanie zasobu słownictwa i analogii werbalnych." }
+          { title: "Podstawy Logiki", time: "10 min", diff: "Niski", desc: "Proste ćwiczenia na wyciąganie wniosków." },
+          { title: "Puzzle 3D", time: "15 min", diff: "Niski", desc: "Zabawa formą, która rozwija wyobraźnię." },
+          { title: "Gry Słowne", time: "15 min", diff: "Niski", desc: "Rozwijanie zasobu słów i sprawności kojarzenia." }
         ],
-        careerPaths: ["Koordynator Operacyjny", "Specjalista Techniczny", "Doradca Klienta"],
-        personalityTraits: ["Empatia", "Wytrwałość", "Zorientowanie na detale"]
+        careerPaths: ["Koordynator", "Specjalista", "Doradca"],
+        personalityTraits: ["Konkretność", "Cierpliwość", "Uważność"]
       };
     }
   };
