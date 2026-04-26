@@ -210,9 +210,9 @@ const PercentileAxis = ({ val, animate, label, hideScale }: { val: number; anima
     
     {!hideScale && (
       <div className="flex justify-between mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-        <span>Słabszy niż większość</span>
-        <span>Przeciętny (50)</span>
-        <span>Wybitny</span>
+        <span>Dolna połowa</span>
+        <span>Średnia (50%)</span>
+        <span>Górna połowa</span>
       </div>
     )}
 
@@ -416,7 +416,7 @@ const IQWorldMap = () => {
             <span className="text-blue-600">w wybranych krajach</span>
           </h2>
           <p className="text-lg text-slate-600 dark:text-slate-400 mb-10 leading-relaxed max-w-2xl mx-auto">
-            Porównaj wyniki z różnych części świata. Nasza baza danych jest stale aktualizowana o wyniki użytkowników z ponad 150 krajów.
+            Nasza baza danych jest stale aktualizowana o wyniki tysięcy użytkowników z całego globu. Zobacz, jak wypadają inne kraje.
           </p>
         </div>
 
@@ -491,11 +491,11 @@ const IQWorldMap = () => {
                         {/* Custom Tooltip on Marker */}
                         <g className="opacity-0 group-hover/marker:opacity-100 transition-all duration-300 pointer-events-none translate-y-2 group-hover/marker:translate-y-0">
                           <rect
-                            x={-45}
-                            y={-40}
-                            width={90}
-                            height={28}
-                            rx={14}
+                            x={-85}
+                            y={-42}
+                            width={170}
+                            height={32}
+                            rx={16}
                             fill="#1E293B"
                             className="shadow-xl"
                           />
@@ -702,11 +702,11 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
               <div className="flex-1">
                 <h4 className="text-xl font-bold mb-2 flex items-center gap-2"><Brain size={20} className="text-blue-500" /> Interpretacja ogólna</h4>
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic max-w-prose">
-                  "{analysis?.summary || `Twój wynik (${stats.iqScore}) plasuje Cię powyżej przeciętnej. Wykazujesz biegłość w zadaniach analitycznych.`}"
+                  "{analysis?.summary || `Twój wynik (${stats.iqScore}) jest bardzo dobry. Wykazujesz sprawne i logiczne myślenie.`}"
                 </p>
               </div>
             </div>
-            {(data.isMax || data.isPro) && (
+            {data.isPro && (
               <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm">
@@ -756,11 +756,11 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
             <h4 className="font-bold text-center flex items-center justify-center gap-2 text-slate-800 dark:text-slate-100">
               <BrainCircuit size={20} className="text-blue-500" /> Szczegółowy profil domen
             </h4>
-            <DomainBar label="Wzorce i matryce" value={stats.domainScores.MATRIX} desc="Identyfikacja trendów wizualnych" level={stats.domainScores.MATRIX > 80 ? "Wysoki" : "Średni"} animate={animate} />
-            <DomainBar label="Logika i wnioskowanie" value={stats.domainScores.LOGIC} desc="Dedukcja i synteza" level={stats.domainScores.LOGIC > 80 ? "Wysoki" : "Średni"} animate={animate} />
-            <DomainBar label="Przestrzeń" value={stats.domainScores.SPATIAL} desc="Rotacja i składanie brył" level={stats.domainScores.SPATIAL > 80 ? "Wysoki" : "Średni"} animate={animate} />
-            <DomainBar label="Liczby" value={stats.domainScores.NUMBER_SERIES} desc="Operacje na sekwencjach" level={stats.domainScores.NUMBER_SERIES > 80 ? "Wysoki" : "Średni"} animate={animate} />
-            <DomainBar label="Słowa" value={stats.domainScores.ANALOGY} desc="Zrozumienie relacji pojęć" level={stats.domainScores.ANALOGY > 80 ? "Wysoki" : "Średni"} animate={animate} />
+            <DomainBar label="Wzorce i schematy" value={stats.domainScores.MATRIX} desc="Dostrzeganie reguł wizualnych" level={stats.domainScores.MATRIX > 65 ? "Wysoki" : stats.domainScores.MATRIX > 30 ? "Średni" : "Podstawowy"} animate={animate} />
+            <DomainBar label="Logika" value={stats.domainScores.LOGIC} desc="Wyciąganie wniosków" level={stats.domainScores.LOGIC > 65 ? "Wysoki" : stats.domainScores.LOGIC > 30 ? "Średni" : "Podstawowy"} animate={animate} />
+            <DomainBar label="Wyobraźnia" value={stats.domainScores.SPATIAL} desc="Wyobraźnia przestrzenna" level={stats.domainScores.SPATIAL > 65 ? "Wysoki" : stats.domainScores.SPATIAL > 30 ? "Średni" : "Podstawowy"} animate={animate} />
+            <DomainBar label="Matematyka" value={stats.domainScores.NUMBER_SERIES} desc="Praca z liczbami" level={stats.domainScores.NUMBER_SERIES > 65 ? "Wysoki" : stats.domainScores.NUMBER_SERIES > 30 ? "Średni" : "Podstawowy"} animate={animate} />
+            <DomainBar label="Słownictwo" value={stats.domainScores.ANALOGY} desc="Rozumienie relacji" level={stats.domainScores.ANALOGY > 65 ? "Wysoki" : stats.domainScores.ANALOGY > 30 ? "Średni" : "Podstawowy"} animate={animate} />
           </div>
         );
       case "percentyl":
@@ -768,9 +768,14 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
           <div className="space-y-8 animate-in animate-slide-in-from-bottom duration-500">
             <div className="bg-slate-50 dark:bg-slate-800/50 p-8 rounded-3xl">
               <h4 className="font-bold text-center mb-4 flex items-center justify-center gap-2">
-                <Percent size={20} className="text-blue-500" /> Percentyl: {stats.percentile}%
+                <Percent size={20} className="text-blue-500" /> Pozycja w populacji: {stats.percentile}%
               </h4>
-              <p className="text-xs text-slate-500 text-center mb-8">Jesteś sprawniejszy poznawczo niż {stats.percentile}% populacji w naszym modelu referencyjnym.</p>
+              <p className="text-xs text-slate-500 text-center mb-8 px-6">
+                {stats.iqScore >= 90 && stats.iqScore <= 110 
+                  ? `Twój wynik mieści się w standardowej normie intelektualnej (którą dzieli ok. 50% populacji). Wynik ten wskazuje na pełną sprawność procesów poznawczych.`
+                  : `Twój wynik wskazuje, że jesteś sprawniejszy poznawczo niż ${stats.percentile}% populacji w naszym modelu referencyjnym.`
+                }
+              </p>
               <PercentileAxis val={stats.percentile} animate={animate} label={`Twój wynik: ${stats.percentile}%`} />
             </div>
           </div>
@@ -842,8 +847,8 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
   };
 
   const tabs = [
-    { id: "podsumowanie", label: "Podsumowanie", icon: <LayoutDashboard size={16} /> },
-    ...(data.isMax || data.isPro ? [
+    { id: "podsumowanie", label: data.isPro ? "Podsumowanie" : "Twój Wynik", icon: <ClipboardList size={16} /> },
+    ...(data.isPro ? [
       { id: "domeny", label: "Profil Domen", icon: <BrainCircuit size={16} /> },
       { id: "percentyl", label: "Percentyl", icon: <Percent size={16} /> },
       { id: "rekomendacje", label: "Rozwój", icon: <Rocket size={16} /> }
@@ -921,12 +926,12 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
               Sprawdź możliwości swojego mózgu i poznaj swoje mocne strony. Twój spersonalizowany raport będzie gotowy natychmiast po zakończeniu testu.
             </p>
             <div className="flex flex-col sm:flex-row gap-5">
-              <button 
-                onClick={openPurchaseModal}
+              <Link 
+                to="/test"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-5 rounded-2xl text-lg font-bold shadow-2xl shadow-blue-200 dark:shadow-none hover:scale-105 transition-all text-center"
               >
                 Rozpocznij Test IQ
-              </button>
+              </Link>
               <Link to="/metoda" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 px-12 py-5 rounded-2xl text-lg font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-center">
                 Metodologia
               </Link>
@@ -1012,7 +1017,7 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
               Przykład pełnego raportu z pakietu PRO
             </div>
             <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-4">
-              Płatny raport to nie tylko jedna liczba. To kompletna mapa Twojej struktury intelektualnej. Zobacz, jak prezentujemy Twoje wyniki:
+              Raport to nie tylko jedna liczba. To szczegółowa analiza Twoich umiejętności. Zobacz, jak wyglądają wyniki:
             </p>
           </motion.div>
           
@@ -1142,10 +1147,10 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
               <h3 className="text-2xl font-bold mb-2 dark:text-white text-center relative z-10">Test Standard</h3>
               <div className="text-slate-500 font-black text-4xl mb-6 text-center relative z-10">4,99 PLN</div>
               <p className="text-slate-500 text-xs leading-relaxed mb-10 text-center flex-1 relative z-10">
-                Klasyczny pomiar inteligencji płynnej. Oficjalny certyfikat z Twoim wynikiem punktowym oraz podstawowe podsumowanie wysłane na Twój e-mail za 4,99 PLN.
+                Dokładny pomiar IQ, oficjalny certyfikat oraz krótkie podsumowanie wyników wysłane na e-mail. Tylko 4,99 PLN.
               </p>
-              <Link to="/platnosc" className="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 hover:bg-slate-700 transition-all shadow-xl text-sm relative z-10">
-                <span>Rozpocznij Standard</span>
+              <Link to="/test" className="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 hover:bg-slate-700 transition-all shadow-xl text-sm relative z-10">
+                <span>Rozpocznij Test</span>
               </Link>
             </motion.div>
 
@@ -1166,10 +1171,10 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
               <h3 className="text-2xl font-bold mb-2 dark:text-white text-center relative z-10">Analiza PRO</h3>
               <div className="text-blue-600 dark:text-blue-400 font-black text-4xl mb-6 text-center relative z-10">9,99 PLN</div>
               <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed mb-10 text-center flex-1 relative z-10">
-                Pełny raport z analizą 5 domen poznawczych, percentylem oraz spersonalizowanymi rekomendacjami rozwoju wysłany na Twój e-mail.
+                Kompletny raport: analiza 5 umiejętności, Twoja pozycja na tle innych oraz wskazówki jak ćwiczyć mózg. Wszystko na e-mail.
               </p>
-              <Link to="/platnosc?type=pro&intent=start" className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 hover:bg-blue-700 transition-all shadow-xl text-sm relative z-10">
-                <span>Wybierz Analizę PRO</span>
+              <Link to="/test" className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 hover:bg-blue-700 transition-all shadow-xl text-sm relative z-10">
+                <span>Rozpocznij Test</span>
               </Link>
             </motion.div>
           </div>
@@ -1287,13 +1292,20 @@ const TestSession = () => {
     
     const existingSaved = JSON.parse(localStorage.getItem('iq_results') || '{}');
     
-    localStorage.setItem('iq_results', JSON.stringify({
+    // Create new results, explicitly resetting Pro/Max status and old analysis
+    const newResults = {
       ...existingSaved,
       stats,
       timestamp: Date.now(),
-      isPaid: existingSaved.isPaid || false,
-      isPro: existingSaved.isPro || isPro
-    }));
+      isPaid: false,
+      isPro: false,
+      isMax: false
+    };
+    
+    // Remove old analysis if it exists
+    delete (newResults as any).analysis;
+    
+    localStorage.setItem('iq_results', JSON.stringify(newResults));
     navigate('/wynik');
   };
 
@@ -1349,7 +1361,15 @@ const TestSession = () => {
 
     const domainScores: any = {};
     Object.keys(domainCorrect).forEach(key => {
-      domainScores[key] = Math.round((domainCorrect[key] / (domainTotal[key] || 1)) * 100);
+      const rawPct = (domainCorrect[key] / (domainTotal[key] || 1)) * 100;
+      // Normalizacja wizualna: 45% (średnia) -> 50% na pasku
+      let uiScore;
+      if (rawPct <= 45) {
+        uiScore = (rawPct / 45) * 50;
+      } else {
+        uiScore = 50 + ((rawPct - 45) / 55) * 50;
+      }
+      domainScores[key] = Math.round(uiScore);
     });
 
     return { iqScore, percentile, domainScores, confidenceInterval: [iqScore - 4, iqScore + 4] };
@@ -1379,23 +1399,23 @@ const TestSession = () => {
   const progress = ((state.currentQuestionIndex + 1) / state.questions.length) * 100;
 
   return (
-    <div className="min-h-screen py-16 px-6 relative z-10" ref={containerRef}>
+    <div className="min-h-screen py-6 px-4 relative z-10" ref={containerRef}>
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-12">
-          <div className="flex-1 mr-12">
-            <div className="h-3 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex-1 mr-8">
+            <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
               <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }}></div>
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-900 px-6 py-3 rounded-2xl font-mono font-bold shadow-sm text-xl border border-slate-100 dark:border-slate-800">
+          <div className="bg-white dark:bg-slate-900 px-4 py-2 rounded-xl font-mono font-bold shadow-sm text-lg border border-slate-100 dark:border-slate-800">
             {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-[3.5rem] p-10 md:p-20 shadow-2xl border border-slate-100 dark:border-slate-800 min-h-[600px] flex flex-col">
+        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 md:p-10 shadow-2xl border border-slate-100 dark:border-slate-800 min-h-[500px] flex flex-col">
           <div className="flex-1">
-            <h3 className="text-3xl font-bold mb-16 dark:text-white leading-tight">{currentQ.content}</h3>
+            <h3 className="text-xl md:text-2xl font-bold mb-8 dark:text-white leading-tight">{currentQ.content}</h3>
             {currentQ.svgContent && (
-              <div className="max-w-[400px] mx-auto mb-16 text-slate-800 dark:text-slate-100">
+              <div className="max-w-[320px] mx-auto mb-8 text-slate-800 dark:text-slate-100">
                 {typeof currentQ.svgContent === 'string' ? (
                   <div dangerouslySetInnerHTML={{ __html: currentQ.svgContent }} />
                 ) : (
@@ -1403,16 +1423,16 @@ const TestSession = () => {
                 )}
               </div>
             )}
-            {currentQ.imageUrl && <div className="max-w-[400px] mx-auto mb-16"><img src={currentQ.imageUrl} alt="Zadanie" className="w-full h-auto rounded-xl shadow-sm" /></div>}
+            {currentQ.imageUrl && <div className="max-w-[320px] mx-auto mb-8"><img src={currentQ.imageUrl} alt="Zadanie" className="w-full h-auto rounded-xl shadow-sm" /></div>}
           </div>
-          <div className="grid grid-cols-2 gap-5 mt-auto">
+          <div className="grid grid-cols-2 gap-4 mt-auto">
             {currentQ.options.map((opt, idx) => {
               const isSvg = typeof opt === 'string' && opt.startsWith('<svg');
               return (
-                <button key={idx} onClick={(e) => { e.currentTarget.blur(); handleAnswer(idx); }} className={`p-8 border-2 border-slate-100 dark:border-slate-800 rounded-[2.5rem] hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all font-bold text-lg active:scale-[0.98] flex items-center ${isSvg ? 'justify-center' : 'text-left'}`}>
-                  {!isSvg && <span className="mr-5 font-black text-blue-600/30 text-xl">{String.fromCharCode(65 + idx)}</span>}
+                <button key={idx} onClick={(e) => { e.currentTarget.blur(); handleAnswer(idx); }} className={`p-4 md:p-6 border-2 border-slate-100 dark:border-slate-800 rounded-2xl hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all font-bold text-base active:scale-[0.98] flex items-center ${isSvg ? 'justify-center' : 'text-left'}`}>
+                  {!isSvg && <span className="mr-3 font-black text-blue-600/30 text-lg">{String.fromCharCode(65 + idx)}</span>}
                   {isSvg ? (
-                    <div className="w-24 h-24 text-slate-800 dark:text-slate-100" dangerouslySetInnerHTML={{ __html: opt }} />
+                    <div className="w-16 h-16 text-slate-800 dark:text-slate-100" dangerouslySetInnerHTML={{ __html: opt }} />
                   ) : (
                     opt
                   )}
@@ -1443,27 +1463,24 @@ const Results = () => {
       setData(parsed);
       if (parsed.email) setEmail(parsed.email);
       
-      // Simulate generation process
+      // Much faster results calculation feel
       const steps = 4;
-      const stepDuration = 800;
-      
       const interval = setInterval(() => {
         setGenerationStep(prev => {
           if (prev >= steps - 1) {
             clearInterval(interval);
             setTimeout(() => {
               setIsGenerating(false);
+              // Only auto-navigate if they ALREADY paid for this specific result
               if (parsed.isPaid) {
                 navigate('/raport');
-              } else {
-                setTimeout(() => setAnimate(true), 100);
               }
-            }, stepDuration);
+            }, 600);
             return prev;
           }
           return prev + 1;
         });
-      }, stepDuration);
+      }, 400);
 
       return () => clearInterval(interval);
     } else {
@@ -1480,72 +1497,45 @@ const Results = () => {
 
   if (!data) return null;
   
-  if (isGenerating && data.invalid !== 'too_fast') {
+  if (isGenerating) {
     const stepsText = [
-      "Analizowanie wzorców odpowiedzi...",
-      "Kalkulacja czasu reakcji...",
-      "Porównywanie z modelem populacyjnym...",
-      "Generowanie profilu poznawczego..."
+      "Analizowanie wzorców...",
+      "Kalkulacja wyników...",
+      "Normalizacja populacyjna...",
+      "Kończenie raportu..."
     ];
     
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 relative z-10">
-        <div className="w-32 h-32 text-blue-600 mb-12">
-          <Logos.BrainGrid size={128} className="animate-spin-slow" />
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 relative z-10">
+        <div className="w-32 h-32 text-blue-600 mb-12 relative">
+          <Logos.BrainGrid size={128} className="animate-spin-slow opacity-20" />
+          <div className="absolute inset-0 flex items-center justify-center">
+             <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
         </div>
-        <h2 className="text-3xl font-bold mb-8 dark:text-white text-center">Przetwarzanie wyników</h2>
+        <h2 className="text-3xl font-bold mb-8 dark:text-white text-center">Analizujemy Twoje odpowiedzi</h2>
         
-        <div className="w-full max-w-md space-y-4 mb-12">
+        <div className="w-full max-w-sm space-y-3 mb-12">
           {stepsText.map((text, idx) => (
             <div 
               key={idx} 
-              className={`flex items-center space-x-4 p-4 rounded-2xl transition-all duration-500 ${
+              className={`flex items-center space-x-3 p-4 rounded-2xl transition-all duration-300 ${
                 idx <= generationStep 
-                  ? 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm opacity-100 translate-y-0' 
-                  : 'opacity-0 translate-y-4'
+                  ? 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm opacity-100' 
+                  : 'opacity-30'
               }`}
             >
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                idx < generationStep ? 'bg-emerald-100 text-emerald-600' : 
-                idx === generationStep ? 'bg-blue-100 text-blue-600 animate-pulse' : 'bg-slate-100 text-slate-400'
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                idx < generationStep ? 'bg-emerald-500 text-white' : 
+                idx === generationStep ? 'bg-blue-600 text-white animate-pulse' : 'bg-slate-200 dark:bg-slate-700'
               }`}>
-                {idx < generationStep ? <Icons.Check /> : <div className="w-2 h-2 bg-current rounded-full" />}
+                {idx < generationStep ? <Check size={12} strokeWidth={4} /> : <div className="w-1.5 h-1.5 bg-current rounded-full" />}
               </div>
-              <span className={`text-sm font-medium ${idx <= generationStep ? 'text-slate-700 dark:text-slate-300' : 'text-slate-400'}`}>
+              <span className={`text-sm font-bold ${idx <= generationStep ? 'text-slate-700 dark:text-slate-300' : 'text-slate-400'}`}>
                 {text}
               </span>
             </div>
           ))}
-        </div>
-
-        <div className="w-full max-w-md bg-white/50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
-          <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">E-mail do wysyłki raportu (opcjonalnie)</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-              <Icons.Mail size={18} />
-            </div>
-            <input 
-              type="email" 
-              placeholder="Twój e-mail (opcjonalnie)" 
-              value={email}
-              onChange={handleEmailChange}
-              className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-xl focus:border-blue-500 outline-none transition-all dark:text-white text-sm"
-            />
-          </div>
-          <p className="text-[10px] text-slate-400 mt-2 text-center uppercase tracking-widest font-bold">Możesz wpisać maila później</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (data.invalid === 'too_fast') {
-    return (
-      <div className="max-w-2xl mx-auto py-32 px-6 text-center relative z-10">
-        <div className="bg-red-50 dark:bg-red-900/10 p-12 rounded-[3rem] border border-red-100 dark:border-red-900/40">
-          <div className="w-20 h-20 text-red-500 mx-auto mb-6"><Icons.AlertTriangle /></div>
-          <h2 className="text-3xl font-bold mb-4 text-red-900 dark:text-red-400">Test Odrzucony</h2>
-          <p className="text-red-800 dark:text-red-400/80 text-lg mb-8 leading-relaxed">Wykryto nienaturalnie szybkie tempo rozwiązywania zadań (poniżej minimalnego czasu potrzebnego na przeczytanie pytań). Wynik nie może zostać uznany za wiarygodny.</p>
-          <Link to="/test" className="inline-block bg-red-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-red-700 transition-all">Rozwiąż test ponownie</Link>
         </div>
       </div>
     );
@@ -1554,110 +1544,103 @@ const Results = () => {
   const { stats } = data;
 
   return (
-    <div className="max-w-[1120px] mx-auto py-24 px-6 space-y-16 relative z-10">
-      {/* 1. Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-black dark:text-white uppercase tracking-widest animate-in animate-fade-in">Analiza Zakończona</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-lg mt-4 font-medium animate-in animate-fade-in delay-100">Podejście: {new Date(data.timestamp).toLocaleDateString()}</p>
+    <div className="max-w-[1200px] mx-auto py-12 md:py-24 px-6 space-y-16 relative z-10 animate-in fade-in duration-700">
+      <div className="text-center max-w-3xl mx-auto">
+        <div className="inline-flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-6">
+          <Icons.Check /> Gotowe do wyświetlenia
+        </div>
+        <h1 className="text-4xl md:text-6xl font-black dark:text-white mb-6 uppercase tracking-tight">Twój Wynik IQ gotowy</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-lg leading-relaxed">
+          Zaliczyliśmy Twoje podejście z dnia {new Date(data.timestamp).toLocaleDateString()}. Wybierz teraz rodzaj raportu, który chcesz otrzymać.
+        </p>
       </div>
 
-      {/* 2. Main Result Card (Teaser) */}
-      <div className="bg-white dark:bg-slate-900 rounded-[4rem] shadow-[0_48px_80px_-20px_rgba(37,99,235,0.2)] dark:shadow-none border border-slate-100 dark:border-slate-800 overflow-hidden animate-in animate-slide-in-from-bottom">
-        <div className="bg-blue-600 p-16 md:p-24 text-center text-white relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10 dot-grid pointer-events-none"></div>
-          <div className="w-16 h-16 mx-auto mb-6 text-blue-200"><Icons.Lock /></div>
-          <h2 className="text-2xl font-black uppercase tracking-[0.4em] opacity-80 mb-6">Twój Wynik IQ</h2>
-          <div className="flex flex-col items-center gap-4">
-            <button 
-              onClick={() => {
-                const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
-                localStorage.setItem('iq_results', JSON.stringify({ ...s, isPaid: true, email: email || 'test@example.com' }));
-                navigate('/raport');
-              }}
-              className="inline-flex items-center justify-center px-12 py-5 bg-white text-blue-600 rounded-2xl text-lg font-bold shadow-xl hover:bg-blue-50 transition-all hover:scale-105"
-            >
-              <div className="w-5 h-5 mr-3"><Icons.Lock /></div> Odblokuj Wynik (Dostęp Testowy)
-            </button>
-            <Link 
-              to="/platnosc?intent=unlock" 
-              className="text-white/70 hover:text-white text-sm font-bold underline underline-offset-4 transition-colors"
-            >
-              Przejdź do oficjalnej płatności
-            </Link>
-          </div>
-        </div>
-        <div className="p-12 text-center bg-slate-50 dark:bg-slate-800/20">
-          <h3 className="text-2xl font-bold mb-4 dark:text-white">Odblokuj swój wynik i pełny raport</h3>
-          <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-8 leading-relaxed">
-            Twój test został pomyślnie przetworzony. Podaj swój adres e-mail (opcjonalnie), abyśmy mogli wysłać Ci kopię wyników oraz certyfikat.
-          </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        {/* Standard */}
+        <div className="bg-white dark:bg-slate-900 p-10 md:p-12 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col items-center text-center relative hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 text-slate-600 rounded-3xl flex items-center justify-center mb-8"><Award size={32} /></div>
+          <h3 className="text-2xl font-bold mb-2 dark:text-white">Raport Standard</h3>
+          <div className="text-4xl font-black mb-6 text-slate-800 dark:text-slate-200">4,99 PLN</div>
           
-          <div className="max-w-md mx-auto mb-10">
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
-                <Icons.Mail size={20} />
+          <div className="space-y-4 mb-10 text-left w-full">
+            {[
+              "Twój wynik punktowy IQ",
+              "Percentyl (pozycja w populacji)",
+              "Oficjalny certyfikat PDF",
+              "Wysyłka na e-mail natychmiast"
+            ].map((item, i) => (
+              <div key={i} className="flex items-center text-sm font-medium text-slate-600 dark:text-slate-400">
+                <Check size={16} className="text-emerald-500 mr-3 shrink-0" /> {item}
               </div>
-              <input 
-                type="email" 
-                placeholder="Twój adres e-mail (opcjonalnie)" 
-                value={email}
-                onChange={handleEmailChange}
-                className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all dark:text-white font-medium"
-              />
-            </div>
+            ))}
           </div>
 
-          <button 
-            onClick={() => {
-              const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
-              localStorage.setItem('iq_results', JSON.stringify({ ...s, isPaid: true, email: email || 'test@example.com' }));
-              navigate('/raport');
-            }}
-            className="inline-flex items-center justify-center px-12 py-5 bg-blue-600 text-white rounded-2xl text-lg font-bold shadow-xl shadow-blue-500/30 hover:bg-blue-700 transition-all hover:scale-105"
+          <Link 
+            to="/platnosc?intent=unlock" 
+            className="w-full bg-slate-800 text-white py-5 rounded-2xl font-bold hover:bg-slate-700 transition-all flex items-center justify-center gap-2 text-lg"
           >
-            <div className="w-5 h-5 mr-3"><Icons.Lock /></div> Odblokuj Wynik (Dostęp Testowy)
-          </button>
+            Wybierz Standard
+          </Link>
+        </div>
+
+        {/* PRO */}
+        <div className="bg-blue-600 p-10 md:p-12 rounded-[3.5rem] shadow-2xl shadow-blue-500/20 flex flex-col items-center text-center relative hover:scale-[1.02] transition-all">
+          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-950 text-[10px] font-black px-6 py-2 rounded-full uppercase tracking-widest shadow-xl">Najczęściej wybierany</div>
+          <div className="w-16 h-16 bg-blue-500 text-blue-100 rounded-3xl flex items-center justify-center mb-8"><Brain size={32} /></div>
+          <h3 className="text-2xl font-bold mb-2 text-white">Analiza PRO</h3>
+          <div className="text-4xl font-black mb-6 text-white">9,99 PLN</div>
+          
+          <div className="space-y-4 mb-10 text-left w-full">
+            {[
+              "Wszystko z raportu Standard",
+              "Szczegółowa analiza 5 domen",
+              "Mocne i słabe strony",
+              "Katalog spersonalizowanych ćwiczeń",
+              "Porównanie z grupą wiekową"
+            ].map((item, i) => (
+              <div key={i} className="flex items-center text-sm font-medium text-blue-100">
+                <Check size={16} className="text-amber-400 mr-3 shrink-0" /> {item}
+              </div>
+            ))}
+          </div>
+
+          <Link 
+            to="/platnosc?type=pro&intent=unlock" 
+            className="w-full bg-white text-blue-600 py-5 rounded-2xl font-bold hover:bg-blue-50 transition-all flex items-center justify-center gap-2 text-lg shadow-xl"
+          >
+            Wybierz Analizę PRO
+          </Link>
         </div>
       </div>
 
-      {/* 7. Paywall */}
-      <section className="bg-slate-900 text-white p-16 md:p-24 rounded-[4.5rem] shadow-2xl relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 dot-grid pointer-events-none"></div>
-        <div className="relative z-10 text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center space-x-3 text-blue-400 font-black mb-8 uppercase text-sm tracking-[0.2em]">
-            <div className="w-6 h-6"><Award /></div>
-            <span>Pakiet Ekspert Psychometrii</span>
-          </div>
-          <h3 className="text-5xl font-bold mb-8">Pobierz pełną analizę</h3>
-          <p className="text-slate-400 mb-12 leading-relaxed text-xl max-w-prose mx-auto">
-            Otrzymaj pełen dostęp do szczegółowego rozkładu 5 domen, wnikliwej analizy Twoich mocnych stron oraz imienny certyfikat.
-          </p>
-          <div className="bg-slate-800/50 p-10 rounded-[3rem] mb-16 text-left space-y-5 max-w-2xl mx-auto">
-             {[
-               "Pełny breakdown 5 domen poznawczych",
-               "Percentyl i rozkład populacyjny",
-               "Szczegółowa analiza mocnych i słabych stron",
-               "Imienny Certyfikat PDF do druku",
-               "5 spersonalizowanych rekomendacji ćwiczeń"
-             ].map((item, i) => (
-               <div key={i} className="flex items-center text-lg font-medium"><div className="w-5 h-5 text-blue-500 mr-5 shrink-0"><CheckCircle2 /></div>{item}</div>
-             ))}
-          </div>
-          <div className="flex flex-col items-center gap-5">
-            <button 
-              onClick={() => {
-                const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
-                localStorage.setItem('iq_results', JSON.stringify({ ...s, isPaid: true }));
-                navigate('/raport');
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-16 py-6 rounded-3xl font-bold shadow-2xl text-2xl transition-all hover:scale-105"
-            >
-              Odblokuj Wynik (Dostęp Testowy)
-            </button>
-            <p className="text-[11px] text-slate-500 uppercase tracking-widest font-black">Jednorazowo | Bezpieczna płatność Stripe</p>
-          </div>
+      <div className="max-w-4xl mx-auto pt-12 border-t border-slate-200 dark:border-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { i: <Icons.ShieldCheck />, t: "Prywatność", d: "Twoje dane są w pełni anonimowe i bezpieczne." },
+            { i: <Icons.Mail />, t: "E-mail", d: "Raport otrzymasz bezpośrednio na swoją skrzynkę." },
+            { i: <Icons.Award />, t: "Certyfikat", d: "Wystawiony przez autoryzowany system testowy." }
+          ].map((item, i) => (
+            <div key={i} className="text-center">
+              <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl flex items-center justify-center mx-auto mb-4">{item.i}</div>
+              <h4 className="font-bold dark:text-white text-sm mb-1">{item.t}</h4>
+              <p className="text-xs text-slate-400 leading-relaxed">{item.d}</p>
+            </div>
+          ))}
         </div>
-      </section>
+      </div>
+
+      <div className="flex flex-col items-center gap-4">
+        <button 
+          onClick={() => {
+            const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
+            localStorage.setItem('iq_results', JSON.stringify({ ...s, isPaid: true, isPro: false, email: email || 'test@example.com' }));
+            navigate('/raport');
+          }}
+          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold underline underline-offset-4 transition-colors"
+        >
+          Tryb programisty: Zobacz raport (skip payment)
+        </button>
+      </div>
     </div>
   );
 };
@@ -1729,7 +1712,8 @@ const Checkout = () => {
       else if (typeParam === 'reakcja') updatedSaved.hasReakcja = true;
       else {
         updatedSaved.isPaid = true;
-        if (isPro) updatedSaved.isPro = true;
+        updatedSaved.isPro = typeParam === 'pro';
+        updatedSaved.isMax = typeParam === 'max';
       }
       
       localStorage.setItem('iq_results', JSON.stringify(updatedSaved));
@@ -1878,6 +1862,13 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
       if (parsed.userName) setUserName(parsed.userName);
 
       const fetchReport = async () => {
+        if (!parsed.isPro) {
+          setData(parsed);
+          setLoading(false);
+          setTimeout(() => setAnimate(true), 300);
+          return;
+        }
+
         try {
           const analysis = await generateDetailedReport(parsed.stats);
           const updatedData = { ...parsed, analysis: analysis || undefined };
@@ -1974,9 +1965,9 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
         <div className="flex items-center space-x-6">
            <Logos.BrainGrid size={64} className="text-blue-600 animate-spin-soft" />
            <div>
-             <h1 className="text-5xl font-bold dark:text-white mb-3">Szczegółowa Analiza IQ</h1>
-             <p className="text-slate-500 dark:text-slate-400 text-lg">Zaawansowana Analiza Psychometryczna — Model CHC v2.5</p>
-              <p className="text-blue-600 font-bold mt-2 no-print">Pełny raport oraz certyfikat zostały wysłane na Twój adres e-mail.</p>
+             <h1 className="text-5xl font-bold dark:text-white mb-3">{data.isPro ? "Szczegółowa Analiza IQ" : "Wynik Twojego Testu"}</h1>
+             <p className="text-slate-500 dark:text-slate-400 text-lg">{data.isPro ? "Zaawansowana Analiza Psychometryczna — Model CHC v2.5" : "Oficjalny Wynik i Certyfikat Inteligencji"}</p>
+              <p className="text-blue-600 font-bold mt-2 no-print">{data.isPro ? "Pełny raport oraz certyfikat zostały wysłane na Twój adres e-mail." : "Twój wynik oraz certyfikat zostały wysłane na Twój adres e-mail."}</p>
              {userName && <p className="text-xl font-bold text-blue-600 mt-2 print:block hidden">Certyfikat wystawiony dla: {userName}</p>}
            </div>
         </div>
@@ -2014,7 +2005,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
                 />
               </div>
               <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">E-mail do wysyłki raportu</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">{data.isPro ? "E-mail do wysyłki raportu" : "E-mail do wysyłki certyfikatu"}</label>
                 <input 
                   type="email" 
                   value={data.email || ""} 
@@ -3265,49 +3256,28 @@ const PurchaseModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800 relative">
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-800 relative">
         <button 
           onClick={onClose}
           className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
         >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          <Icons.X size={24} />
         </button>
         
-        <div className="p-8 md:p-12">
-          <h2 className="text-3xl font-bold mb-8 text-center dark:text-white">Wybierz swój test IQ</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-            {/* Standard */}
-            <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col">
-              <h3 className="text-xl font-bold mb-2 dark:text-white text-center">Test Standard</h3>
-              <div className="text-slate-500 font-black text-3xl mb-4 text-center">4,99 PLN</div>
-              <p className="text-slate-500 text-xs leading-relaxed mb-6 text-center flex-1">
-                Klasyczny pomiar inteligencji płynnej. Oficjalny certyfikat z Twoim wynikiem punktowym oraz podstawowe podsumowanie wysłane na e-mail.
-              </p>
-              <Link to="/platnosc?intent=start" onClick={onClose} className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center hover:bg-slate-700 transition-all text-sm">
-                Rozpocznij Standard
-              </Link>
-            </div>
-
-            {/* PRO */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-3xl border-2 border-blue-500 flex flex-col relative">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Najczęściej wybierany</div>
-              <h3 className="text-xl font-bold mb-2 dark:text-white text-center">Analiza PRO</h3>
-              <div className="text-blue-600 dark:text-blue-400 font-black text-3xl mb-4 text-center">9,99 PLN</div>
-              <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed mb-6 text-center flex-1">
-                Pełny raport z analizą 5 domen poznawczych, percentylem oraz spersonalizowanymi rekomendacjami rozwoju wysłanymi na e-mail.
-              </p>
-              <Link to="/platnosc?type=pro&intent=start" onClick={onClose} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center hover:bg-blue-700 transition-all text-sm shadow-lg shadow-blue-500/20">
-                Wybierz Analizę PRO
-              </Link>
-            </div>
+        <div className="p-10 md:p-14 text-center">
+          <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
+            <Brain size={40} />
           </div>
-
-          <div className="text-center">
-            <Link to="/inne-testy" onClick={onClose} className="inline-flex items-center justify-center space-x-2 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 font-semibold transition-colors">
-              <span>Zobacz inne testy</span>
-              <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+          <h2 className="text-3xl font-bold mb-4 dark:text-white">Gotowy na wyzwanie?</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-10 leading-relaxed">
+            Test trwa około 15-20 minut i składa się z 30 zadań logicznych. Upewnij się, że masz chwilę spokoju i nikt Ci nie będzie przeszkadzał.
+          </p>
+          
+          <div className="flex flex-col gap-4">
+            <Link to="/test" onClick={onClose} className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all">
+              Rozpocznij Test IQ
             </Link>
+            <button onClick={onClose} className="text-slate-500 font-bold text-sm hover:text-slate-700 transition-colors">Wróć później</button>
           </div>
         </div>
       </div>
