@@ -46,10 +46,10 @@ const wrapSvg = (content: string) => `<svg viewBox="0 0 100 100" class="w-full h
 const generateMatrix3x3 = (cells: string[], missingIndex: number) => {
   let svg = `<svg viewBox="0 0 300 300" class="w-full h-full text-slate-800 dark:text-slate-100">${defs}`;
   // Grid lines
-  svg += '<line x1="100" y1="0" x2="100" y2="300" stroke="currentColor" stroke-width="4" opacity="0.3" />';
-  svg += '<line x1="200" y1="0" x2="200" y2="300" stroke="currentColor" stroke-width="4" opacity="0.3" />';
-  svg += '<line x1="0" y1="100" x2="300" y2="100" stroke="currentColor" stroke-width="4" opacity="0.3" />';
-  svg += '<line x1="0" y1="200" x2="300" y2="200" stroke="currentColor" stroke-width="4" opacity="0.3" />';
+  svg += '<line x1="100" y1="0" x2="100" y2="300" stroke="currentColor" stroke-width="2" opacity="0.2" />';
+  svg += '<line x1="200" y1="0" x2="200" y2="300" stroke="currentColor" stroke-width="2" opacity="0.2" />';
+  svg += '<line x1="0" y1="100" x2="300" y2="100" stroke="currentColor" stroke-width="2" opacity="0.2" />';
+  svg += '<line x1="0" y1="200" x2="300" y2="200" stroke="currentColor" stroke-width="2" opacity="0.2" />';
   
   for (let i = 0; i < 9; i++) {
     const x = (i % 3) * 100;
@@ -81,327 +81,392 @@ const generateQuestions = (): Question[] => {
   const qs: Question[] = [];
   let idCounter = 1;
 
-  // 1. Pattern: ADVANCED XOR/LOGICAL MERGE (Mensa Grade)
-  const generateMensaXor = () => {
-    const segments = [
-      '<line x1="20" y1="50" x2="80" y2="50" stroke="currentColor" stroke-width="4" stroke-linecap="round" />',
-      '<line x1="50" y1="20" x2="50" y2="80" stroke="currentColor" stroke-width="4" stroke-linecap="round" />',
-      '<circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" stroke-width="4" />',
-      '<path d="M 20 20 L 80 80" stroke="currentColor" stroke-width="4" stroke-linecap="round" />',
-      '<path d="M 80 20 L 20 80" stroke="currentColor" stroke-width="4" stroke-linecap="round" />',
-      '<rect x="25" y="25" width="50" height="50" fill="none" stroke="currentColor" stroke-width="4" />',
-      '<circle cx="50" cy="50" r="10" fill="currentColor" />',
-      '<line x1="10" y1="10" x2="90" y2="90" stroke="currentColor" stroke-width="1" stroke-dasharray="2" />'
-    ];
+  const shapesList = ['square', 'circle', 'triangle', 'diamond', 'hexagon'];
+  const fillsList = ['none', 'solid', 'stripes_h', 'stripes_v', 'grid', 'dots'];
 
-    const getXorResult = (p1: string[], p2: string[]) => {
-      return segments.filter(s => (p1.includes(s) || p2.includes(s)) && !(p1.includes(s) && p2.includes(s)));
-    };
-
-    const getRandomSegments = () => shuffle(segments).slice(0, 2 + Math.floor(Math.random() * 2));
-
-    const r1_p1 = getRandomSegments();
-    const r1_p2 = getRandomSegments();
-    const r1_xor = getXorResult(r1_p1, r1_p2);
-
-    const r2_p1 = getRandomSegments();
-    const r2_p2 = getRandomSegments();
-    const r2_xor = getXorResult(r2_p1, r2_p2);
-
-    const r3_p1 = getRandomSegments();
-    const r3_p2 = getRandomSegments();
-    const r3_xor = getXorResult(r3_p1, r3_p2);
-
-    const cells = [
-      r3_p1.join(''), r3_p2.join(''), r3_xor.join(''),
-      r1_p1.join(''), r1_p2.join(''), r1_xor.join(''),
-      r2_p1.join(''), r2_p2.join(''), r2_xor.join('')
-    ];
-
-    const correct = wrapSvg(cells[8]);
-    const options = [correct];
-    while(options.length < 6) {
-      const cand = wrapSvg(getRandomSegments().join(''));
-      if (!options.includes(cand)) options.push(cand);
-    }
-
-    return {
-      id: `m_xor_${idCounter++}`,
-      type: QuestionType.LOGIC,
-      difficulty: 9,
-      content: 'Wybierz brakujący element (Logika nakładania Mensa)',
-      svgContent: generateMatrix3x3(cells, 8),
-      options: options,
-      correctAnswer: 0,
-      explanation: 'Trzecia kolumna powstaje poprzez nałożenie dwóch pierwszych, przy czym elementy wspólne znikają.'
-    };
-  };
-
-  // 2. Pattern: TRIPLE ATTRIBUTE ROTATION (Latin Square)
-  const generateMensaLatin = () => {
-    const allShapes: ("square" | "circle" | "triangle" | "diamond" | "hexagon")[] = ['square', 'circle', 'triangle', 'diamond', 'hexagon'];
-    const allFills: ("none" | "solid" | "stripes_h" | "stripes_v" | "grid" | "dots")[] = ['solid', 'none', 'dots', 'grid', 'stripes_h'];
+  // Pattern 1: Distribution with Distractors (Shape & Fill & Border) - 10 questions
+  for (let i = 0; i < 10; i++) {
+    const selectedShapes = shuffle(shapesList).slice(0, 3);
+    const selectedFills = shuffle(['none', 'solid', 'stripes_h', 'stripes_v']).slice(0, 3);
     
-    const s = shuffle(allShapes).slice(0, 3);
-    const f = shuffle(allFills).slice(0, 3);
-    const o = [0, 45, 90, 135, 180].sort(() => 0.5 - Math.random()).slice(0, 3);
-
+    // Rule: Shape + Fill + Rotation (0, 90, 180)
     const cells = [];
-    for(let r=0; r<3; r++) {
-      for(let c=0; c<3; c++) {
-        const shape = s[(r + c) % 3];
-        const fill = f[(r + 2*c) % 3];
-        const rot = o[(2*r + c) % 3];
-        cells.push(getClassicShape(shape, fill, `rotate(${rot} 50 50)`));
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const s = selectedShapes[(r + c) % 3];
+        const f = selectedFills[(r + 2 * c) % 3];
+        const rot = ((2 * r + c) % 3) * 90;
+        cells.push(getClassicShape(s, f, `rotate(${rot} 50 50)`));
       }
     }
-
-    const correct = wrapSvg(cells[8]);
-    const options = [correct];
-    while(options.length < 6) {
-        const shape = s[Math.floor(Math.random()*3)];
-        const fill = f[Math.floor(Math.random()*3)];
-        const rot = o[Math.floor(Math.random()*3)] + (Math.random() > 0.5 ? 22.5 : 0);
-        const cand = wrapSvg(getClassicShape(shape, fill, `rotate(${rot} 50 50)`));
-        if(!options.includes(cand)) options.push(cand);
-    }
-
-    return {
-      id: `m_latin_${idCounter++}`,
-      type: QuestionType.MATRIX,
-      difficulty: 8,
-      content: 'Dopełnij macierz atrybutów (Raven/Mensa)',
-      svgContent: generateMatrix3x3(cells, 8),
-      options: options,
-      correctAnswer: 0,
-      explanation: 'Każdy kształt, wypełnienie i kąt obrotu występuje dokładnie raz w każdym wierszu i kolumnie.'
-    };
-  };
-
-  // 3. Pattern: DUAL VECTOR ROTATION
-  const generateMensaVector = () => {
-    const baseRot = Math.floor(Math.random() * 8) * 45;
-    const step1 = [45, 90, 135, -45, -90][Math.floor(Math.random()*5)];
-    const step2 = [45, 90, 135, -45, -90].filter(s => s !== step1)[Math.floor(Math.random()*4)];
     
-    const colors = ['currentColor', '#3b82f6', '#ef4444', '#10b981'];
-    const mainColor = colors[Math.floor(Math.random() * colors.length)];
-
-    const cells = [];
-    const base = `<circle cx="50" cy="50" r="40" fill="none" stroke="${mainColor}" stroke-width="1.5" stroke-dasharray="3" />`;
-    for(let i=0; i<9; i++) {
-      const a1 = baseRot + i * step1;
-      const a2 = baseRot + i * step2;
-      const p1 = `<circle cx="50" cy="15" r="5" fill="${mainColor}" />`; 
-      const p2 = `<rect x="45" y="72" width="10" height="10" fill="none" stroke="${mainColor}" stroke-width="2.5" />`; 
-      cells.push(base + `<g transform="rotate(${a1} 50 50)">${p1}</g>` + `<g transform="rotate(${a2} 50 50)">${p2}</g>`);
-    }
-
-    const correct = wrapSvg(cells[8]);
-    const options = [correct];
-    while(options.length < 6) {
-        const a1 = Math.floor(Math.random()*8)*45;
-        const a2 = Math.floor(Math.random()*8)*45;
-        const cand = wrapSvg(base + `<g transform="rotate(${a1} 50 50)"><circle cx="50" cy="15" r="5" fill="${mainColor}" /></g>` + `<g transform="rotate(${a2} 50 50)"><rect x="45" y="72" width="10" height="10" fill="none" stroke="${mainColor}" stroke-width="2.5" /></g>`);
-        if(!options.includes(cand)) options.push(cand);
-    }
-
-    return {
-      id: `m_vector_${idCounter++}`,
-      type: QuestionType.SPATIAL,
-      difficulty: 9,
-      content: 'Widzenie przestrzenne i rotacja dwuosiowa',
-      svgContent: generateMatrix3x3(cells, 8),
-      options: options,
-      correctAnswer: 0,
-      explanation: 'Dwa elementy poruszają się po obwodzie koła ze stałymi, ale różnymi prędkościami kątowymi.'
-    };
-  };
-
-  // 4. Pattern: SYMBOLIC ARITHMETIC (Visual Addition)
-  const generateMensaArithmetic = () => {
-    const symbols = [
-        '<path d="M 20 20 L 50 50 L 20 80" stroke="currentColor" stroke-width="4" fill="none" />',
-        '<path d="M 80 20 L 50 50 L 80 80" stroke="currentColor" stroke-width="4" fill="none" />',
-        '<line x1="50" y1="20" x2="50" y2="80" stroke="currentColor" stroke-width="4" />',
-        '<circle cx="50" cy="50" r="10" fill="currentColor" />',
-        '<rect x="20" y="20" width="60" height="10" fill="currentColor" />',
-        '<rect x="20" y="70" width="60" height="10" fill="currentColor" />'
-    ];
-
-    const getRow = () => {
-        const s1 = shuffle(symbols).slice(0, 2);
-        const s2 = shuffle(symbols).slice(0, 2);
-        const s3 = Array.from(new Set([...s1, ...s2]));
-        return [s1.join(''), s2.join(''), s3.join('')];
-    };
-
-    const r1 = getRow();
-    const r2 = getRow();
-    const r3 = getRow();
-    const cells = [...r1, ...r2, ...r3];
-
-    const correct = wrapSvg(cells[8]);
-    const options = [correct];
-    while(options.length < 6) {
-        const cand = wrapSvg(shuffle(symbols).slice(0, 3).join(''));
-        if(!options.includes(cand)) options.push(cand);
-    }
-
-    return {
-      id: `m_arith_${idCounter++}`,
-      type: QuestionType.MATRIX,
-      difficulty: 8,
-      content: 'Wizualne dodawanie elementów (Mensa)',
-      svgContent: generateMatrix3x3(cells, 8),
-      options: options,
-      correctAnswer: 0,
-      explanation: 'Trzecia figura w wierszu jest sumą zbiorów elementów dwóch poprzednich figur.'
-    };
-  };
-
-  // 5. Pattern: PERSPECTIVE / SYMMETRY
-  const generateMensaSymmetry = () => {
-    const types = ['mirror_h', 'mirror_v', 'rot_180'];
-    const selectedType = types[Math.floor(Math.random()*types.length)];
-    const baseShapes = [
-        '<path d="M 20 20 L 50 20 L 50 80 L 20 80 Z" fill="currentColor" opacity="0.3" /><path d="M 20 20 L 50 50 L 20 80" stroke="currentColor" stroke-width="4" fill="none" />',
-        '<circle cx="35" cy="50" r="15" fill="none" stroke="currentColor" stroke-width="4" /><line x1="20" y1="20" x2="50" y2="80" stroke="currentColor" stroke-width="2" />',
-        '<rect x="20" y="30" width="30" height="40" fill="none" stroke="currentColor" stroke-width="4" /><circle cx="35" cy="50" r="5" fill="currentColor" />'
-    ];
-
-    const transform = (svg: string, type: string) => {
-        if(type === 'mirror_h') return `<g transform="scale(-1 1) translate(-100 0)">${svg}</g>`;
-        if(type === 'mirror_v') return `<g transform="scale(1 -1) translate(0 -100)">${svg}</g>`;
-        return `<g transform="rotate(180 50 50)">${svg}</g>`;
-    };
-
-    const r1_base = shuffle(baseShapes)[0];
-    const r2_base = shuffle(baseShapes)[1];
-    const r3_base = shuffle(baseShapes)[2];
-
-    const cells = [
-        r1_base, transform(r1_base, selectedType), r1_base + transform(r1_base, selectedType),
-        r2_base, transform(r2_base, selectedType), r2_base + transform(r2_base, selectedType),
-        r3_base, transform(r3_base, selectedType), r3_base + transform(r3_base, selectedType)
-    ];
-
-    const correct = wrapSvg(cells[8]);
-    const options = [correct];
-    while(options.length < 6) {
-        const candBase = shuffle(baseShapes)[0];
-        const cand = wrapSvg(candBase + transform(candBase, types[Math.floor(Math.random()*types.length)]));
-        if(!options.includes(cand)) options.push(cand);
-    }
-
-    return {
-      id: `m_symm_${idCounter++}`,
-      type: QuestionType.SPATIAL,
-      difficulty: 8,
-      content: 'Symetria i nakładanie (Mensa)',
-      svgContent: generateMatrix3x3(cells, 8),
-      options: options,
-      correctAnswer: 0,
-      explanation: 'Trzecia figura jest połączeniem figury bazowej i jej odbicia lustrzanego lub obrotu.'
-    };
-  };
-
-  // 6. Pattern: BASIC RAVEN (Simpler)
-  const generateBasicRaven = (diff: number) => {
-    const s = ['square', 'circle', 'triangle', 'diamond', 'hexagon'];
-    const selectedS = shuffle(s)[0];
-    const cells = [];
-    for(let i=0; i<9; i++) {
-        const fill = ['none', 'solid', 'dots', 'grid', 'stripes_h', 'stripes_v'][(i % 6)];
-        cells.push(getClassicShape(selectedS as any, fill as any));
-    }
-    const correct = wrapSvg(cells[8]);
-    return {
-      id: `m_basic_${idCounter++}`,
-      type: QuestionType.MATRIX,
-      difficulty: diff,
-      content: 'Prosty wzórRaven.',
-      svgContent: generateMatrix3x3(cells, 8),
-      options: shuffle([correct, wrapSvg(getClassicShape('square', 'none')), wrapSvg(getClassicShape('circle', 'solid')), wrapSvg(getClassicShape('triangle', 'dots')), wrapSvg(getClassicShape('diamond', 'grid')), wrapSvg(getClassicShape('hexagon', 'stripes_v'))]),
-      correctAnswer: 0,
-      explanation: 'Zmiana wypełnienia w stałym kształcie.'
-    };
-  };
-
-  // 7. Pattern: USER CUSTOM MENSA (NOWE)
-  const drawCustomMensaCell = (dots: string[], circles: string[]) => {
-    let content = '';
-    const pos: any = {
-      lt: { x: 20, y: 20 }, rt: { x: 80, y: 20 },
-      lb: { x: 20, y: 80 }, rb: { x: 80, y: 80 },
-      t: { x: 50, y: 15 }, b: { x: 50, y: 85 },
-      l: { x: 15, y: 50 }, r: { x: 85, y: 50 },
-      bl: { x: 35, y: 85 } // bottom-leftish
-    };
+    const missingIndex = i < 5 ? 8 : Math.floor(Math.random() * 3) + 6; // Randomize missing cell in last row for harder variants
+    const correct = wrapSvg(cells[missingIndex]);
     
-    dots.forEach(d => {
-      content += `<circle cx="${pos[d].x}" cy="${pos[d].y}" r="11" fill="currentColor" />`;
-    });
-    circles.forEach(c => {
-      content += `<circle cx="${pos[c].x}" cy="${pos[c].y}" r="13" fill="none" stroke="currentColor" stroke-width="5" />`;
-    });
+    const wrongOptions = [
+      wrapSvg(getClassicShape(selectedShapes[0], selectedFills[0])),
+      wrapSvg(getClassicShape(selectedShapes[1], selectedFills[1], `rotate(90 50 50)`)),
+      wrapSvg(getClassicShape(selectedShapes[2], selectedFills[2], `rotate(180 50 50)`)),
+      wrapSvg(getClassicShape(selectedShapes[(missingIndex) % 3], selectedFills[(missingIndex + 1) % 3], `rotate(45 50 50)`)),
+      wrapSvg(getClassicShape(selectedShapes[1], 'solid', `scale(0.9)`))
+    ].filter(opt => opt !== correct);
     
-    return `<rect x="2" y="2" width="96" height="96" fill="none" stroke="currentColor" stroke-width="4" />${content}`;
-  };
+    // Ensure 6 options for higher difficulty
+    const options = shuffle([correct, ...shuffle(wrongOptions).slice(0, 5)]).slice(0, 6);
+    const finalOptions = shuffle(options);
 
-  const customCells = [
-    drawCustomMensaCell(['rt', 'lb'], ['r', 'bl']), // 1,1
-    drawCustomMensaCell(['rt', 'lb', 'rb'], ['l', 'r', 'b']), // 1,2
-    drawCustomMensaCell(['rt', 'lb'], ['r', 'bl']), // 1,3
-    drawCustomMensaCell(['lt', 'rt'], ['t', 'l', 'r', 'b']), // 2,1
-    drawCustomMensaCell(['lt', 'lb'], ['t', 'b']), // 2,2
-    drawCustomMensaCell(['lt'], ['t', 'b']), // 2,3
-    drawCustomMensaCell(['rt'], ['r', 'bl']), // 3,1
-    drawCustomMensaCell(['lb'], ['b']), // 3,2
-    drawCustomMensaCell([], ['bl']) // 3,3 (Correct Answer)
-  ];
-
-  const customOptions = [
-    wrapSvg(drawCustomMensaCell([], ['bl'])), // A: Correct
-    wrapSvg(drawCustomMensaCell(['lt'], ['t'])), // B
-    wrapSvg(drawCustomMensaCell(['rt'], ['b'])), // C
-    wrapSvg(drawCustomMensaCell([], ['t', 'b'])), // D
-    wrapSvg(drawCustomMensaCell(['lb'], [])), // E
-    wrapSvg(drawCustomMensaCell(['rt', 'lb'], ['bl'])), // F
-    wrapSvg(drawCustomMensaCell([], [])), // G
-    wrapSvg(drawCustomMensaCell(['lt', 'rt', 'lb', 'rb'], ['t', 'b', 'l', 'r'])) // H
-  ];
-
-  const customMensaQ: Question = {
-    id: `q_custom_mensa_${idCounter++}`,
-    type: QuestionType.MATRIX,
-    difficulty: 9,
-    content: 'ZADANIE NOWE (Logika przecięcia): Wybierz brakujący element.',
-    svgContent: generateMatrix3x3(customCells, 8),
-    options: customOptions,
-    correctAnswer: 0,
-    explanation: 'Trzeci wiersz jest częścią wspólną (iloczynem logicznym) pierwszego i drugiego wiersza w każdej kolumnie.'
-  };
-
-  // Add more patterns to reach 30 questions with varied difficulty
-  qs.push(customMensaQ);
-  for(let i=0; i<4; i++) qs.push(generateBasicRaven(2 + i));
-  for(let i=0; i<5; i++) qs.push(generateMensaXor());
-  for(let i=0; i<5; i++) qs.push(generateMensaLatin());
-  for(let i=0; i<5; i++) qs.push(generateMensaVector());
-  for(let i=0; i<5; i++) qs.push(generateMensaArithmetic());
-  for(let i=0; i<5; i++) qs.push(generateMensaSymmetry());
-
-  // Final post-processing to set correct answer index correctly after shuffle
-  return qs.map(q => {
-    const correctSvg = q.options[0]; // We put it at 0 initially before a wrapper shuffle
-    const finalOptions = shuffle(q.options);
-    return {
-      ...q,
+    qs.push({
+      id: `q_${idCounter++}`,
+      type: QuestionType.MATRIX,
+      difficulty: 4,
+      content: 'Wybierz brakujący element',
+      svgContent: generateMatrix3x3(cells, missingIndex),
       options: finalOptions,
-      correctAnswer: finalOptions.indexOf(correctSvg)
-    };
-  });
+      correctAnswer: finalOptions.indexOf(correct),
+      explanation: 'W macierzy występują trzy niezależne reguły dla kształtu, wypełnienia i rotacji (system Latin Square na 3 cechach).'
+    });
+  }
+
+  // Pattern 2: Addition (Superposition) with Inverse - 10 questions
+  for (let i = 0; i < 10; i++) {
+    const baseShapes = shuffle(shapesList).slice(0, 3);
+    
+    const cells = [];
+    for (let row = 0; row < 3; row++) {
+      const s1 = getClassicShape(baseShapes[0], 'none', `scale(0.8) translate(10,10)`);
+      const s2 = getClassicShape(baseShapes[1], 'none', `rotate(45 50 50)`);
+      const s3 = getClassicShape(baseShapes[2], 'none', `scale(1.2) translate(-8,-8)`);
+      
+      if (row === 0) {
+        cells.push(s1, s2, s1 + s2);
+      } else if (row === 1) {
+        cells.push(s2, s3, s2 + s3);
+      } else {
+        cells.push(s1, s3, s1 + s3);
+      }
+    }
+    
+    const missingIndex = i < 5 ? 8 : Math.floor(Math.random() * 3) + 6;
+    const correct = wrapSvg(cells[missingIndex]);
+    
+    const wrongOptions = [
+      wrapSvg(getClassicShape(baseShapes[0], 'none') + getClassicShape(baseShapes[1], 'none')),
+      wrapSvg(getClassicShape(baseShapes[2], 'solid')),
+      wrapSvg(getClassicShape(baseShapes[0], 'none', 'scale(0.5)') + getClassicShape(baseShapes[2], 'none')),
+      wrapSvg(cells[(missingIndex + 1) % 8]),
+      wrapSvg(cells[(missingIndex + 2) % 8])
+    ].filter(opt => opt !== correct);
+    
+    const options = shuffle([correct, ...shuffle(wrongOptions).slice(0, 5)]).slice(0, 6);
+    const finalOptions = shuffle(options);
+
+    qs.push({
+      id: `q_${idCounter++}`,
+      type: QuestionType.ANALOGY,
+      difficulty: 5,
+      content: 'Wybierz brakujący element',
+      svgContent: generateMatrix3x3(cells, missingIndex),
+      options: finalOptions,
+      correctAnswer: finalOptions.indexOf(correct),
+      explanation: 'Trzecia figura w rzędzie jest sumą geometryczną dwóch poprzednich.'
+    });
+  }
+
+  // Pattern 3: Complex Logical XOR (Recursive) - 10 questions
+  const lineSegments = [
+    `<line x1="20" y1="20" x2="80" y2="20" stroke="currentColor" stroke-width="4" stroke-linecap="round" />`, // Top
+    `<line x1="20" y1="50" x2="80" y2="50" stroke="currentColor" stroke-width="4" stroke-linecap="round" />`, // Mid H
+    `<line x1="20" y1="80" x2="80" y2="80" stroke="currentColor" stroke-width="4" stroke-linecap="round" />`, // Bot
+    `<line x1="20" y1="20" x2="20" y2="80" stroke="currentColor" stroke-width="4" stroke-linecap="round" />`, // Left
+    `<line x1="50" y1="20" x2="50" y2="80" stroke="currentColor" stroke-width="4" stroke-linecap="round" />`, // Mid V
+    `<line x1="80" y1="20" x2="80" y2="80" stroke="currentColor" stroke-width="4" stroke-linecap="round" />`, // Right
+    `<line x1="20" y1="20" x2="80" y2="80" stroke="currentColor" stroke-width="4" stroke-linecap="round" />`, // Diag 1
+    `<line x1="80" y1="20" x2="20" y2="80" stroke="currentColor" stroke-width="4" stroke-linecap="round" />`, // Diag 2
+    `<circle cx="50" cy="50" r="10" fill="none" stroke="currentColor" stroke-width="3" />`, // Center Circle
+    `<rect x="40" y="40" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" />`, // Center Square
+  ];
+
+  for (let i = 0; i < 10; i++) {
+    const parts = shuffle(lineSegments);
+    
+    // More complex XOR distribution
+    const row1_a = parts[0] + parts[1] + parts[4];
+    const row1_b = parts[1] + parts[2] + parts[5];
+    const row1_c = parts[0] + parts[4] + parts[2] + parts[5]; // XOR
+    
+    const row2_a = parts[3] + parts[4] + parts[6];
+    const row2_b = parts[4] + parts[5] + parts[7];
+    const row2_c = parts[3] + parts[6] + parts[5] + parts[7];
+    
+    const row3_a = parts[0] + parts[3] + parts[8];
+    const row3_b = parts[1] + parts[4] + parts[8];
+    const row3_c = parts[0] + parts[3] + parts[1] + parts[4];
+
+    const cells = [row1_a, row1_b, row1_c, row2_a, row2_b, row2_c, row3_a, row3_b, row3_c];
+    
+    const missingIndex = i < 3 ? 8 : Math.floor(Math.random() * 3) + 6;
+    const correctVal = cells[missingIndex];
+    const correct = wrapSvg(correctVal);
+    
+    const wrongOptions = [
+      wrapSvg(row3_a + row3_b),
+      wrapSvg(row3_a),
+      wrapSvg(row3_b),
+      wrapSvg(row2_c),
+      wrapSvg(row1_c),
+      wrapSvg(parts[0] + parts[3] + parts[5] + parts[8])
+    ].filter(opt => opt !== correct);
+    
+    const options = shuffle([correct, ...shuffle(wrongOptions).slice(0, 5)]).slice(0, 6);
+    const finalOptions = shuffle(options);
+
+    qs.push({
+      id: `q_${idCounter++}`,
+      type: QuestionType.LOGIC,
+      difficulty: 8,
+      content: 'Wybierz brakujący element',
+      svgContent: generateMatrix3x3(cells, missingIndex),
+      options: finalOptions,
+      correctAnswer: finalOptions.indexOf(correct),
+      explanation: 'Wysoce złożona operacja XOR: usunięcie nakładających się segmentów w każdym rzędzie.'
+    });
+  }
+
+  // Pattern 4: Triple-Clock Rotation - 10 questions
+  for (let i = 0; i < 10; i++) {
+    const shape = shuffle(['circle', 'square', 'hexagon'])[0];
+    const baseShape = getClassicShape(shape, 'none');
+    
+    const p1 = `<line x1="50" y1="50" x2="50" y2="20" stroke="currentColor" stroke-width="4" stroke-linecap="round" />`;
+    const p2 = `<circle cx="50" cy="20" r="4" fill="currentColor" />`;
+    const p3 = `<rect x="45" y="75" width="10" height="10" fill="currentColor" />`;
+    
+    const s1 = Math.floor(Math.random() * 8) * 45;
+    const st1 = 45;
+    const s2 = Math.floor(Math.random() * 8) * 45;
+    const st2 = -45;
+    const s3 = Math.floor(Math.random() * 8) * 45;
+    const st3 = 90;
+    
+    const cells = [];
+    for (let j = 0; j < 9; j++) {
+      const a1 = s1 + j * st1;
+      const a2 = s2 + j * st2;
+      const a3 = s3 + j * st3;
+      cells.push(baseShape + 
+        `<g transform="rotate(${a1} 50 50)">${p1}</g>` + 
+        `<g transform="rotate(${a2} 50 50)">${p2}</g>` +
+        `<g transform="rotate(${a3} 50 50)">${p3}</g>`
+      );
+    }
+    
+    const missingIndex = i < 5 ? 8 : Math.floor(Math.random() * 3) + 6;
+    const correct = wrapSvg(cells[missingIndex]);
+    
+    const wrongOptions = [];
+    for (let k = 1; k <= 7; k++) {
+      const wa1 = s1 + (missingIndex * st1) + (k % 2 === 0 ? 45 : -45);
+      const wa2 = s2 + (missingIndex * st2) + (k * 22.5);
+      const wa3 = s3 + (missingIndex * st3) + (k * 45);
+      wrongOptions.push(wrapSvg(baseShape + 
+        `<g transform="rotate(${wa1} 50 50)">${p1}</g>` + 
+        `<g transform="rotate(${wa2} 50 50)">${p2}</g>` +
+        `<g transform="rotate(${wa3} 50 50)">${p3}</g>`
+      ));
+    }
+    
+    const options = shuffle([correct, ...shuffle(wrongOptions).slice(0, 5)]).slice(0, 6);
+    const finalOptions = shuffle(options);
+
+    qs.push({
+      id: `q_${idCounter++}`,
+      type: QuestionType.SPATIAL,
+      difficulty: 8,
+      content: 'Wybierz brakujący element',
+      svgContent: generateMatrix3x3(cells, missingIndex),
+      options: finalOptions,
+      correctAnswer: finalOptions.indexOf(correct),
+      explanation: 'Trzy niezależne elementy obracają się według własnych reguł: linia o 45 (+), kropka o 45 (-) i kwadrat o 90 (+).'
+    });
+  }
+
+  // Pattern 5: Matrix Multiplication Logic - 10 questions
+  for (let i = 0; i < 10; i++) {
+    const rows = [];
+    for (let r = 0; r < 3; r++) {
+      const a = Math.floor(Math.random() * 6) + 2;
+      const b = Math.floor(Math.random() * 6) + 2;
+      const c = (a * b) - r; // Compound rule
+      rows.push([a, b, c]);
+    }
+    
+    const numbers = rows.flat();
+    const cells = numbers.map(n => generateNumberCell(n));
+    
+    const missingIndex = i < 4 ? 8 : Math.floor(Math.random() * 3) + 6;
+    const correctVal = numbers[missingIndex];
+    const correct = wrapSvg(generateNumberCell(correctVal));
+    
+    const wrongOptions = [
+      wrapSvg(generateNumberCell(correctVal + 1)),
+      wrapSvg(generateNumberCell(correctVal - 1)),
+      wrapSvg(generateNumberCell(correctVal + 10)),
+      wrapSvg(generateNumberCell(correctVal * 2)),
+      wrapSvg(generateNumberCell(Math.floor(correctVal / 2))),
+      wrapSvg(generateNumberCell(Math.abs(correctVal - 5)))
+    ].filter(opt => opt !== correct);
+    
+    const options = shuffle([correct, ...shuffle(wrongOptions).slice(0, 5)]).slice(0, 6);
+    const finalOptions = shuffle(options);
+
+    qs.push({
+      id: `q_${idCounter++}`,
+      type: QuestionType.NUMBER_SERIES,
+      difficulty: 7,
+      content: 'Uzupełnij brakującą liczbę',
+      svgContent: generateMatrix3x3(cells, missingIndex),
+      options: finalOptions,
+      correctAnswer: finalOptions.indexOf(correct),
+      explanation: 'W każdym rzędzie trzecia liczba to wynik mnożenia dwóch pierwszych pomniejszony o indeks rzędu.'
+    });
+  }
+
+  // Pattern 6: Triple Rule Progression (Raven-Style) - 10 questions
+  for (let i = 0; i < 10; i++) {
+    const shapes = shuffle(shapesList);
+    const fills = shuffle(['none', 'solid', 'stripes_h', 'dots']);
+    
+    const cells = [];
+    for (let j = 0; j < 9; j++) {
+      const r = Math.floor(j / 3);
+      const c = j % 3;
+      
+      const sIdx = (r + c) % 3;
+      const fIdx = (r) % 3;
+      const rot = (c) * 45;
+      
+      const dotsCount = r + c + 1;
+      let dotsSvg = '';
+      for (let d = 0; d < dotsCount; d++) {
+        dotsSvg += `<circle cx="${20 + d * 12}" cy="15" r="3" fill="currentColor" />`;
+      }
+      
+      cells.push(getClassicShape(shapes[sIdx], fills[fIdx], `rotate(${rot} 50 50)`) + dotsSvg);
+    }
+    
+    const missingIndex = i < 3 ? 8 : Math.floor(Math.random() * 3) + 6;
+    const correct = wrapSvg(cells[missingIndex]);
+    
+    const wrongOptions = [
+      wrapSvg(cells[(missingIndex + 1) % 6]),
+      wrapSvg(cells[(missingIndex + 2) % 6]),
+      wrapSvg(cells[(missingIndex + 3) % 6]),
+      wrapSvg(getClassicShape(shapes[1], fills[1], `rotate(180 50 50)`) + `<circle cx="20" cy="15" r="3" fill="currentColor" />`),
+      wrapSvg(getClassicShape(shapes[0], fills[0]) + `<circle cx="50" cy="50" r="10" fill="rose" />`)
+    ].filter(opt => opt !== correct);
+    
+    const options = shuffle([correct, ...shuffle(wrongOptions).slice(0, 5)]).slice(0, 6);
+    const finalOptions = shuffle(options);
+
+    qs.push({
+      id: `q_${idCounter++}`,
+      type: QuestionType.MATRIX,
+      difficulty: 9,
+      content: 'Wybierz brakujący element',
+      svgContent: generateMatrix3x3(cells, missingIndex),
+      options: finalOptions,
+      correctAnswer: finalOptions.indexOf(correct),
+      explanation: 'Kombinacja czterech reguł: kształt (przesunięcie), wypełnienie (stałe w rzędzie), obrót (stały w kolumnie) oraz liczba kropek (suma indeksów).'
+    });
+  }
+
+  // Pattern 7: Triple Property Matrix (Shape + Fill + Ornament) - 10 questions
+  for (let i = 0; i < 10; i++) {
+    const selectedShapes = shuffle(shapesList).slice(0, 3);
+    const selectedFills = ['none', 'solid', 'stripes_h'];
+    const ornaments = [
+      (c: string) => c + `<circle cx="20" cy="20" r="5" fill="currentColor" />`,
+      (c: string) => c + `<rect x="75" y="75" width="10" height="10" fill="currentColor" />`,
+      (c: string) => c + `<path d="M 20 80 L 30 70" stroke="currentColor" stroke-width="3" />`
+    ];
+    
+    const cells = [];
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const sIdx = (r + c) % 3;
+        const fIdx = (r * c) % 3; // Even more complex non-linear
+        const oIdx = (r + 2 * c) % 3;
+        const base = getClassicShape(selectedShapes[sIdx], selectedFills[fIdx]);
+        cells.push(ornaments[oIdx](base));
+      }
+    }
+    
+    const missingIndex = i < 2 ? 8 : Math.floor(Math.random() * 3) + 6;
+    const correct = wrapSvg(cells[missingIndex]);
+    
+    const wrongOptions = [
+      wrapSvg(cells[0]),
+      wrapSvg(cells[4]),
+      wrapSvg(cells[2]),
+      wrapSvg(ornaments[0](getClassicShape(selectedShapes[0], 'solid'))),
+      wrapSvg(ornaments[1](getClassicShape(selectedShapes[1], 'none'))),
+      wrapSvg(ornaments[2](getClassicShape(selectedShapes[2], 'stripes_h')))
+    ].filter(opt => opt !== correct);
+    
+    const options = shuffle([correct, ...shuffle(wrongOptions).slice(0, 5)]).slice(0, 6);
+    const finalOptions = shuffle(options);
+
+    qs.push({
+      id: `q_${idCounter++}`,
+      type: QuestionType.LOGIC,
+      difficulty: 10,
+      content: 'Wybierz brakujący element',
+      svgContent: generateMatrix3x3(cells, missingIndex),
+      options: finalOptions,
+      correctAnswer: finalOptions.indexOf(correct),
+      explanation: 'Wysoce zaawansowana matryca atrybutów z nieliniowymi przesunięciami.'
+    });
+  }
+
+  // Pattern 8: Non-Linear Geometric Sequence - 10 questions
+  for (let i = 0; i < 10; i++) {
+    const start1 = Math.floor(Math.random() * 4) + 1;
+    const start2 = Math.floor(Math.random() * 4) + 2;
+    const sequence = [start1, start2];
+    for (let j = 2; j < 9; j++) {
+      sequence.push(sequence[j-1] * 2 - sequence[j-2] + j);
+    }
+    
+    const cells = sequence.map(n => generateNumberCell(n));
+    const missingIndex = i < 4 ? 8 : Math.floor(Math.random() * 3) + 6;
+    const correctVal = sequence[missingIndex];
+    const correct = wrapSvg(generateNumberCell(correctVal));
+    
+    const wrongOptions = [
+      wrapSvg(generateNumberCell(correctVal + 1)),
+      wrapSvg(generateNumberCell(correctVal - 1)),
+      wrapSvg(generateNumberCell(correctVal + 2)),
+      wrapSvg(generateNumberCell(correctVal - 2)),
+      wrapSvg(generateNumberCell(Math.floor(correctVal * 1.1))),
+      wrapSvg(generateNumberCell(correctVal * 1.5))
+    ].filter(opt => opt !== correct);
+    
+    const options = shuffle([correct, ...shuffle(wrongOptions).slice(0, 5)]).slice(0, 6);
+    const finalOptions = shuffle(options);
+
+    qs.push({
+      id: `q_${idCounter++}`,
+      type: QuestionType.NUMBER_SERIES,
+      difficulty: 10,
+      content: 'Uzupełnij brakującą liczbę',
+      svgContent: generateMatrix3x3(cells, missingIndex),
+      options: finalOptions,
+      correctAnswer: finalOptions.indexOf(correct),
+      explanation: 'Ciąg rekurencyjny: 2*a[n-1] - a[n-2] + n.'
+    });
+  }
+
+  return qs;
 };
 
 export const QUESTIONS: Question[] = generateQuestions();
