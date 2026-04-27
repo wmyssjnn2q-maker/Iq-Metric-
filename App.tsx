@@ -1768,7 +1768,7 @@ const Checkout = () => {
 
         <!-- CTA -->
         <tr><td style="padding:0 48px 40px;text-align:center">
-          <a href="https://brainmediq.pl" style="display:inline-block;background:#2563eb;color:#ffffff;font-weight:700;font-size:15px;padding:16px 40px;border-radius:12px;text-decoration:none;letter-spacing:0.02em">
+          <a href="https://brainmediq.com" style="display:inline-block;background:#2563eb;color:#ffffff;font-weight:700;font-size:15px;padding:16px 40px;border-radius:12px;text-decoration:none;letter-spacing:0.02em">
             Wróć do aplikacji →
           </a>
         </td></tr>
@@ -1776,7 +1776,7 @@ const Checkout = () => {
         <!-- Footer -->
         <tr><td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center">
           <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6">
-            © ${year} brainmediq Polska · kontakt@brainmediq.pl<br>
+            © ${year} brainmediq Polska · kontakt@brainmediq.com<br>
             Ta wiadomość jest automatycznym potwierdzeniem. Nie odpowiadaj na ten e-mail.
           </p>
         </td></tr>
@@ -2047,7 +2047,7 @@ const CertificateTemplate = ({ data, userName }: { data: ReportData, userName: s
             Główny Analityk
           </div>
           <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '12px', fontFamily: 'Inter, sans-serif' }}>
-            www.brainmediq.pl
+            www.brainmediq.com
           </div>
         </div>
         
@@ -2264,7 +2264,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
         <!-- Footer -->
         <tr><td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center">
           <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6">
-            © ${year} brainmediq Polska · kontakt@brainmediq.pl<br>
+            © ${year} brainmediq Polska · kontakt@brainmediq.com<br>
             Ta wiadomość jest automatyczną odpowiedzią. Nie odpowiadaj na ten e-mail.
           </p>
         </td></tr>
