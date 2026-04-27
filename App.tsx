@@ -1976,7 +1976,7 @@ const CertificateTemplate = ({ data, userName }: { data: ReportData, userName: s
             </div>
             <div>
               <div style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>Certyfikowany Pomiar Inteligencji · brainmediq</div>
-              <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>kontakt@brainmediq.pl · Nr certyfikatu: {certId}</div>
+              <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>Nr certyfikatu: {certId}</div>
             </div>
           </div>
         </div>
