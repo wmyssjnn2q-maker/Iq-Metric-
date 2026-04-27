@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Grid3X3, Target, Zap, ArrowRight, Search, Cpu, Dna, Lightbulb, Atom, LayoutDashboard, TrendingUp, ShieldCheck, Briefcase, Layout, BarChart3, Globe, Rocket, Award, BadgeCheck, Fingerprint, Star, ArrowUpCircle, CheckCircle2, Brain, Percent, PieChart, BrainCircuit, Activity, Trophy, AreaChart, ClipboardList, Check, Clock, Sun, Moon, AlertTriangle, Lock, Mail } from 'lucide-react';
+import { Users, Grid3X3, Target, Zap, ArrowRight, Search, Cpu, Dna, Lightbulb, Atom, LayoutDashboard, TrendingUp, ShieldCheck, Briefcase, Layout, BarChart3, Globe, Rocket, Award, BadgeCheck, Fingerprint, Star, ArrowUpCircle, CheckCircle2, Brain, Percent, Info, PieChart, BrainCircuit, Activity, Trophy, AreaChart, ClipboardList, Check, Clock, Sun, Moon, AlertTriangle, Lock, Mail } from 'lucide-react';
 import { HashRouter, Routes, Route, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import { 
   ComposableMap, 
@@ -863,7 +863,9 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
         <div className="mb-10 hidden md:block">
           <div className="flex items-center space-x-2 text-blue-600 mb-2">
             <div className="w-4 h-4"><BadgeCheck size={16} /></div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">{data.isPaid ? 'Pełny Raport' : 'Raport Przykład'}</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+              {data.isPro ? 'Analiza PRO' : data.isPaid ? 'Wynik Standard' : 'Przykład Analizy'}
+            </span>
           </div>
           <h3 className="text-xl font-bold dark:text-white leading-tight">Twój potencjał <br />w pigułce</h3>
         </div>
@@ -1227,7 +1229,7 @@ const TestSession = () => {
       isFinished: false
     });
 
-    setTimeLeft(15 * 60); 
+    setTimeLeft(20 * 60); 
   }, []);
 
   const startRealTest = () => {
@@ -1399,9 +1401,9 @@ const TestSession = () => {
   const progress = ((state.currentQuestionIndex + 1) / state.questions.length) * 100;
 
   return (
-    <div className="min-h-screen py-6 px-4 relative z-10" ref={containerRef}>
+    <div className="min-h-screen py-2 px-4 relative z-10" ref={containerRef}>
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-3">
           <div className="flex-1 mr-8">
             <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
               <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }}></div>
@@ -1411,11 +1413,11 @@ const TestSession = () => {
             {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 md:p-10 shadow-2xl border border-slate-100 dark:border-slate-800 min-h-[500px] flex flex-col">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 md:p-6 shadow-2xl border border-slate-100 dark:border-slate-800 min-h-[400px] flex flex-col">
           <div className="flex-1">
-            <h3 className="text-xl md:text-2xl font-bold mb-8 dark:text-white leading-tight">{currentQ.content}</h3>
+            <h3 className="text-xl md:text-2xl font-bold mb-4 dark:text-white leading-tight">{currentQ.content}</h3>
             {currentQ.svgContent && (
-              <div className="max-w-[320px] mx-auto mb-8 text-slate-800 dark:text-slate-100">
+              <div className="max-w-[260px] mx-auto mb-4 text-slate-800 dark:text-slate-100">
                 {typeof currentQ.svgContent === 'string' ? (
                   <div dangerouslySetInnerHTML={{ __html: currentQ.svgContent }} />
                 ) : (
@@ -1423,13 +1425,13 @@ const TestSession = () => {
                 )}
               </div>
             )}
-            {currentQ.imageUrl && <div className="max-w-[320px] mx-auto mb-8"><img src={currentQ.imageUrl} alt="Zadanie" className="w-full h-auto rounded-xl shadow-sm" /></div>}
+            {currentQ.imageUrl && <div className="max-w-[260px] mx-auto mb-4"><img src={currentQ.imageUrl} alt="Zadanie" className="w-full h-auto rounded-xl shadow-sm" /></div>}
           </div>
-          <div className="grid grid-cols-2 gap-4 mt-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-auto">
             {currentQ.options.map((opt, idx) => {
               const isSvg = typeof opt === 'string' && opt.startsWith('<svg');
               return (
-                <button key={idx} onClick={(e) => { e.currentTarget.blur(); handleAnswer(idx); }} className={`p-4 md:p-6 border-2 border-slate-100 dark:border-slate-800 rounded-2xl hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all font-bold text-base active:scale-[0.98] flex items-center ${isSvg ? 'justify-center' : 'text-left'}`}>
+                <button key={idx} onClick={(e) => { e.currentTarget.blur(); handleAnswer(idx); }} className={`p-3 md:p-4 border-2 border-slate-100 dark:border-slate-800 rounded-xl hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all font-bold text-base active:scale-[0.98] flex items-center ${isSvg ? 'justify-center' : 'text-left'}`}>
                   {!isSvg && <span className="mr-3 font-black text-blue-600/30 text-lg">{String.fromCharCode(65 + idx)}</span>}
                   {isSvg ? (
                     <div className="w-16 h-16 text-slate-800 dark:text-slate-100" dangerouslySetInnerHTML={{ __html: opt }} />
@@ -1551,7 +1553,7 @@ const Results = () => {
         </div>
         <h1 className="text-4xl md:text-6xl font-black dark:text-white mb-6 uppercase tracking-tight">Twój Wynik IQ gotowy</h1>
         <p className="text-slate-500 dark:text-slate-400 text-lg leading-relaxed">
-          Zaliczyliśmy Twoje podejście z dnia {new Date(data.timestamp).toLocaleDateString()}. Wybierz teraz rodzaj raportu, który chcesz otrzymać.
+          Zaliczyliśmy Twoje podejście z dnia {new Date(data.timestamp).toLocaleDateString()}. Wybierz teraz opcję wyświetlenia swojego rezultatu.
         </p>
       </div>
 
@@ -1559,7 +1561,7 @@ const Results = () => {
         {/* Standard */}
         <div className="bg-white dark:bg-slate-900 p-10 md:p-12 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col items-center text-center relative hover:border-slate-300 dark:hover:border-slate-700 transition-all">
           <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 text-slate-600 rounded-3xl flex items-center justify-center mb-8"><Award size={32} /></div>
-          <h3 className="text-2xl font-bold mb-2 dark:text-white">Raport Standard</h3>
+          <h3 className="text-2xl font-bold mb-2 dark:text-white">Wynik Standard</h3>
           <div className="text-4xl font-black mb-6 text-slate-800 dark:text-slate-200">4,99 PLN</div>
           
           <div className="space-y-4 mb-10 text-left w-full">
@@ -1592,7 +1594,7 @@ const Results = () => {
           
           <div className="space-y-4 mb-10 text-left w-full">
             {[
-              "Wszystko z raportu Standard",
+              "Wszystko z opcji Standard",
               "Szczegółowa analiza 5 domen",
               "Mocne i słabe strony",
               "Katalog spersonalizowanych ćwiczeń",
@@ -1617,7 +1619,7 @@ const Results = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
             { i: <Icons.ShieldCheck />, t: "Prywatność", d: "Twoje dane są w pełni anonimowe i bezpieczne." },
-            { i: <Icons.Mail />, t: "E-mail", d: "Raport otrzymasz bezpośrednio na swoją skrzynkę." },
+            { i: <Icons.Mail />, t: "E-mail", d: "Wiadomość otrzymasz bezpośrednio na swoją skrzynkę." },
             { i: <Icons.Award />, t: "Certyfikat", d: "Wystawiony przez autoryzowany system testowy." }
           ].map((item, i) => (
             <div key={i} className="text-center">
@@ -1980,7 +1982,9 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
       {loading ? (
         <div className="py-40 text-center bg-white dark:bg-slate-900 rounded-[3.5rem] border border-slate-200 dark:border-slate-800">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600/20 border-t-blue-600 mx-auto mb-10"></div>
-          <p className="text-slate-500 font-bold text-xl animate-pulse">Trwa zestawianie merytorycznych danych raportu...</p>
+          <p className="text-slate-500 font-bold text-xl animate-pulse">
+            {data.isPro ? "Trwa generowanie szczegółowego raportu..." : "Przygotowujemy Twój wynik i certyfikat..."}
+          </p>
         </div>
       ) : (
         <div className="space-y-12">
@@ -3108,9 +3112,10 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
     { id: "co-mierzymy", title: "1. Co mierzy ten test?" },
     { id: "format-czas", title: "2. Format i czas" },
     { id: "jak-liczymy", title: "3. Jak liczymy wynik" },
-    { id: "analiza-pro", title: "4. Analiza PRO" },
-    { id: "nie-diagnoza", title: "5. To nie jest diagnoza" },
-    { id: "slownik", title: "6. Słownik pojęć" }
+    { id: "percentyl", title: "4. Interpretacja percentyli" },
+    { id: "analiza-pro", title: "5. Analiza PRO" },
+    { id: "nie-diagnoza", title: "6. To nie jest diagnoza" },
+    { id: "slownik", title: "7. Słownik pojęć" }
   ];
 
   return (
@@ -3177,6 +3182,46 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
           <p className="text-base text-slate-500 leading-relaxed italic mt-12 max-w-prose">
             Powyższa infografika przedstawia uproszczony schemat procesowania danych psychometrycznych przez nasz autorski silnik obliczeniowy.
           </p>
+        </div>
+
+        <div id="percentyl" className="scroll-mt-32">
+          <h2 className="text-4xl font-bold mb-8 dark:text-white">Interpretacja percentyli</h2>
+          <div className="flex flex-col md:flex-row gap-12 items-start">
+            <div className="flex-1 space-y-6">
+              <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg max-w-prose">
+                Percentyl to jedna z najważniejszych miar w psychometrii. W przeciwieństwie do wyniku punktowego IQ, który jest miarą bezwzględną na skali, percentyl mówi Ci dokładnie, <strong>ilu ludzi osiągnęło wynik gorszy od Twojego</strong>.
+              </p>
+              <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                <h4 className="font-bold mb-4 flex items-center gap-2">
+                  <Info className="text-blue-600" size={20} />
+                  Przykład interpretacji:
+                </h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Jeśli Twój wynik to <strong>95. percentyl</strong>, oznacza to, że Twoje zdolności poznawcze są wyższe niż u 95% populacji. Znajdujesz się w ścisłej czołówce 5% najbardziej uzdolnionych osób.
+                </p>
+              </div>
+            </div>
+            <div className="md:w-80 w-full p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] flex flex-col items-center text-center">
+               <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+                  <Percent size={32} />
+               </div>
+               <h4 className="font-bold text-xl mb-4">Skala Percentylowa</h4>
+               <div className="w-full space-y-3">
+                  <div className="flex justify-between text-xs px-2"><span className="text-slate-400">Wybitny</span><span className="font-bold">98+</span></div>
+                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                     <div className="h-full bg-blue-600 w-[98%]"></div>
+                  </div>
+                  <div className="flex justify-between text-xs px-2"><span className="text-slate-400">Wysoki</span><span className="font-bold">75-97</span></div>
+                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                     <div className="h-full bg-blue-400 w-[85%]"></div>
+                  </div>
+                  <div className="flex justify-between text-xs px-2"><span className="text-slate-400">Przeciętny</span><span className="font-bold">25-74</span></div>
+                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                     <div className="h-full bg-slate-300 w-[50%]"></div>
+                  </div>
+               </div>
+            </div>
+          </div>
         </div>
 
         <div id="analiza-pro" className="scroll-mt-32">
