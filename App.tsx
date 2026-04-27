@@ -1894,133 +1894,149 @@ const Checkout = () => {
 const CertificateTemplate = ({ data, userName }: { data: ReportData, userName: string }) => {
   const certId = `BMQ-${data.stats.iqScore}-${new Date().getFullYear()}-${Math.random().toString(36).substring(2,7).toUpperCase()}`;
   const dateStr = new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
+  const domainLabels: Record<string, string> = {
+    MATRIX: 'Macierze', NUMBER_SERIES: 'Ciągi', ANALOGY: 'Analogie', SPATIAL: 'Przestrzeń', LOGIC: 'Logika',
+  };
   return (
-    <div
-      className="w-[1123px] h-[794px] bg-white text-slate-900 relative overflow-hidden"
-      style={{ fontFamily: 'Inter, sans-serif' }}
-    >
-      {/* Outer gold border frame */}
-      <div className="absolute inset-0 border-[18px] border-[#c8a84b] pointer-events-none" style={{ zIndex: 10 }} />
-      <div className="absolute inset-[22px] border-[3px] border-[#c8a84b]/60 pointer-events-none" style={{ zIndex: 10 }} />
-      <div className="absolute inset-[28px] border-[1px] border-[#c8a84b]/30 pointer-events-none" style={{ zIndex: 10 }} />
-
-      {/* Corner ornaments */}
-      {[
-        'top-[10px] left-[10px]',
-        'top-[10px] right-[10px] rotate-90',
-        'bottom-[10px] left-[10px] -rotate-90',
-        'bottom-[10px] right-[10px] rotate-180',
-      ].map((pos, i) => (
-        <svg key={i} className={`absolute w-14 h-14 ${pos}`} style={{ zIndex: 11 }} viewBox="0 0 56 56" fill="none">
-          <path d="M4 4 L4 24 M4 4 L24 4" stroke="#c8a84b" strokeWidth="3" strokeLinecap="round"/>
-          <path d="M4 4 L14 14" stroke="#c8a84b" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
-          <circle cx="4" cy="4" r="2.5" fill="#c8a84b"/>
-        </svg>
-      ))}
-
-      {/* Background watermark text */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] select-none pointer-events-none" style={{ zIndex: 1 }}>
-        <span className="text-[200px] font-black text-slate-900 tracking-tighter">IQ</span>
+    <div style={{
+      width: '1123px', height: '794px', background: '#ffffff',
+      fontFamily: 'Inter, Arial, sans-serif', position: 'relative', overflow: 'hidden',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* ── TOP HEADER BAR ─ dark slate, matches site navbar ── */}
+      <div style={{
+        background: '#0f172a', padding: '0 56px', flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '86px',
+      }}>
+        {/* Logo + brand name */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C7.58172 2 4 5.58172 4 10C4 12.3906 5.05093 14.5357 6.71212 16H17.2879C18.9491 14.5357 20 12.3906 20 10C20 5.58172 16.4183 2 12 2Z" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round"/>
+            <circle cx="9" cy="8" r="1" fill="#2563eb"/><circle cx="12" cy="8" r="1" fill="#2563eb"/><circle cx="15" cy="8" r="1" fill="#2563eb"/>
+            <circle cx="9" cy="11" r="1" fill="#2563eb"/><circle cx="12" cy="11" r="1" fill="#2563eb"/><circle cx="15" cy="11" r="1" fill="#2563eb"/>
+            <circle cx="12" cy="14" r="1" fill="#2563eb"/>
+            <path d="M9 19H15" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M10 22H14" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          <div>
+            <div style={{ fontSize: '22px', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>brainmediq</div>
+            <div style={{ fontSize: '9px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.18em', marginTop: '3px' }}>Centrum Badań Psychometrycznych</div>
+          </div>
+        </div>
+        {/* Right side title */}
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.22em' }}>Oficjalny dokument</div>
+          <div style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Certyfikat IQ</div>
+        </div>
       </div>
 
-      {/* Left side accent bar */}
-      <div className="absolute left-[44px] top-[80px] bottom-[80px] w-[3px] bg-gradient-to-b from-transparent via-[#c8a84b]/40 to-transparent" style={{ zIndex: 2 }} />
-      {/* Right side accent bar */}
-      <div className="absolute right-[44px] top-[80px] bottom-[80px] w-[3px] bg-gradient-to-b from-transparent via-[#c8a84b]/40 to-transparent" style={{ zIndex: 2 }} />
+      {/* Blue gradient accent line */}
+      <div style={{ height: '4px', background: 'linear-gradient(90deg,#1d4ed8,#3b82f6,#60a5fa,#3b82f6,#1d4ed8)', flexShrink: 0 }} />
 
-      {/* Main content */}
-      <div className="relative z-20 h-full flex flex-col items-center justify-between py-14 px-24">
+      {/* ── MAIN BODY ── */}
+      <div style={{ flex: 1, display: 'flex', padding: '32px 56px 28px', gap: '44px' }}>
 
-        {/* Header */}
-        <div className="w-full text-center">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#c8a84b]/50" />
-            <span className="text-[11px] font-black text-[#8a6d1e] uppercase tracking-[0.35em]">Centrum Badań Psychometrycznych</span>
-            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#c8a84b]/50" />
-          </div>
-          <h1 className="text-[52px] font-black text-slate-900 tracking-[0.06em] uppercase mb-1" style={{ letterSpacing: '0.12em' }}>
-            Certyfikat Ilorazu Inteligencji
-          </h1>
-          <div className="flex items-center justify-center gap-3 mt-1">
-            <div className="h-px w-32 bg-[#c8a84b]/60" />
-            <span className="text-[10px] text-[#8a6d1e] font-bold uppercase tracking-[0.3em]">brainmediq · Polska · {new Date().getFullYear()}</span>
-            <div className="h-px w-32 bg-[#c8a84b]/60" />
-          </div>
-        </div>
+        {/* LEFT COLUMN */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
 
-        {/* Middle section */}
-        <div className="w-full text-center space-y-4">
-          <p className="text-[15px] text-slate-500 uppercase tracking-[0.25em] font-medium">Niniejszym zaświadcza się, że</p>
-          <div className="relative inline-block">
-            <h2 className="text-[46px] font-black text-slate-900 pb-3" style={{ fontStyle: 'italic' }}>
-              {userName || "Uczestnik Badania"}
-            </h2>
-            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#c8a84b] to-transparent" />
-          </div>
-          <p className="text-[15px] text-slate-500 max-w-lg mx-auto leading-relaxed">
-            pomyślnie ukończył/a standaryzowany test psychometryczny i uzyskał/a wynik określony poniżej,
-            zgodnie z normami populacyjnymi badania brainmediq.
-          </p>
-        </div>
-
-        {/* Score block */}
-        <div className="flex items-stretch gap-12">
-          {/* Main score */}
-          <div className="text-center">
-            <div className="relative">
-              <div className="w-32 h-32 rounded-full border-4 border-[#c8a84b] flex items-center justify-center bg-slate-900 shadow-2xl mx-auto">
-                <span className="text-[50px] font-black text-white leading-none">{data.stats.iqScore}</span>
-              </div>
+          {/* Recipient block */}
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: '10px' }}>
+              Niniejszym zaświadcza się, że
             </div>
-            <p className="text-[10px] font-black text-[#8a6d1e] uppercase tracking-[0.3em] mt-3">Wynik IQ</p>
-          </div>
-          {/* Divider */}
-          <div className="w-px bg-gradient-to-b from-transparent via-[#c8a84b]/40 to-transparent" />
-          {/* Stats */}
-          <div className="flex flex-col justify-center gap-5">
-            <div>
-              <p className="text-[9px] font-black text-[#8a6d1e] uppercase tracking-[0.3em] mb-0.5">Percentyl populacyjny</p>
-              <p className="text-[28px] font-black text-slate-800 leading-none">{data.stats.percentile}<span className="text-base font-bold text-slate-400">%</span></p>
+            <div style={{ fontSize: '38px', fontWeight: 900, color: '#0f172a', lineHeight: 1.15, marginBottom: '10px' }}>
+              {userName || 'Uczestnik Badania'}
             </div>
-            <div>
-              <p className="text-[9px] font-black text-[#8a6d1e] uppercase tracking-[0.3em] mb-0.5">Przedział ufności (95%)</p>
-              <p className="text-[18px] font-bold text-slate-700 leading-none">{data.stats.confidenceInterval[0]} – {data.stats.confidenceInterval[1]}</p>
-            </div>
-            <div>
-              <p className="text-[9px] font-black text-[#8a6d1e] uppercase tracking-[0.3em] mb-0.5">Data badania</p>
-              <p className="text-[15px] font-bold text-slate-700 leading-none">{dateStr}</p>
+            <div style={{ height: '3px', background: '#2563eb', borderRadius: '2px', marginBottom: '14px', width: '100%' }} />
+            <div style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.7, maxWidth: '420px' }}>
+              pomyślnie ukończył/a standaryzowany test psychometryczny i uzyskał/a wynik zgodny
+              z normami populacyjnymi platformy <strong style={{ color: '#1e293b' }}>brainmediq Polska</strong>.
             </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="w-full flex items-end justify-between">
-          {/* Seal */}
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-full border-4 border-slate-900 flex items-center justify-center bg-slate-900">
-                <div className="text-white text-center">
-                  <div className="w-7 h-7 mx-auto mb-0.5"><Icons.Award /></div>
-                  <p className="text-[6px] font-black uppercase tracking-wider text-white/80">Certified</p>
+          {/* Domain score chips */}
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '10px' }}>Wyniki w kategoriach</div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {Object.entries(data.stats.domainScores).map(([key, val]) => (
+                <div key={key} style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '10px', padding: '7px 13px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 800, color: '#2563eb', lineHeight: 1 }}>{Math.round(val as number)}</div>
+                  <div style={{ fontSize: '9px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: '2px' }}>{domainLabels[key] || key}</div>
                 </div>
-              </div>
-              <div className="absolute inset-[-3px] rounded-full border-2 border-[#c8a84b]/60" />
-            </div>
-            <div>
-              <p className="font-black text-slate-900 text-base"><BrandName className="text-base" /> Polska</p>
-              <p className="text-[11px] text-slate-500 font-medium">Certyfikowany Pomiar Inteligencji</p>
-              <p className="text-[10px] text-[#8a6d1e] font-bold mt-0.5">centrum.badań@brainmediq.pl</p>
+              ))}
             </div>
           </div>
 
-          {/* Signature area */}
-          <div className="text-right">
-            <div className="border-b border-slate-300 pb-1 mb-1 min-w-[200px]">
-              <p className="text-[28px] font-black text-slate-700" style={{ fontStyle: 'italic', fontFamily: 'Georgia, serif' }}>brainmediq</p>
+          {/* Footer info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '38px', height: '38px', background: '#2563eb', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+              </svg>
             </div>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Dyrektor ds. Badań Psychometrycznych</p>
-            <p className="text-[9px] text-slate-400 mt-1">Nr certyfikatu: {certId}</p>
+            <div>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>Certyfikowany Pomiar Inteligencji · brainmediq</div>
+              <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>kontakt@brainmediq.pl · Nr certyfikatu: {certId}</div>
+            </div>
           </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: '1px', background: '#e2e8f0', flexShrink: 0 }} />
+
+        {/* RIGHT COLUMN — score panel */}
+        <div style={{ width: '232px', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between' }}>
+
+          {/* IQ circle — using display:table trick for guaranteed centering in html2canvas */}
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '14px' }}>Wynik Ogólny IQ</div>
+            <div style={{
+              width: '156px', height: '156px', borderRadius: '50%',
+              background: '#0f172a',
+              border: '5px solid #2563eb',
+              boxShadow: '0 0 0 2px #eff6ff, 0 8px 32px rgba(37,99,235,0.25)',
+              margin: '0 auto',
+              display: 'table',
+            }}>
+              <div style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'center' }}>
+                <span style={{ fontSize: '56px', fontWeight: 900, color: '#ffffff', lineHeight: 1, display: 'block' }}>
+                  {data.stats.iqScore}
+                </span>
+              </div>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '11px', color: '#64748b', fontWeight: 500 }}>
+              Zakres 95%: {data.stats.confidenceInterval[0]}–{data.stats.confidenceInterval[1]}
+            </div>
+          </div>
+
+          {/* Percentile */}
+          <div style={{ width: '100%', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '14px', padding: '14px 16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Percentyl populacyjny</div>
+            <div style={{ fontSize: '34px', fontWeight: 900, color: '#15803d', lineHeight: 1.2, marginTop: '2px' }}>
+              {data.stats.percentile}<span style={{ fontSize: '18px', color: '#4ade80', fontWeight: 700 }}>%</span>
+            </div>
+          </div>
+
+          {/* Date */}
+          <div style={{ width: '100%', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '14px', padding: '12px 16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Data Badania</div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', marginTop: '4px' }}>{dateStr}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── BOTTOM FOOTER ── */}
+      <div style={{
+        background: '#f8fafc', borderTop: '1px solid #e2e8f0', flexShrink: 0,
+        padding: '10px 56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div style={{ fontSize: '10px', color: '#94a3b8' }}>© {new Date().getFullYear()} brainmediq Polska. Wszelkie prawa zastrzeżone.</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C7.58172 2 4 5.58172 4 10C4 12.3906 5.05093 14.5357 6.71212 16H17.2879C18.9491 14.5357 20 12.3906 20 10C20 5.58172 16.4183 2 12 2Z" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round"/>
+            <circle cx="12" cy="8" r="1" fill="#2563eb"/>
+          </svg>
+          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>brainmediq.pl</div>
         </div>
       </div>
     </div>
