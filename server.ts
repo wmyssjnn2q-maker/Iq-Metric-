@@ -15,7 +15,7 @@ app.post('/api/send-email', async (req, res) => {
 
   try {
     const payload: Parameters<typeof resend.emails.send>[0] = {
-      from: 'brainmediq <noreply@brainmediq.pl>',
+      from: 'brainmediq <onboarding@resend.dev>',
       to: [to],
       subject,
       html,
