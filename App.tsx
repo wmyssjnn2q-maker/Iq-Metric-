@@ -1694,11 +1694,55 @@ const Checkout = () => {
     productName = 'Test Szybkości Reakcji';
     price = '4,99';
     redirectUrl = '/test-reakcji';
+  } else if (typeParam === 'alzheimer') {
+    productName = 'Test Funkcji Poznawczych';
+    price = '4,99';
+    redirectUrl = '/test-funkcji-poznawczych';
+  } else if (typeParam === 'adhd') {
+    productName = 'Test ADHD (ASRS)';
+    price = '4,99';
+    redirectUrl = '/test-adhd';
   }
+
+  const sendConfirmationEmail = async (toEmail: string, product: string) => {
+    try {
+      await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: toEmail,
+          subject: `Potwierdzenie zakupu: ${product} – brainmediq`,
+          html: `
+            <div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;background:#fff;padding:40px;border:1px solid #e2e8f0;border-radius:16px">
+              <div style="text-align:center;margin-bottom:32px">
+                <h1 style="font-size:28px;font-weight:900;color:#1e293b;margin:0">brainmediq</h1>
+                <p style="color:#64748b;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin-top:4px">Centrum Badań Psychometrycznych</p>
+              </div>
+              <h2 style="font-size:20px;font-weight:700;color:#1e293b;margin-bottom:12px">Dziękujemy za zakup!</h2>
+              <p style="color:#475569;line-height:1.7;margin-bottom:20px">
+                Twoje zamówienie na <strong>${product}</strong> zostało zrealizowane. Dostęp do testu jest już aktywny — wróć na stronę i kontynuuj.
+              </p>
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:24px">
+                <p style="margin:0;font-size:13px;color:#64748b"><strong>Produkt:</strong> ${product}</p>
+                <p style="margin:8px 0 0;font-size:13px;color:#64748b"><strong>Data:</strong> ${new Date().toLocaleDateString('pl-PL', { dateStyle: 'long' })}</p>
+                <p style="margin:8px 0 0;font-size:13px;color:#64748b"><strong>E-mail:</strong> ${toEmail}</p>
+              </div>
+              <p style="color:#94a3b8;font-size:12px;text-align:center;margin-top:32px;border-top:1px solid #f1f5f9;padding-top:16px">
+                © ${new Date().getFullYear()} brainmediq Polska · kontakt@brainmediq.pl<br/>
+                Ten e-mail jest automatycznym potwierdzeniem. Nie odpowiadaj na tę wiadomość.
+              </p>
+            </div>
+          `,
+        }),
+      });
+    } catch (e) {
+      console.warn('Email sending failed (non-critical):', e);
+    }
+  };
 
   const handlePay = (bypass: boolean = false) => {
     setLoading(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       setLoading(false);
       const updatedSaved = { ...saved, email: email || 'test@example.com' };
       
@@ -1712,6 +1756,8 @@ const Checkout = () => {
       else if (typeParam === 'pamiec') updatedSaved.hasPamiec = true;
       else if (typeParam === 'koncentracja') updatedSaved.hasKoncentracja = true;
       else if (typeParam === 'reakcja') updatedSaved.hasReakcja = true;
+      else if (typeParam === 'alzheimer') updatedSaved.hasAlzheimer = true;
+      else if (typeParam === 'adhd') updatedSaved.hasADHD = true;
       else {
         updatedSaved.isPaid = true;
         updatedSaved.isPro = typeParam === 'pro';
@@ -1719,6 +1765,11 @@ const Checkout = () => {
       }
       
       localStorage.setItem('iq_results', JSON.stringify(updatedSaved));
+
+      if (email && email.includes('@') && !bypass) {
+        await sendConfirmationEmail(email, productName);
+      }
+
       navigate(redirectUrl);
     }, 1500);
   };
@@ -1788,55 +1839,134 @@ const Checkout = () => {
 };
 
 const CertificateTemplate = ({ data, userName }: { data: ReportData, userName: string }) => {
+  const certId = `BMQ-${data.stats.iqScore}-${new Date().getFullYear()}-${Math.random().toString(36).substring(2,7).toUpperCase()}`;
+  const dateStr = new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
   return (
-    <div className="w-[1123px] h-[794px] bg-white text-slate-900 p-16 flex flex-col items-center justify-center relative border-[24px] border-blue-600/10" style={{ fontFamily: 'Inter, sans-serif' }}>
-      <div className="absolute top-12 left-12 w-32 h-32 opacity-10">
-        <Logos.BrainGrid size={128} className="text-blue-600" />
-      </div>
-      <div className="absolute bottom-12 right-12 w-32 h-32 opacity-10">
-        <Logos.BrainGrid size={128} className="text-blue-600" />
-      </div>
-      
-      <div className="text-center mb-12">
-        <h1 className="text-6xl font-black text-slate-900 tracking-tight uppercase mb-4">Certyfikat IQ</h1>
-        <p className="text-2xl text-slate-500 uppercase tracking-widest">
-          Wystawiony przez <BrandName className="text-2xl" /> Polska
-        </p>
+    <div
+      className="w-[1123px] h-[794px] bg-white text-slate-900 relative overflow-hidden"
+      style={{ fontFamily: 'Inter, sans-serif' }}
+    >
+      {/* Outer gold border frame */}
+      <div className="absolute inset-0 border-[18px] border-[#c8a84b] pointer-events-none" style={{ zIndex: 10 }} />
+      <div className="absolute inset-[22px] border-[3px] border-[#c8a84b]/60 pointer-events-none" style={{ zIndex: 10 }} />
+      <div className="absolute inset-[28px] border-[1px] border-[#c8a84b]/30 pointer-events-none" style={{ zIndex: 10 }} />
+
+      {/* Corner ornaments */}
+      {[
+        'top-[10px] left-[10px]',
+        'top-[10px] right-[10px] rotate-90',
+        'bottom-[10px] left-[10px] -rotate-90',
+        'bottom-[10px] right-[10px] rotate-180',
+      ].map((pos, i) => (
+        <svg key={i} className={`absolute w-14 h-14 ${pos}`} style={{ zIndex: 11 }} viewBox="0 0 56 56" fill="none">
+          <path d="M4 4 L4 24 M4 4 L24 4" stroke="#c8a84b" strokeWidth="3" strokeLinecap="round"/>
+          <path d="M4 4 L14 14" stroke="#c8a84b" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
+          <circle cx="4" cy="4" r="2.5" fill="#c8a84b"/>
+        </svg>
+      ))}
+
+      {/* Background watermark text */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] select-none pointer-events-none" style={{ zIndex: 1 }}>
+        <span className="text-[200px] font-black text-slate-900 tracking-tighter">IQ</span>
       </div>
 
-      <div className="text-center mb-16">
-        <p className="text-xl text-slate-600 mb-6">Niniejszym zaświadcza się, że</p>
-        <h2 className="text-5xl font-bold text-blue-600 border-b-2 border-blue-200 pb-4 inline-block min-w-[400px]">
-          {userName || "Uczestnik Badania"}
-        </h2>
-      </div>
+      {/* Left side accent bar */}
+      <div className="absolute left-[44px] top-[80px] bottom-[80px] w-[3px] bg-gradient-to-b from-transparent via-[#c8a84b]/40 to-transparent" style={{ zIndex: 2 }} />
+      {/* Right side accent bar */}
+      <div className="absolute right-[44px] top-[80px] bottom-[80px] w-[3px] bg-gradient-to-b from-transparent via-[#c8a84b]/40 to-transparent" style={{ zIndex: 2 }} />
 
-      <div className="flex items-center gap-16 mb-16">
-        <div className="text-center">
-          <p className="text-sm text-slate-500 uppercase tracking-widest font-bold mb-2">Wynik Ogólny</p>
-          <div className="text-8xl font-black text-slate-900">{data.stats.iqScore}</div>
+      {/* Main content */}
+      <div className="relative z-20 h-full flex flex-col items-center justify-between py-14 px-24">
+
+        {/* Header */}
+        <div className="w-full text-center">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#c8a84b]/50" />
+            <span className="text-[11px] font-black text-[#8a6d1e] uppercase tracking-[0.35em]">Centrum Badań Psychometrycznych</span>
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#c8a84b]/50" />
+          </div>
+          <h1 className="text-[52px] font-black text-slate-900 tracking-[0.06em] uppercase mb-1" style={{ letterSpacing: '0.12em' }}>
+            Certyfikat Ilorazu Inteligencji
+          </h1>
+          <div className="flex items-center justify-center gap-3 mt-1">
+            <div className="h-px w-32 bg-[#c8a84b]/60" />
+            <span className="text-[10px] text-[#8a6d1e] font-bold uppercase tracking-[0.3em]">brainmediq · Polska · {new Date().getFullYear()}</span>
+            <div className="h-px w-32 bg-[#c8a84b]/60" />
+          </div>
         </div>
-        <div className="w-px h-32 bg-slate-200"></div>
-        <div className="text-left space-y-4">
-          <div>
-            <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Percentyl</p>
-            <p className="text-2xl font-bold text-slate-800">{data.stats.percentile}%</p>
+
+        {/* Middle section */}
+        <div className="w-full text-center space-y-4">
+          <p className="text-[15px] text-slate-500 uppercase tracking-[0.25em] font-medium">Niniejszym zaświadcza się, że</p>
+          <div className="relative inline-block">
+            <h2 className="text-[46px] font-black text-slate-900 pb-3" style={{ fontStyle: 'italic' }}>
+              {userName || "Uczestnik Badania"}
+            </h2>
+            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#c8a84b] to-transparent" />
           </div>
-          <div>
-            <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Data Badania</p>
-            <p className="text-xl font-medium text-slate-800">{new Date().toLocaleDateString('pl-PL')}</p>
+          <p className="text-[15px] text-slate-500 max-w-lg mx-auto leading-relaxed">
+            pomyślnie ukończył/a standaryzowany test psychometryczny i uzyskał/a wynik określony poniżej,
+            zgodnie z normami populacyjnymi badania brainmediq.
+          </p>
+        </div>
+
+        {/* Score block */}
+        <div className="flex items-stretch gap-12">
+          {/* Main score */}
+          <div className="text-center">
+            <div className="relative">
+              <div className="w-32 h-32 rounded-full border-4 border-[#c8a84b] flex items-center justify-center bg-slate-900 shadow-2xl mx-auto">
+                <span className="text-[50px] font-black text-white leading-none">{data.stats.iqScore}</span>
+              </div>
+            </div>
+            <p className="text-[10px] font-black text-[#8a6d1e] uppercase tracking-[0.3em] mt-3">Wynik IQ</p>
+          </div>
+          {/* Divider */}
+          <div className="w-px bg-gradient-to-b from-transparent via-[#c8a84b]/40 to-transparent" />
+          {/* Stats */}
+          <div className="flex flex-col justify-center gap-5">
+            <div>
+              <p className="text-[9px] font-black text-[#8a6d1e] uppercase tracking-[0.3em] mb-0.5">Percentyl populacyjny</p>
+              <p className="text-[28px] font-black text-slate-800 leading-none">{data.stats.percentile}<span className="text-base font-bold text-slate-400">%</span></p>
+            </div>
+            <div>
+              <p className="text-[9px] font-black text-[#8a6d1e] uppercase tracking-[0.3em] mb-0.5">Przedział ufności (95%)</p>
+              <p className="text-[18px] font-bold text-slate-700 leading-none">{data.stats.confidenceInterval[0]} – {data.stats.confidenceInterval[1]}</p>
+            </div>
+            <div>
+              <p className="text-[9px] font-black text-[#8a6d1e] uppercase tracking-[0.3em] mb-0.5">Data badania</p>
+              <p className="text-[15px] font-bold text-slate-700 leading-none">{dateStr}</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="absolute bottom-16 left-16">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white">
-            <Icons.Award />
+        {/* Footer */}
+        <div className="w-full flex items-end justify-between">
+          {/* Seal */}
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full border-4 border-slate-900 flex items-center justify-center bg-slate-900">
+                <div className="text-white text-center">
+                  <div className="w-7 h-7 mx-auto mb-0.5"><Icons.Award /></div>
+                  <p className="text-[6px] font-black uppercase tracking-wider text-white/80">Certified</p>
+                </div>
+              </div>
+              <div className="absolute inset-[-3px] rounded-full border-2 border-[#c8a84b]/60" />
+            </div>
+            <div>
+              <p className="font-black text-slate-900 text-base"><BrandName className="text-base" /> Polska</p>
+              <p className="text-[11px] text-slate-500 font-medium">Certyfikowany Pomiar Inteligencji</p>
+              <p className="text-[10px] text-[#8a6d1e] font-bold mt-0.5">centrum.badań@brainmediq.pl</p>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-slate-900"><BrandName className="text-lg" /> Polska</p>
-            <p className="text-sm text-slate-500">Certyfikowany Pomiar Inteligencji</p>
+
+          {/* Signature area */}
+          <div className="text-right">
+            <div className="border-b border-slate-300 pb-1 mb-1 min-w-[200px]">
+              <p className="text-[28px] font-black text-slate-700" style={{ fontStyle: 'italic', fontFamily: 'Georgia, serif' }}>brainmediq</p>
+            </div>
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest">Dyrektor ds. Badań Psychometrycznych</p>
+            <p className="text-[9px] text-slate-400 mt-1">Nr certyfikatu: {certId}</p>
           </div>
         </div>
       </div>
@@ -2961,6 +3091,575 @@ const ReactionTest = () => {
   );
 };
 
+// --- ALZHEIMER TEST ---
+
+const alzheimerQuestions = [
+  {
+    id: 1,
+    category: 'Orientacja czasowa',
+    question: 'Który mamy teraz rok?',
+    type: 'text' as const,
+    correctAnswer: new Date().getFullYear().toString(),
+    points: 1,
+  },
+  {
+    id: 2,
+    category: 'Orientacja czasowa',
+    question: 'Jaka jest teraz pora roku?',
+    type: 'choice' as const,
+    options: ['Wiosna', 'Lato', 'Jesień', 'Zima'],
+    correctAnswer: (() => {
+      const m = new Date().getMonth();
+      if (m >= 2 && m <= 4) return 'Wiosna';
+      if (m >= 5 && m <= 7) return 'Lato';
+      if (m >= 8 && m <= 10) return 'Jesień';
+      return 'Zima';
+    })(),
+    points: 1,
+  },
+  {
+    id: 3,
+    category: 'Orientacja czasowa',
+    question: 'Który mamy miesiąc?',
+    type: 'choice' as const,
+    options: ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'],
+    correctAnswer: ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'][new Date().getMonth()],
+    points: 1,
+  },
+  {
+    id: 4,
+    category: 'Orientacja czasowa',
+    question: 'Który mamy dzień tygodnia?',
+    type: 'choice' as const,
+    options: ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'],
+    correctAnswer: ['Niedziela','Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota'][new Date().getDay()],
+    points: 1,
+  },
+  {
+    id: 5,
+    category: 'Pamięć krótkotrwała',
+    question: 'Przeczytaj uważnie trzy słowa i spróbuj je zapamiętać:\n\n🍎 JABŁKO — 🏠 DOM — 🌊 MORZE\n\nCzy możesz je teraz powtórzyć (wpisz wszystkie trzy)?',
+    type: 'memory_register' as const,
+    correctAnswer: 'jabłko dom morze',
+    points: 3,
+    hint: 'jabłko, dom, morze',
+  },
+  {
+    id: 6,
+    category: 'Uwaga i obliczenia',
+    question: 'Odejmij 7 od 100. Następnie odejmuj 7 kolejno pięć razy. Jaki jest ostatni wynik?',
+    type: 'choice' as const,
+    options: ['58', '63', '65', '72'],
+    correctAnswer: '65',
+    points: 5,
+  },
+  {
+    id: 7,
+    category: 'Pamięć — przypomnienie',
+    question: 'Jakie trzy słowa prosiłem Cię wcześniej zapamiętać?',
+    type: 'choice' as const,
+    options: [
+      'Jabłko, dom, morze',
+      'Gruszka, ogród, rzeka',
+      'Jabłko, las, góra',
+      'Dom, chmura, morze',
+    ],
+    correctAnswer: 'Jabłko, dom, morze',
+    points: 3,
+  },
+  {
+    id: 8,
+    category: 'Język i rozumienie',
+    question: 'Co robi się z parasolem, gdy pada deszcz?',
+    type: 'choice' as const,
+    options: ['Zamyka się go', 'Otwiera się go', 'Odkłada się go', 'Wyrzuca się go'],
+    correctAnswer: 'Otwiera się go',
+    points: 1,
+  },
+  {
+    id: 9,
+    category: 'Język i rozumienie',
+    question: 'Dokończ zdanie: "Kamień wrzucony do wody..."',
+    type: 'choice' as const,
+    options: ['...płynie', '...tonie', '...wyparowuje', '...spala się'],
+    correctAnswer: '...tonie',
+    points: 1,
+  },
+  {
+    id: 10,
+    category: 'Orientacja przestrzenna',
+    question: 'Gdzie zazwyczaj jest słońce o godzinie 12:00 w południe?',
+    type: 'choice' as const,
+    options: ['Na wschodzie', 'Na zachodzie', 'Na południu (wysoko)', 'Na północy'],
+    correctAnswer: 'Na południu (wysoko)',
+    points: 1,
+  },
+  {
+    id: 11,
+    category: 'Myślenie abstrakcyjne',
+    question: 'Co łączy jabłko, banan i pomarańczę?',
+    type: 'choice' as const,
+    options: ['Są okrągłe', 'Są owocami', 'Są żółte', 'Rosną na drzewach'],
+    correctAnswer: 'Są owocami',
+    points: 1,
+  },
+  {
+    id: 12,
+    category: 'Myślenie abstrakcyjne',
+    question: 'Pociąg jest do torów jak samolot jest do...?',
+    type: 'choice' as const,
+    options: ['Chmur', 'Nieba', 'Pasa startowego', 'Skrzydeł'],
+    correctAnswer: 'Pasa startowego',
+    points: 1,
+  },
+  {
+    id: 13,
+    category: 'Pamięć epizodyczna',
+    question: 'Co robiłeś/aś wczoraj rano?',
+    type: 'self_report' as const,
+    options: ['Pamiętam dokładnie', 'Pamiętam ogólnie', 'Mam trudności z przypomnieniem', 'Nie pamiętam'],
+    correctAnswer: 'Pamiętam dokładnie',
+    points: 3,
+  },
+  {
+    id: 14,
+    category: 'Koncentracja',
+    question: 'Czy potrafisz skupić uwagę na jednej czynności przez co najmniej 20 minut bez przerwy?',
+    type: 'self_report' as const,
+    options: ['Tak, bez problemu', 'Raczej tak', 'Mam z tym trudności', 'Nie, bardzo trudne'],
+    correctAnswer: 'Tak, bez problemu',
+    points: 2,
+  },
+  {
+    id: 15,
+    category: 'Funkcje wykonawcze',
+    question: 'Wyobraź sobie, że planujesz wyjazd. W jakiej kolejności wykonujesz kroki?',
+    type: 'choice' as const,
+    options: [
+      'Pakuję → rezerwuję → wyjeżdżam → planuję',
+      'Planuję → rezerwuję → pakuję → wyjeżdżam',
+      'Wyjeżdżam → planuję → rezerwuję → pakuję',
+      'Rezerwuję → wyjeżdżam → planuję → pakuję',
+    ],
+    correctAnswer: 'Planuję → rezerwuję → pakuję → wyjeżdżam',
+    points: 2,
+  },
+];
+
+const AlzheimerTest = () => {
+  const navigate = useNavigate();
+  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
+  const hasAccess = saved.hasAlzheimer === true;
+
+  const [phase, setPhase] = useState<'intro' | 'test' | 'result'>('intro');
+  const [currentQ, setCurrentQ] = useState(0);
+  const [answers, setAnswers] = useState<string[]>(Array(alzheimerQuestions.length).fill(''));
+  const [selected, setSelected] = useState<string>('');
+  const [textInput, setTextInput] = useState('');
+
+  const totalPoints = alzheimerQuestions.reduce((s, q) => s + q.points, 0);
+
+  const calcScore = () => {
+    let score = 0;
+    alzheimerQuestions.forEach((q, i) => {
+      const ans = answers[i]?.toLowerCase().trim();
+      if (q.type === 'memory_register') {
+        const words = ['jabłko', 'dom', 'morze'];
+        words.forEach(w => { if (ans?.includes(w)) score++; });
+      } else if (q.type === 'self_report') {
+        const idx = (q.options as string[]).indexOf(answers[i]);
+        const maxIdx = (q.options as string[]).indexOf(q.correctAnswer as string);
+        const earned = Math.max(0, q.points - idx);
+        score += Math.min(earned, q.points);
+      } else if (ans === (q.correctAnswer as string).toLowerCase()) {
+        score += q.points;
+      }
+    });
+    return score;
+  };
+
+  const handleNext = () => {
+    const q = alzheimerQuestions[currentQ];
+    const val = q.type === 'text' || q.type === 'memory_register' ? textInput : selected;
+    const newAnswers = [...answers];
+    newAnswers[currentQ] = val;
+    setAnswers(newAnswers);
+
+    if (currentQ + 1 < alzheimerQuestions.length) {
+      setCurrentQ(currentQ + 1);
+      setSelected('');
+      setTextInput('');
+    } else {
+      setAnswers(newAnswers);
+      setPhase('result');
+    }
+  };
+
+  const score = phase === 'result' ? calcScore() : 0;
+  const pct = Math.round((score / totalPoints) * 100);
+
+  const getInterpretation = (pct: number) => {
+    if (pct >= 85) return { label: 'Wynik prawidłowy', color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200', desc: 'Twoje wyniki wskazują na prawidłowe funkcjonowanie poznawcze w badanych obszarach. Nie stwierdzono niepokojących odchyleń.' };
+    if (pct >= 65) return { label: 'Wynik w normie z drobnymi odchyleniami', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200', desc: 'Większość wyników jest w normie, jednak niektóre obszary mogą wymagać uwagi. Zalecamy regularną aktywność umysłową.' };
+    if (pct >= 45) return { label: 'Wynik poniżej normy', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200', desc: 'Wyniki sugerują możliwe trudności w kilku obszarach poznawczych. Warto skonsultować się z lekarzem pierwszego kontaktu.' };
+    return { label: 'Wynik wskazujący na trudności', color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20 border-rose-200', desc: 'Wyniki mogą wskazywać na istotne trudności poznawcze. Zalecamy pilną konsultację z lekarzem lub neurologiem.' };
+  };
+
+  if (!hasAccess) {
+    return (
+      <div className="max-w-2xl mx-auto py-32 px-6 text-center">
+        <div className="bg-white dark:bg-slate-900 p-16 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+          <div className="w-20 h-20 bg-teal-100 dark:bg-teal-900/30 rounded-3xl flex items-center justify-center mx-auto mb-8">
+            <Brain className="w-10 h-10 text-teal-600" />
+          </div>
+          <h2 className="text-3xl font-bold mb-4 dark:text-white">Test Funkcji Poznawczych</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-8">Aby uzyskać dostęp do tego testu, dokonaj zakupu.</p>
+          <Link to="/platnosc?type=alzheimer" className="inline-flex items-center px-8 py-4 bg-teal-600 text-white rounded-2xl font-bold hover:bg-teal-700 transition-all shadow-lg">
+            Kup za 4,99 PLN
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'intro') {
+    return (
+      <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
+        <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+          <div className="w-20 h-20 bg-teal-100 dark:bg-teal-900/30 rounded-3xl flex items-center justify-center mb-8">
+            <Brain className="w-10 h-10 text-teal-600" />
+          </div>
+          <h1 className="text-4xl font-bold mb-4 dark:text-white">Test Funkcji Poznawczych</h1>
+          <p className="text-slate-500 dark:text-slate-400 mb-6 text-lg leading-relaxed">
+            Ten test bada orientację, pamięć, uwagę, język i myślenie abstrakcyjne. Składa się z {alzheimerQuestions.length} pytań i zajmuje ok. 10 minut.
+          </p>
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6 mb-8">
+            <div className="flex gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-amber-800 dark:text-amber-300 mb-1">Ważna informacja medyczna</p>
+                <p className="text-amber-700 dark:text-amber-400 text-sm leading-relaxed">
+                  Ten test ma wyłącznie charakter edukacyjny i orientacyjny. <strong>Nie jest narzędziem diagnostycznym</strong> i nie zastępuje badania lekarskiego ani specjalistycznej oceny neuropsychologicznej. Wyniki testu nie stanowią porady medycznej ani diagnozy choroby Alzheimera lub demencji. W razie jakichkolwiek obaw dotyczących funkcji poznawczych skonsultuj się z lekarzem.
+                </p>
+              </div>
+            </div>
+          </div>
+          <button onClick={() => setPhase('test')} className="w-full bg-teal-600 text-white py-5 rounded-2xl font-bold text-lg hover:bg-teal-700 transition-all shadow-lg shadow-teal-500/20">
+            Rozpocznij Test
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'result') {
+    const interp = getInterpretation(pct);
+    return (
+      <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
+        <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl space-y-8">
+          <div className="text-center">
+            <div className="text-7xl font-black text-teal-600 mb-2">{score}<span className="text-3xl text-slate-400">/{totalPoints}</span></div>
+            <p className={`text-2xl font-bold ${interp.color}`}>{interp.label}</p>
+          </div>
+
+          <div className={`border rounded-2xl p-6 ${interp.bg}`}>
+            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{interp.desc}</p>
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6">
+            <div className="flex gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <p className="text-amber-700 dark:text-amber-400 text-sm leading-relaxed">
+                <strong>Przypomnienie:</strong> Ten wynik ma charakter wyłącznie orientacyjny i nie stanowi diagnozy medycznej ani porady lekarskiej. Nie zastępuje profesjonalnej oceny klinicznej. Jeśli masz obawy co do swojego zdrowia poznawczego, skonsultuj się z lekarzem.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {alzheimerQuestions.map((q, i) => {
+              const ans = answers[i]?.toLowerCase().trim();
+              let correct = false;
+              if (q.type === 'memory_register') {
+                correct = ['jabłko','dom','morze'].every(w => ans?.includes(w));
+              } else if (q.type === 'self_report') {
+                correct = answers[i] === q.correctAnswer;
+              } else {
+                correct = ans === (q.correctAnswer as string).toLowerCase();
+              }
+              return (
+                <div key={q.id} className={`p-4 rounded-2xl border text-sm ${correct ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200' : 'bg-rose-50 dark:bg-rose-900/20 border-rose-200'}`}>
+                  <p className="font-bold text-slate-700 dark:text-slate-300 mb-1">{q.category}</p>
+                  <p className={correct ? 'text-emerald-600' : 'text-rose-600'}>{correct ? '✓ Prawidłowa odpowiedź' : `✗ Oczekiwano: ${q.correctAnswer}`}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          <Link to="/inne-testy" className="block w-full text-center bg-teal-600 text-white py-5 rounded-2xl font-bold hover:bg-teal-700 transition-all">
+            Powrót do testów
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const q = alzheimerQuestions[currentQ];
+  const progress = ((currentQ) / alzheimerQuestions.length) * 100;
+  const canProceed = q.type === 'text' || q.type === 'memory_register' ? textInput.trim().length > 0 : selected !== '';
+
+  return (
+    <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
+      <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+        <div className="mb-8">
+          <div className="flex justify-between text-sm text-slate-500 mb-2">
+            <span>Pytanie {currentQ + 1} z {alzheimerQuestions.length}</span>
+            <span className="font-bold text-teal-600">{q.category}</span>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+            <div className="bg-teal-500 h-2 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+
+        <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-8 leading-relaxed whitespace-pre-line">{q.question}</h2>
+
+        {(q.type === 'text' || q.type === 'memory_register') ? (
+          <textarea
+            value={textInput}
+            onChange={e => setTextInput(e.target.value)}
+            placeholder={q.type === 'memory_register' ? 'Wpisz zapamiętane słowa...' : 'Wpisz odpowiedź...'}
+            className="w-full px-4 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white focus:outline-none focus:border-teal-500 resize-none"
+            rows={3}
+          />
+        ) : (
+          <div className="space-y-3">
+            {(q.options as string[]).map((opt) => (
+              <button
+                key={opt}
+                onClick={() => setSelected(opt)}
+                className={`w-full text-left px-6 py-4 rounded-2xl border-2 font-medium transition-all ${selected === opt ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-teal-300'}`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <button
+          onClick={handleNext}
+          disabled={!canProceed}
+          className="mt-8 w-full bg-teal-600 text-white py-5 rounded-2xl font-bold text-lg hover:bg-teal-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {currentQ + 1 === alzheimerQuestions.length ? 'Zobacz wyniki' : 'Następne pytanie'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// --- ADHD TEST ---
+
+const adhdQuestions = [
+  { id: 1, part: 'A', text: 'Jak często masz trudności z dokończeniem ostatnich szczegółów projektu, gdy najtrudniejsza część jest już za Tobą?' },
+  { id: 2, part: 'A', text: 'Jak często masz trudności z porządkowaniem spraw, gdy musisz wykonać zadanie wymagające organizacji?' },
+  { id: 3, part: 'A', text: 'Jak często masz problem z zapamiętywaniem spotkań lub zobowiązań?' },
+  { id: 4, part: 'A', text: 'Gdy masz zadanie wymagające dużo myślenia, jak często unikasz jego rozpoczęcia lub odkładasz je na później?' },
+  { id: 5, part: 'A', text: 'Jak często wiercisz się lub kręcisz rękami/nogami, gdy musisz siedzieć przez dłuższy czas?' },
+  { id: 6, part: 'A', text: 'Jak często czujesz się nadmiernie aktywny/a i zmuszony/a do działania, jakby napędzał/a Cię jakiś silnik?' },
+  { id: 7, part: 'B', text: 'Jak często popełniasz nieostrożne błędy, gdy pracujesz nad nudnym lub trudnym projektem?' },
+  { id: 8, part: 'B', text: 'Jak często masz trudności z utrzymaniem uwagi przy wykonywaniu nudnych lub powtarzalnych czynności?' },
+  { id: 9, part: 'B', text: 'Jak często masz trudności z koncentracją, gdy ktoś do Ciebie mówi, nawet bezpośrednio?' },
+  { id: 10, part: 'B', text: 'Jak często gubisz lub masz trudności ze znalezieniem przedmiotów w domu lub w pracy?' },
+  { id: 11, part: 'B', text: 'Jak często rozpraszają Cię otaczające hałasy lub zdarzenia?' },
+  { id: 12, part: 'B', text: 'Jak często wstajesz ze swojego miejsca na spotkaniach lub w innych sytuacjach, gdy powinieneś/powinnaś siedzieć?' },
+  { id: 13, part: 'B', text: 'Jak często czujesz się niespokojny/a lub pobudzony/a?' },
+  { id: 14, part: 'B', text: 'Jak często masz trudności z odpoczywaniem lub relaksowaniem się, gdy masz chwilę wolnego?' },
+  { id: 15, part: 'B', text: 'Jak często mówisz za dużo w sytuacjach towarzyskich?' },
+  { id: 16, part: 'B', text: 'Jak często kończysz zdania rozmówców lub mówisz coś przed nimi, gdy uczestniczysz w rozmowie?' },
+  { id: 17, part: 'B', text: 'Jak często masz trudności z czekaniem na swoją kolej w sytuacjach, gdy kolejność ma znaczenie?' },
+  { id: 18, part: 'B', text: 'Jak często przerywasz innym, gdy są zajęci?' },
+];
+
+const adhdFrequencies = ['Nigdy', 'Rzadko', 'Czasami', 'Często', 'Bardzo często'];
+
+const ADHDTest = () => {
+  const navigate = useNavigate();
+  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
+  const hasAccess = saved.hasADHD === true;
+
+  const [phase, setPhase] = useState<'intro' | 'test' | 'result'>('intro');
+  const [answers, setAnswers] = useState<number[]>(Array(adhdQuestions.length).fill(-1));
+  const [currentQ, setCurrentQ] = useState(0);
+
+  const partAScore = answers.slice(0, 6).reduce((s, v) => s + Math.max(0, v), 0);
+  const totalScore = answers.reduce((s, v) => s + Math.max(0, v), 0);
+  const partAPositive = answers.slice(0, 6).filter((v, i) => {
+    const thresholds = [2, 2, 2, 2, 3, 3];
+    return v >= thresholds[i];
+  }).length;
+
+  const getResult = () => {
+    if (partAPositive >= 4) return {
+      label: 'Wysokie prawdopodobieństwo ADHD',
+      color: 'text-rose-600',
+      bg: 'bg-rose-50 dark:bg-rose-900/20 border-rose-200',
+      desc: 'Twoje odpowiedzi w kluczowej części testu są wysoce zgodne z objawami ADHD u dorosłych. Zdecydowanie zalecamy konsultację z psychiatrą lub psychologiem specjalizującym się w ADHD.',
+    };
+    if (partAPositive >= 2 || totalScore >= 24) return {
+      label: 'Możliwe objawy ADHD',
+      color: 'text-amber-600',
+      bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200',
+      desc: 'Część Twoich odpowiedzi sugeruje obecność pewnych objawów związanych z ADHD. Może warto porozmawiać z lekarzem lub psychologiem, szczególnie jeśli objawy wpływają na codzienne funkcjonowanie.',
+    };
+    return {
+      label: 'Niskie prawdopodobieństwo ADHD',
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200',
+      desc: 'Twoje odpowiedzi nie wskazują na silne objawy ADHD. Jeśli jednak masz obawy dotyczące koncentracji lub impulsywności, zawsze możesz skonsultować się ze specjalistą.',
+    };
+  };
+
+  if (!hasAccess) {
+    return (
+      <div className="max-w-2xl mx-auto py-32 px-6 text-center">
+        <div className="bg-white dark:bg-slate-900 p-16 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+          <div className="w-20 h-20 bg-violet-100 dark:bg-violet-900/30 rounded-3xl flex items-center justify-center mx-auto mb-8">
+            <Zap className="w-10 h-10 text-violet-600" />
+          </div>
+          <h2 className="text-3xl font-bold mb-4 dark:text-white">Test ADHD (ASRS)</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-8">Aby uzyskać dostęp do tego testu, dokonaj zakupu.</p>
+          <Link to="/platnosc?type=adhd" className="inline-flex items-center px-8 py-4 bg-violet-600 text-white rounded-2xl font-bold hover:bg-violet-700 transition-all shadow-lg">
+            Kup za 4,99 PLN
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'intro') {
+    return (
+      <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
+        <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+          <div className="w-20 h-20 bg-violet-100 dark:bg-violet-900/30 rounded-3xl flex items-center justify-center mb-8">
+            <Zap className="w-10 h-10 text-violet-600" />
+          </div>
+          <h1 className="text-4xl font-bold mb-2 dark:text-white">Test ADHD</h1>
+          <p className="text-sm font-bold text-violet-600 mb-4 uppercase tracking-widest">Skala ASRS v1.1 (WHO)</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-6 text-lg leading-relaxed">
+            Kwestionariusz oparty na Skali Samooceny ADHD dla Dorosłych (ASRS v1.1), opracowanej przez WHO i Uniwersytet Harvarda. Składa się z {adhdQuestions.length} pytań i zajmuje ok. 5–8 minut.
+          </p>
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6 mb-8">
+            <div className="flex gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-amber-800 dark:text-amber-300 mb-1">Ważna informacja medyczna</p>
+                <p className="text-amber-700 dark:text-amber-400 text-sm leading-relaxed">
+                  Ten test ma wyłącznie charakter przesiewowy i edukacyjny. <strong>Nie jest narzędziem diagnostycznym</strong> i nie zastępuje oceny klinicznej przeprowadzonej przez wykwalifikowanego specjalistę. Wyniki nie stanowią diagnozy ADHD ani żadnej innej choroby, ani porady medycznej. Diagnoza ADHD wymaga kompleksowej oceny psychiatrycznej lub psychologicznej.
+                </p>
+              </div>
+            </div>
+          </div>
+          <button onClick={() => setPhase('test')} className="w-full bg-violet-600 text-white py-5 rounded-2xl font-bold text-lg hover:bg-violet-700 transition-all shadow-lg shadow-violet-500/20">
+            Rozpocznij Test
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'result') {
+    const result = getResult();
+    return (
+      <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
+        <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl space-y-8">
+          <div className="text-center">
+            <div className="text-6xl font-black text-violet-600 mb-2">{totalScore}<span className="text-2xl text-slate-400">/{adhdQuestions.length * 4}</span></div>
+            <p className={`text-2xl font-bold ${result.color}`}>{result.label}</p>
+            <p className="text-sm text-slate-500 mt-1">Część A: {partAPositive}/6 kluczowych objawów</p>
+          </div>
+
+          <div className={`border rounded-2xl p-6 ${result.bg}`}>
+            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{result.desc}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-5 text-center">
+              <p className="text-3xl font-black text-violet-600">{partAScore}</p>
+              <p className="text-sm text-slate-500 mt-1">Wynik Część A</p>
+              <p className="text-xs text-slate-400">(6 kluczowych pytań)</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-5 text-center">
+              <p className="text-3xl font-black text-slate-700 dark:text-slate-200">{totalScore}</p>
+              <p className="text-sm text-slate-500 mt-1">Wynik łączny</p>
+              <p className="text-xs text-slate-400">(wszystkie 18 pytań)</p>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6">
+            <div className="flex gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <p className="text-amber-700 dark:text-amber-400 text-sm leading-relaxed">
+                <strong>Przypomnienie:</strong> Wyniki tego testu nie stanowią diagnozy medycznej ani porady lekarskiej. Nie zastępują oceny przeprowadzonej przez psychiatrę lub psychologa. Jeśli masz obawy, skonsultuj się ze specjalistą.
+              </p>
+            </div>
+          </div>
+
+          <Link to="/inne-testy" className="block w-full text-center bg-violet-600 text-white py-5 rounded-2xl font-bold hover:bg-violet-700 transition-all">
+            Powrót do testów
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const q = adhdQuestions[currentQ];
+  const progress = (currentQ / adhdQuestions.length) * 100;
+
+  return (
+    <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
+      <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+        <div className="mb-8">
+          <div className="flex justify-between text-sm text-slate-500 mb-2">
+            <span>Pytanie {currentQ + 1} z {adhdQuestions.length}</span>
+            <span className={`font-bold px-3 py-1 rounded-full text-xs ${q.part === 'A' ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+              Część {q.part} {q.part === 'A' ? '(kluczowa)' : ''}
+            </span>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+            <div className="bg-violet-500 h-2 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Oceń częstotliwość w ciągu ostatnich 6 miesięcy</p>
+        <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-8 leading-relaxed">{q.text}</h2>
+
+        <div className="space-y-3">
+          {adhdFrequencies.map((freq, idx) => (
+            <button
+              key={freq}
+              onClick={() => {
+                const newAnswers = [...answers];
+                newAnswers[currentQ] = idx;
+                setAnswers(newAnswers);
+                setTimeout(() => {
+                  if (currentQ + 1 < adhdQuestions.length) {
+                    setCurrentQ(currentQ + 1);
+                  } else {
+                    setPhase('result');
+                  }
+                }, 180);
+              }}
+              className={`w-full text-left px-6 py-4 rounded-2xl border-2 font-medium transition-all flex items-center gap-4 ${answers[currentQ] === idx ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-violet-300'}`}
+            >
+              <span className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold flex-shrink-0 border-current">{idx}</span>
+              {freq}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const OtherTests = () => {
   const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
 
@@ -3008,7 +3707,31 @@ const OtherTests = () => {
       status: 'Dostępny',
       link: '/test-reakcji',
       hasAccess: saved.hasReakcja === true
-    }
+    },
+    {
+      id: 'alzheimer',
+      title: 'Test Funkcji Poznawczych',
+      price: '4,99 PLN',
+      desc: 'Zbadaj orientację, pamięć, uwagę i język. Test inspirowany metodologią MMSE/SAGE. Wyłącznie cel edukacyjny — nie jest diagnozą medyczną.',
+      icon: <Brain className="w-full h-full" />,
+      color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400',
+      status: 'Dostępny',
+      link: '/test-funkcji-poznawczych',
+      hasAccess: saved.hasAlzheimer === true,
+      disclaimer: true,
+    },
+    {
+      id: 'adhd',
+      title: 'Test ADHD (ASRS)',
+      price: '4,99 PLN',
+      desc: 'Kwestionariusz przesiewowy oparty na skali WHO ASRS v1.1. Wyłącznie cel edukacyjny — nie jest diagnozą medyczną.',
+      icon: <Zap className="w-full h-full" />,
+      color: 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
+      status: 'Dostępny',
+      link: '/test-adhd',
+      hasAccess: saved.hasADHD === true,
+      disclaimer: true,
+    },
   ];
 
   return (
@@ -3044,6 +3767,12 @@ const OtherTests = () => {
               </span>
             </div>
             <h3 className="text-3xl font-bold mb-2 dark:text-white">{test.title}</h3>
+            {'disclaimer' in test && test.disclaimer && (
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Nie jest diagnozą medyczną</span>
+              </div>
+            )}
             <p className="text-slate-500 dark:text-slate-400 text-base leading-relaxed mb-10 flex-1">
               {test.desc}
             </p>
@@ -3366,6 +4095,8 @@ const App = () => {
             <Route path="/test-pamieci" element={<MemoryTest />} />
             <Route path="/test-koncentracji" element={<ConcentrationTest />} />
             <Route path="/test-reakcji" element={<ReactionTest />} />
+            <Route path="/test-funkcji-poznawczych" element={<AlzheimerTest />} />
+            <Route path="/test-adhd" element={<ADHDTest />} />
             <Route path="/prywatnosc" element={<div className="max-w-3xl mx-auto py-32 px-6"><h2>Polityka Prywatności</h2></div>} />
             <Route path="/regulamin" element={<div className="max-w-3xl mx-auto py-32 px-6"><h2>Regulamin</h2></div>} />
             <Route path="*" element={<div className="p-32 text-center text-2xl font-bold">404 - Strony nie znaleziono</div>} />
