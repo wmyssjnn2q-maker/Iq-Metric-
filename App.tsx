@@ -1897,147 +1897,131 @@ const CertificateTemplate = ({ data, userName }: { data: ReportData, userName: s
   const domainLabels: Record<string, string> = {
     MATRIX: 'Macierze', NUMBER_SERIES: 'Ciągi', ANALOGY: 'Analogie', SPATIAL: 'Przestrzeń', LOGIC: 'Logika',
   };
+
+  const S = {
+    wrap: { width:'1123px', height:'794px', background:'#ffffff', fontFamily:'Inter,Arial,sans-serif', overflow:'hidden', boxSizing:'border-box' as const, border:'12px solid #1e293b', position:'relative' as const },
+    innerBorder: { position:'absolute' as const, inset:'16px', border:'1.5px solid #e2e8f0', pointerEvents:'none' as const },
+    header: { background:'#0f172a', height:'80px', padding:'0 48px', display:'flex', alignItems:'center', justifyContent:'space-between', boxSizing:'border-box' as const },
+    blueLine: { height:'5px', background:'#2563eb' },
+    body: { padding:'28px 48px 24px', display:'flex', gap:'40px', height:'calc(794px - 80px - 5px - 44px - 24px)', boxSizing:'border-box' as const },
+    footer: { borderTop:'1px solid #e2e8f0', background:'#f8fafc', height:'44px', padding:'0 48px', display:'flex', alignItems:'center', justifyContent:'space-between', boxSizing:'border-box' as const },
+  } as const;
+
   return (
-    <div style={{
-      width: '1123px', height: '794px', background: '#ffffff',
-      fontFamily: 'Inter, Arial, sans-serif', position: 'relative', overflow: 'hidden',
-      display: 'flex', flexDirection: 'column',
-    }}>
-      {/* ── TOP HEADER BAR ─ dark slate, matches site navbar ── */}
-      <div style={{
-        background: '#0f172a', padding: '0 56px', flexShrink: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '86px',
-      }}>
-        {/* Logo + brand name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2C7.58172 2 4 5.58172 4 10C4 12.3906 5.05093 14.5357 6.71212 16H17.2879C18.9491 14.5357 20 12.3906 20 10C20 5.58172 16.4183 2 12 2Z" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round"/>
-            <circle cx="9" cy="8" r="1" fill="#2563eb"/><circle cx="12" cy="8" r="1" fill="#2563eb"/><circle cx="15" cy="8" r="1" fill="#2563eb"/>
-            <circle cx="9" cy="11" r="1" fill="#2563eb"/><circle cx="12" cy="11" r="1" fill="#2563eb"/><circle cx="15" cy="11" r="1" fill="#2563eb"/>
-            <circle cx="12" cy="14" r="1" fill="#2563eb"/>
-            <path d="M9 19H15" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round"/>
-            <path d="M10 22H14" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round"/>
+    <div style={S.wrap}>
+      {/* Inner accent border */}
+      <div style={S.innerBorder} />
+
+      {/* ── HEADER ── */}
+      <div style={S.header}>
+        {/* Logo */}
+        <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2C7.58 2 4 5.58 4 10c0 2.39 1.05 4.54 2.71 6H17.29C18.95 14.54 20 12.39 20 10c0-4.42-3.58-8-8-8z" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round"/>
+            <circle cx="9" cy="8" r="1" fill="#3b82f6"/><circle cx="12" cy="8" r="1" fill="#3b82f6"/><circle cx="15" cy="8" r="1" fill="#3b82f6"/>
+            <circle cx="9" cy="11" r="1" fill="#3b82f6"/><circle cx="12" cy="11" r="1" fill="#3b82f6"/><circle cx="15" cy="11" r="1" fill="#3b82f6"/>
+            <circle cx="12" cy="14" r="1" fill="#3b82f6"/>
+            <path d="M9 19h6M10 22h4" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
           <div>
-            <div style={{ fontSize: '22px', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>brainmediq</div>
-            <div style={{ fontSize: '9px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.18em', marginTop: '3px' }}>Centrum Badań Psychometrycznych</div>
+            <div style={{ fontSize:'24px', fontWeight:900, color:'#fff', letterSpacing:'-0.02em', lineHeight:'1' }}>brainmediq</div>
+            <div style={{ fontSize:'9px', fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.16em', marginTop:'2px' }}>Centrum Badań Psychometrycznych · Polska</div>
           </div>
         </div>
-        {/* Right side title */}
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.22em' }}>Oficjalny dokument</div>
-          <div style={{ fontSize: '20px', fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Certyfikat IQ</div>
+        {/* Header right */}
+        <div style={{ textAlign:'right' }}>
+          <div style={{ fontSize:'9px', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.2em' }}>Oficjalny Dokument</div>
+          <div style={{ fontSize:'22px', fontWeight:900, color:'#ffffff', textTransform:'uppercase', letterSpacing:'0.08em', marginTop:'2px' }}>Certyfikat IQ</div>
         </div>
       </div>
 
-      {/* Blue gradient accent line */}
-      <div style={{ height: '4px', background: 'linear-gradient(90deg,#1d4ed8,#3b82f6,#60a5fa,#3b82f6,#1d4ed8)', flexShrink: 0 }} />
+      {/* Blue accent */}
+      <div style={S.blueLine} />
 
-      {/* ── MAIN BODY ── */}
-      <div style={{ flex: 1, display: 'flex', padding: '32px 56px 28px', gap: '44px' }}>
+      {/* ── BODY ── */}
+      <div style={S.body}>
 
-        {/* LEFT COLUMN */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        {/* ─ LEFT ─ */}
+        <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
 
-          {/* Recipient block */}
+          {/* Recipient */}
           <div>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.22em', marginBottom: '10px' }}>
-              Niniejszym zaświadcza się, że
-            </div>
-            <div style={{ fontSize: '38px', fontWeight: 900, color: '#0f172a', lineHeight: 1.15, marginBottom: '10px' }}>
+            <div style={{ fontSize:'10px', fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'0.22em', marginBottom:'12px' }}>Niniejszym zaświadcza się, że</div>
+            <div style={{ fontSize:'42px', fontWeight:900, color:'#0f172a', lineHeight:'1.1', marginBottom:'12px', wordBreak:'break-word' as const }}>
               {userName || 'Uczestnik Badania'}
             </div>
-            <div style={{ height: '3px', background: '#2563eb', borderRadius: '2px', marginBottom: '14px', width: '100%' }} />
-            <div style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.7, maxWidth: '420px' }}>
-              pomyślnie ukończył/a standaryzowany test psychometryczny i uzyskał/a wynik zgodny
-              z normami populacyjnymi platformy <strong style={{ color: '#1e293b' }}>brainmediq Polska</strong>.
+            <div style={{ height:'3px', width:'100%', background:'#2563eb', borderRadius:'2px', marginBottom:'16px' }} />
+            <div style={{ fontSize:'13px', color:'#64748b', lineHeight:'1.7' }}>
+              pomyślnie ukończył/a standaryzowany test psychometryczny<br/>i uzyskał/a wynik zgodny z normami populacyjnymi platformy<br/><strong style={{ color:'#1e293b' }}>brainmediq Polska</strong>.
             </div>
           </div>
 
-          {/* Domain score chips */}
+          {/* Domain chips */}
           <div>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '10px' }}>Wyniki w kategoriach</div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ fontSize:'9px', fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'0.16em', marginBottom:'10px' }}>Wyniki szczegółowe</div>
+            <div style={{ display:'flex', gap:'8px' }}>
               {Object.entries(data.stats.domainScores).map(([key, val]) => (
-                <div key={key} style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '10px', padding: '7px 13px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '16px', fontWeight: 800, color: '#2563eb', lineHeight: 1 }}>{Math.round(val as number)}</div>
-                  <div style={{ fontSize: '9px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: '2px' }}>{domainLabels[key] || key}</div>
+                <div key={key} style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:'10px', padding:'8px 14px', textAlign:'center', minWidth:'72px' }}>
+                  <div style={{ fontSize:'18px', fontWeight:900, color:'#1d4ed8', lineHeight:'1' }}>{Math.round(val as number)}</div>
+                  <div style={{ fontSize:'8.5px', fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.04em', marginTop:'3px' }}>{domainLabels[key] || key}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Footer info */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '38px', height: '38px', background: '#2563eb', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
-              </svg>
+          {/* Seal row */}
+          <div style={{ display:'flex', alignItems:'center', gap:'14px', paddingTop:'4px' }}>
+            <div style={{ width:'44px', height:'44px', background:'#1e293b', borderRadius:'50%', border:'3px solid #2563eb', display:'table', flexShrink:0 }}>
+              <div style={{ display:'table-cell', verticalAlign:'middle', textAlign:'center' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                </svg>
+              </div>
             </div>
             <div>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>Certyfikowany Pomiar Inteligencji · brainmediq</div>
-              <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>Nr certyfikatu: {certId}</div>
+              <div style={{ fontSize:'12px', fontWeight:800, color:'#0f172a' }}>Certyfikowany Pomiar Inteligencji</div>
+              <div style={{ fontSize:'10px', color:'#94a3b8', marginTop:'2px' }}>Nr: {certId}</div>
             </div>
           </div>
         </div>
 
-        {/* Divider */}
-        <div style={{ width: '1px', background: '#e2e8f0', flexShrink: 0 }} />
+        {/* ─ VERTICAL DIVIDER ─ */}
+        <div style={{ width:'1px', background:'#e2e8f0', flexShrink:0, alignSelf:'stretch' }} />
 
-        {/* RIGHT COLUMN — score panel */}
-        <div style={{ width: '232px', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between' }}>
+        {/* ─ RIGHT ─ */}
+        <div style={{ width:'230px', flexShrink:0, display:'flex', flexDirection:'column', gap:'16px', alignItems:'center' }}>
 
-          {/* IQ circle — using display:table trick for guaranteed centering in html2canvas */}
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '14px' }}>Wynik Ogólny IQ</div>
-            <div style={{
-              width: '156px', height: '156px', borderRadius: '50%',
-              background: '#0f172a',
-              border: '5px solid #2563eb',
-              boxShadow: '0 0 0 2px #eff6ff, 0 8px 32px rgba(37,99,235,0.25)',
-              margin: '0 auto',
-              display: 'table',
-            }}>
-              <div style={{ display: 'table-cell', verticalAlign: 'middle', textAlign: 'center' }}>
-                <span style={{ fontSize: '56px', fontWeight: 900, color: '#ffffff', lineHeight: 1, display: 'block' }}>
-                  {data.stats.iqScore}
-                </span>
+          {/* IQ score circle */}
+          <div style={{ textAlign:'center', width:'100%' }}>
+            <div style={{ fontSize:'9px', fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'0.2em', marginBottom:'12px' }}>Wynik Ogólny IQ</div>
+            <div style={{ width:'150px', height:'150px', borderRadius:'50%', background:'#0f172a', border:'6px solid #2563eb', margin:'0 auto', display:'table' }}>
+              <div style={{ display:'table-cell', verticalAlign:'middle', textAlign:'center', lineHeight:'1' }}>
+                <span style={{ fontSize:'60px', fontWeight:900, color:'#ffffff', display:'block', lineHeight:'1' }}>{data.stats.iqScore}</span>
               </div>
             </div>
-            <div style={{ marginTop: '10px', fontSize: '11px', color: '#64748b', fontWeight: 500 }}>
-              Zakres 95%: {data.stats.confidenceInterval[0]}–{data.stats.confidenceInterval[1]}
+            <div style={{ marginTop:'10px', fontSize:'11px', color:'#64748b', fontWeight:500 }}>
+              Przedział ufności: {data.stats.confidenceInterval[0]}–{data.stats.confidenceInterval[1]}
             </div>
           </div>
 
           {/* Percentile */}
-          <div style={{ width: '100%', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '14px', padding: '14px 16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Percentyl populacyjny</div>
-            <div style={{ fontSize: '34px', fontWeight: 900, color: '#15803d', lineHeight: 1.2, marginTop: '2px' }}>
-              {data.stats.percentile}<span style={{ fontSize: '18px', color: '#4ade80', fontWeight: 700 }}>%</span>
-            </div>
+          <div style={{ width:'100%', background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:'12px', padding:'14px 0', textAlign:'center' }}>
+            <div style={{ fontSize:'9px', fontWeight:700, color:'#166534', textTransform:'uppercase', letterSpacing:'0.14em' }}>Percentyl</div>
+            <div style={{ fontSize:'38px', fontWeight:900, color:'#15803d', lineHeight:'1.1', marginTop:'4px' }}>{data.stats.percentile}<span style={{ fontSize:'20px', color:'#4ade80' }}>%</span></div>
           </div>
 
           {/* Date */}
-          <div style={{ width: '100%', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '14px', padding: '12px 16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Data Badania</div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', marginTop: '4px' }}>{dateStr}</div>
+          <div style={{ width:'100%', background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:'12px', padding:'12px 0', textAlign:'center' }}>
+            <div style={{ fontSize:'9px', fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'0.14em' }}>Data Badania</div>
+            <div style={{ fontSize:'13px', fontWeight:700, color:'#1e293b', marginTop:'5px' }}>{dateStr}</div>
           </div>
         </div>
       </div>
 
-      {/* ── BOTTOM FOOTER ── */}
-      <div style={{
-        background: '#f8fafc', borderTop: '1px solid #e2e8f0', flexShrink: 0,
-        padding: '10px 56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <div style={{ fontSize: '10px', color: '#94a3b8' }}>© {new Date().getFullYear()} brainmediq Polska. Wszelkie prawa zastrzeżone.</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2C7.58172 2 4 5.58172 4 10C4 12.3906 5.05093 14.5357 6.71212 16H17.2879C18.9491 14.5357 20 12.3906 20 10C20 5.58172 16.4183 2 12 2Z" stroke="#2563eb" strokeWidth="1.5" strokeLinecap="round"/>
-            <circle cx="12" cy="8" r="1" fill="#2563eb"/>
-          </svg>
-          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600 }}>brainmediq.pl</div>
-        </div>
+      {/* ── FOOTER ── */}
+      <div style={S.footer}>
+        <div style={{ fontSize:'10px', color:'#94a3b8' }}>© {new Date().getFullYear()} brainmediq Polska — brainmediq.pl</div>
+        <div style={{ fontSize:'10px', color:'#94a3b8' }}>Wynik ma charakter edukacyjny i nie jest oficjalną diagnozą psychologiczną.</div>
       </div>
     </div>
   );
