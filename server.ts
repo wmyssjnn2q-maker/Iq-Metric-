@@ -2,7 +2,8 @@ import express from 'express';
 import { Resend } from 'resend';
 
 const app = express();
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
