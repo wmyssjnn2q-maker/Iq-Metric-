@@ -1704,35 +1704,88 @@ const Checkout = () => {
     redirectUrl = '/test-adhd';
   }
 
-  const sendConfirmationEmail = async (toEmail: string, product: string) => {
+  const sendConfirmationEmail = async (toEmail: string, product: string, price: string) => {
+    const year = new Date().getFullYear();
+    const dateStr = new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
     try {
       await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: toEmail,
-          subject: `Potwierdzenie zakupu: ${product} – brainmediq`,
+          subject: `✅ Potwierdzenie zakupu – brainmediq`,
           html: `
-            <div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;background:#fff;padding:40px;border:1px solid #e2e8f0;border-radius:16px">
-              <div style="text-align:center;margin-bottom:32px">
-                <h1 style="font-size:28px;font-weight:900;color:#1e293b;margin:0">brainmediq</h1>
-                <p style="color:#64748b;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;margin-top:4px">Centrum Badań Psychometrycznych</p>
-              </div>
-              <h2 style="font-size:20px;font-weight:700;color:#1e293b;margin-bottom:12px">Dziękujemy za zakup!</h2>
-              <p style="color:#475569;line-height:1.7;margin-bottom:20px">
-                Twoje zamówienie na <strong>${product}</strong> zostało zrealizowane. Dostęp do testu jest już aktywny — wróć na stronę i kontynuuj.
-              </p>
-              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:24px">
-                <p style="margin:0;font-size:13px;color:#64748b"><strong>Produkt:</strong> ${product}</p>
-                <p style="margin:8px 0 0;font-size:13px;color:#64748b"><strong>Data:</strong> ${new Date().toLocaleDateString('pl-PL', { dateStyle: 'long' })}</p>
-                <p style="margin:8px 0 0;font-size:13px;color:#64748b"><strong>E-mail:</strong> ${toEmail}</p>
-              </div>
-              <p style="color:#94a3b8;font-size:12px;text-align:center;margin-top:32px;border-top:1px solid #f1f5f9;padding-top:16px">
-                © ${new Date().getFullYear()} brainmediq Polska · kontakt@brainmediq.pl<br/>
-                Ten e-mail jest automatycznym potwierdzeniem. Nie odpowiadaj na tę wiadomość.
-              </p>
-            </div>
-          `,
+<!DOCTYPE html>
+<html lang="pl">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Inter,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 0">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)">
+
+        <!-- Header -->
+        <tr><td style="background:#1e293b;padding:36px 48px;text-align:center">
+          <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.2em;text-transform:uppercase">Centrum Badań Psychometrycznych</p>
+          <h1 style="margin:8px 0 0;font-size:32px;font-weight:900;color:#ffffff;letter-spacing:-0.02em">brainmediq</h1>
+        </td></tr>
+
+        <!-- Green stripe -->
+        <tr><td style="background:#10b981;padding:14px 48px">
+          <p style="margin:0;font-size:13px;font-weight:700;color:#ffffff;letter-spacing:0.05em">✅ ZAMÓWIENIE ZREALIZOWANE</p>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:40px 48px">
+          <h2 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#1e293b">Dziękujemy za zakup!</h2>
+          <p style="margin:0 0 28px;color:#64748b;line-height:1.7;font-size:15px">
+            Twoje zamówienie zostało pomyślnie zrealizowane. Dostęp do produktu jest już aktywny.
+          </p>
+
+          <!-- Order box -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;margin-bottom:28px">
+            <tr><td style="padding:20px 24px;border-bottom:1px solid #e2e8f0">
+              <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Produkt</p>
+              <p style="margin:4px 0 0;font-size:16px;font-weight:700;color:#1e293b">${product}</p>
+            </td></tr>
+            <tr><td style="padding:20px 24px;border-bottom:1px solid #e2e8f0">
+              <table width="100%"><tr>
+                <td><p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Kwota</p>
+                <p style="margin:4px 0 0;font-size:16px;font-weight:700;color:#1e293b">${price} PLN</p></td>
+                <td align="right"><p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Data</p>
+                <p style="margin:4px 0 0;font-size:14px;font-weight:600;color:#475569">${dateStr}</p></td>
+              </tr></table>
+            </td></tr>
+            <tr><td style="padding:20px 24px">
+              <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">E-mail</p>
+              <p style="margin:4px 0 0;font-size:14px;font-weight:600;color:#475569">${toEmail}</p>
+            </td></tr>
+          </table>
+
+          <p style="margin:0 0 8px;color:#475569;line-height:1.7;font-size:14px">
+            Po ukończeniu testu Twój <strong>certyfikat IQ oraz szczegółowy wynik</strong> zostaną automatycznie wysłane na ten adres e-mail w osobnej wiadomości.
+          </p>
+        </td></tr>
+
+        <!-- CTA -->
+        <tr><td style="padding:0 48px 40px;text-align:center">
+          <a href="https://brainmediq.pl" style="display:inline-block;background:#2563eb;color:#ffffff;font-weight:700;font-size:15px;padding:16px 40px;border-radius:12px;text-decoration:none;letter-spacing:0.02em">
+            Wróć do aplikacji →
+          </a>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center">
+          <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6">
+            © ${year} brainmediq Polska · kontakt@brainmediq.pl<br>
+            Ta wiadomość jest automatycznym potwierdzeniem. Nie odpowiadaj na ten e-mail.
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
         }),
       });
     } catch (e) {
@@ -1767,7 +1820,7 @@ const Checkout = () => {
       localStorage.setItem('iq_results', JSON.stringify(updatedSaved));
 
       if (email && email.includes('@') && !bypass) {
-        await sendConfirmationEmail(email, productName);
+        await sendConfirmationEmail(email, productName, price);
       }
 
       navigate(redirectUrl);
@@ -1981,9 +2034,11 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
   const [userName, setUserName] = useState("");
   const [animate, setAnimate] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const certificateRef = useRef<HTMLDivElement>(null);
+  const emailSentRef = useRef(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('iq_results');
@@ -2028,6 +2083,17 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
     } else navigate('/');
   }, [navigate]);
 
+  // Auto-send results email once report is ready and certificate is rendered
+  useEffect(() => {
+    if (!loading && data && animate) {
+      // Give certificate element time to render fully in the hidden div
+      const timer = setTimeout(() => {
+        sendResultsEmail(data, userName);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, animate, data]);
+
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
     setUserName(newName);
@@ -2035,6 +2101,172 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
       const updated = { ...data, userName: newName };
       setData(updated);
       localStorage.setItem('iq_results', JSON.stringify(updated));
+    }
+  };
+
+  const generateCertificatePdfBase64 = async (): Promise<string | null> => {
+    if (!certificateRef.current) return null;
+    try {
+      window.scrollTo(0, 0);
+      await new Promise(r => setTimeout(r, 200));
+      const canvas = await html2canvas(certificateRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 1123,
+        windowHeight: 794,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      pdf.addImage(imgData, 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+      const dataUri = pdf.output('datauristring');
+      return dataUri.split(',')[1];
+    } catch (e) {
+      console.error('PDF generation failed:', e);
+      return null;
+    }
+  };
+
+  const sendResultsEmail = async (reportData: ReportData, name: string) => {
+    const toEmail = (reportData as ReportData & { email?: string }).email;
+    if (!toEmail || !toEmail.includes('@')) return;
+
+    const sessionKey = `certEmailSent_${reportData.timestamp}`;
+    if (localStorage.getItem(sessionKey)) return;
+    if (emailSentRef.current) return;
+    emailSentRef.current = true;
+
+    setEmailStatus('sending');
+    const year = new Date().getFullYear();
+    const dateStr = new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
+    const displayName = name || 'Uczestnik Badania';
+
+    const pdfBase64 = await generateCertificatePdfBase64();
+
+    const domainLabels: Record<string, string> = {
+      MATRIX: 'Myślenie matrycowe',
+      NUMBER_SERIES: 'Ciągi liczbowe',
+      ANALOGY: 'Analogie',
+      SPATIAL: 'Wyobraźnia przestrzenna',
+      LOGIC: 'Logika',
+    };
+
+    const domainRows = Object.entries(reportData.stats.domainScores)
+      .map(([key, val]) => `
+        <tr>
+          <td style="padding:10px 16px;font-size:13px;color:#475569;border-bottom:1px solid #f1f5f9">${domainLabels[key] || key}</td>
+          <td style="padding:10px 16px;text-align:right;border-bottom:1px solid #f1f5f9">
+            <div style="display:inline-block;background:#e0e7ff;border-radius:6px;padding:2px 10px;font-weight:700;font-size:13px;color:#3730a3">${Math.round(val)}</div>
+          </td>
+        </tr>`).join('');
+
+    const html = `
+<!DOCTYPE html>
+<html lang="pl">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Inter,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 0">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)">
+
+        <!-- Header -->
+        <tr><td style="background:#1e293b;padding:36px 48px;text-align:center">
+          <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.2em;text-transform:uppercase">Centrum Badań Psychometrycznych</p>
+          <h1 style="margin:8px 0 0;font-size:32px;font-weight:900;color:#ffffff;letter-spacing:-0.02em">brainmediq</h1>
+          <p style="margin:10px 0 0;font-size:13px;color:#94a3b8">Twój certyfikat i wyniki testu IQ</p>
+        </td></tr>
+
+        <!-- Blue accent -->
+        <tr><td style="background:#2563eb;padding:14px 48px">
+          <p style="margin:0;font-size:13px;font-weight:700;color:#ffffff;letter-spacing:0.05em">🏆 WYNIKI BADANIA GOTOWE</p>
+        </td></tr>
+
+        <!-- Greeting -->
+        <tr><td style="padding:40px 48px 20px">
+          <h2 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#1e293b">Cześć, ${displayName}!</h2>
+          <p style="margin:0;color:#64748b;line-height:1.7;font-size:15px">
+            Twoje badanie zostało zakończone. Poniżej znajdziesz pełne wyniki testu IQ. <strong>Certyfikat w formacie PDF</strong> jest dołączony do tej wiadomości jako załącznik.
+          </p>
+        </td></tr>
+
+        <!-- Score hero -->
+        <tr><td style="padding:0 48px 32px">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="background:#1e293b;border-radius:16px;padding:32px;text-align:center" width="45%">
+                <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.15em">Wynik IQ</p>
+                <p style="margin:8px 0;font-size:64px;font-weight:900;color:#ffffff;line-height:1">${reportData.stats.iqScore}</p>
+                <p style="margin:0;font-size:12px;color:#64748b">Przedział: ${reportData.stats.confidenceInterval[0]}–${reportData.stats.confidenceInterval[1]}</p>
+              </td>
+              <td width="10%"></td>
+              <td style="vertical-align:middle" width="45%">
+                <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px 20px;margin-bottom:12px">
+                  <p style="margin:0;font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.1em">Percentyl</p>
+                  <p style="margin:4px 0 0;font-size:24px;font-weight:900;color:#15803d">${reportData.stats.percentile}%</p>
+                </div>
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px 20px">
+                  <p style="margin:0;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.1em">Data badania</p>
+                  <p style="margin:4px 0 0;font-size:14px;font-weight:700;color:#1d4ed8">${dateStr}</p>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- Domain scores -->
+        <tr><td style="padding:0 48px 32px">
+          <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#1e293b;text-transform:uppercase;letter-spacing:0.1em">Wyniki w kategoriach</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
+            ${domainRows}
+          </table>
+        </td></tr>
+
+        <!-- Certificate note -->
+        <tr><td style="padding:0 48px 32px">
+          <div style="background:#fefce8;border:1px solid #fde047;border-radius:14px;padding:20px 24px">
+            <p style="margin:0;font-size:14px;font-weight:700;color:#713f12">📎 Certyfikat PDF w załączniku</p>
+            <p style="margin:8px 0 0;font-size:13px;color:#92400e;line-height:1.6">
+              Do tej wiadomości dołączony jest Certyfikat Ilorazu Inteligencji w formacie PDF. Możesz go pobrać, wydrukować lub udostępnić.
+            </p>
+          </div>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center">
+          <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6">
+            © ${year} brainmediq Polska · kontakt@brainmediq.pl<br>
+            Ta wiadomość jest automatyczną odpowiedzią. Nie odpowiadaj na ten e-mail.
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+    try {
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: toEmail,
+          subject: `🏆 Twój Certyfikat IQ ${reportData.stats.iqScore} – brainmediq`,
+          html,
+          ...(pdfBase64 ? { attachment: { filename: `Certyfikat_IQ_${displayName.replace(/\s+/g, '_')}.pdf`, content: pdfBase64 } } : {}),
+        }),
+      });
+      if (res.ok) {
+        setEmailStatus('sent');
+        localStorage.setItem(sessionKey, '1');
+      } else {
+        setEmailStatus('error');
+        emailSentRef.current = false;
+      }
+    } catch {
+      setEmailStatus('error');
+      emailSentRef.current = false;
     }
   };
 
@@ -2099,7 +2331,30 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
            <div>
              <h1 className="text-5xl font-bold dark:text-white mb-3">{data.isPro ? "Szczegółowa Analiza IQ" : "Wynik Twojego Testu"}</h1>
              <p className="text-slate-500 dark:text-slate-400 text-lg">{data.isPro ? "Zaawansowana Analiza Psychometryczna — Model CHC v2.5" : "Oficjalny Wynik i Certyfikat Inteligencji"}</p>
-              <p className="text-blue-600 font-bold mt-2 no-print">{data.isPro ? "Pełny raport oraz certyfikat zostały wysłane na Twój adres e-mail." : "Twój wynik oraz certyfikat zostały wysłane na Twój adres e-mail."}</p>
+              <div className="mt-2 no-print flex items-center gap-3">
+                {emailStatus === 'sending' && (
+                  <span className="flex items-center gap-2 text-blue-600 font-bold text-sm">
+                    <div className="w-4 h-4 border-2 border-blue-400 border-t-blue-600 rounded-full animate-spin"/>
+                    Wysyłanie certyfikatu na e-mail...
+                  </span>
+                )}
+                {emailStatus === 'sent' && (
+                  <span className="flex items-center gap-2 text-emerald-600 font-bold text-sm">
+                    <CheckCircle2 className="w-4 h-4"/> Certyfikat PDF wysłany na Twój e-mail!
+                  </span>
+                )}
+                {emailStatus === 'error' && (
+                  <span className="flex items-center gap-2 text-rose-500 font-bold text-sm">
+                    <AlertTriangle className="w-4 h-4"/> Błąd wysyłki —
+                    <button onClick={() => { emailSentRef.current = false; data && sendResultsEmail(data, userName); }} className="underline hover:no-underline">
+                      spróbuj ponownie
+                    </button>
+                  </span>
+                )}
+                {emailStatus === 'idle' && (
+                  <span className="text-slate-400 text-sm">{data.isPro ? "Przygotowujemy pełny raport i certyfikat..." : "Przygotowujemy certyfikat..."}</span>
+                )}
+              </div>
              {userName && <p className="text-xl font-bold text-blue-600 mt-2 print:block hidden">Certyfikat wystawiony dla: {userName}</p>}
            </div>
         </div>
