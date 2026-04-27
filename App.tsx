@@ -4343,6 +4343,45 @@ const PurchaseModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
   );
 };
 
+const CookieBanner = () => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const consent = localStorage.getItem('cookie_consent');
+    if (!consent) {
+      setIsVisible(true);
+    }
+  }, []);
+
+  const handleAccept = () => {
+    localStorage.setItem('cookie_consent', 'true');
+    setIsVisible(false);
+  };
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 no-print">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800">
+          <div className="flex-1 text-sm text-slate-300 leading-relaxed">
+            <h4 className="text-white font-bold text-base mb-1">Cenimy Twoją prywatność</h4>
+            Nasza strona używa plików cookies niezbędnych do prawidłowego działania aplikacji, obsługi płatności oraz do celów analitycznych. Dalsze korzystanie ze strony oznacza wyrażenie zgody na ich użycie. Więcej informacji znajdziesz w <Link to="/prywatnosc" onClick={() => window.scrollTo(0,0)} className="text-blue-400 hover:text-blue-300 underline underline-offset-2">Polityce Prywatności</Link>.
+          </div>
+          <div className="flex shrink-0 gap-3 w-full md:w-auto">
+            <button 
+              onClick={handleAccept}
+              className="flex-1 md:flex-none px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-colors whitespace-nowrap"
+            >
+              Akceptuję
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- APP ROOT ---
 
 const App = () => {
@@ -4388,6 +4427,7 @@ const App = () => {
         </main>
         <Footer openPurchaseModal={() => setIsPurchaseModalOpen(true)} />
         <PurchaseModal isOpen={isPurchaseModalOpen} onClose={() => setIsPurchaseModalOpen(false)} />
+        <CookieBanner />
       </div>
     </HashRouter>
   );
