@@ -756,11 +756,11 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
             <h4 className="font-bold text-center flex items-center justify-center gap-2 text-slate-800 dark:text-slate-100">
               <BrainCircuit size={20} className="text-blue-500" /> Szczegółowy profil domen
             </h4>
-            <DomainBar label="Wzorce i schematy" value={stats.domainScores.MATRIX} desc="Dostrzeganie reguł wizualnych" level={stats.domainScores.MATRIX > 80 ? "Wysoki" : stats.domainScores.MATRIX > 50 ? "Średni" : "Podstawowy"} animate={animate} />
-            <DomainBar label="Logika" value={stats.domainScores.LOGIC} desc="Wyciąganie wniosków" level={stats.domainScores.LOGIC > 80 ? "Wysoki" : stats.domainScores.LOGIC > 50 ? "Średni" : "Podstawowy"} animate={animate} />
-            <DomainBar label="Wyobraźnia" value={stats.domainScores.SPATIAL} desc="Wyobraźnia przestrzenna" level={stats.domainScores.SPATIAL > 80 ? "Wysoki" : stats.domainScores.SPATIAL > 50 ? "Średni" : "Podstawowy"} animate={animate} />
-            <DomainBar label="Matematyka" value={stats.domainScores.NUMBER_SERIES} desc="Praca z liczbami" level={stats.domainScores.NUMBER_SERIES > 80 ? "Wysoki" : stats.domainScores.NUMBER_SERIES > 50 ? "Średni" : "Podstawowy"} animate={animate} />
-            <DomainBar label="Relacje i Analogie" value={stats.domainScores.ANALOGY} desc="Rozumienie powiązań" level={stats.domainScores.ANALOGY > 80 ? "Wysoki" : stats.domainScores.ANALOGY > 50 ? "Średni" : "Podstawowy"} animate={animate} />
+            <DomainBar label="Wzorce i schematy" value={stats.domainScores.MATRIX} desc="Dostrzeganie reguł wizualnych" level={stats.domainScores.MATRIX > 65 ? "Wysoki" : stats.domainScores.MATRIX > 30 ? "Średni" : "Podstawowy"} animate={animate} />
+            <DomainBar label="Logika" value={stats.domainScores.LOGIC} desc="Wyciąganie wniosków" level={stats.domainScores.LOGIC > 65 ? "Wysoki" : stats.domainScores.LOGIC > 30 ? "Średni" : "Podstawowy"} animate={animate} />
+            <DomainBar label="Wyobraźnia" value={stats.domainScores.SPATIAL} desc="Wyobraźnia przestrzenna" level={stats.domainScores.SPATIAL > 65 ? "Wysoki" : stats.domainScores.SPATIAL > 30 ? "Średni" : "Podstawowy"} animate={animate} />
+            <DomainBar label="Matematyka" value={stats.domainScores.NUMBER_SERIES} desc="Praca z liczbami" level={stats.domainScores.NUMBER_SERIES > 65 ? "Wysoki" : stats.domainScores.NUMBER_SERIES > 30 ? "Średni" : "Podstawowy"} animate={animate} />
+            <DomainBar label="Słownictwo" value={stats.domainScores.ANALOGY} desc="Rozumienie relacji" level={stats.domainScores.ANALOGY > 65 ? "Wysoki" : stats.domainScores.ANALOGY > 30 ? "Średni" : "Podstawowy"} animate={animate} />
           </div>
         );
       case "percentyl":
@@ -1363,22 +1363,15 @@ const TestSession = () => {
 
     const domainScores: any = {};
     Object.keys(domainCorrect).forEach(key => {
-      const qTotal = domainTotal[key] || 1;
-      const qCorrect = domainCorrect[key];
-      const rawPct = (qCorrect / qTotal) * 100;
-      
-      // Better normalization: 
-      // 0 correct -> 30% (baseline effort/random)
-      // 100% correct -> 98% 
-      // Middle values mapped linearly or with a slight curve
-      let uiScore = 35 + (rawPct * 0.63); 
-      
-      // If we have very few questions in a domain, be even more conservative
-      if (qTotal < 3) {
-        uiScore = Math.max(uiScore, 50); // Don't penalize too much for 1-2 questions
+      const rawPct = (domainCorrect[key] / (domainTotal[key] || 1)) * 100;
+      // Normalizacja wizualna: 45% (średnia) -> 50% na pasku
+      let uiScore;
+      if (rawPct <= 45) {
+        uiScore = (rawPct / 45) * 50;
+      } else {
+        uiScore = 50 + ((rawPct - 45) / 55) * 50;
       }
-
-      domainScores[key] = Math.max(30, Math.min(99, Math.round(uiScore)));
+      domainScores[key] = Math.round(uiScore);
     });
 
     return { iqScore, percentile, domainScores, confidenceInterval: [iqScore - 4, iqScore + 4] };
@@ -1408,69 +1401,46 @@ const TestSession = () => {
   const progress = ((state.currentQuestionIndex + 1) / state.questions.length) * 100;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-black py-4 px-4 relative z-10 font-sans" ref={containerRef}>
-      <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-2rem)]">
-        {/* Header / Progress */}
-        <div className="flex justify-between items-center mb-6 px-2">
-          <div className="flex flex-col flex-1 mr-12">
-            <div className="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
-              <span>Postęp testu</span>
-              <span>Pytanie {state.currentQuestionIndex + 1} / {state.questions.length}</span>
-            </div>
-            <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-600 transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div>
+    <div className="min-h-screen py-2 px-4 relative z-10" ref={containerRef}>
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex-1 mr-8">
+            <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }}></div>
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-900 px-6 py-3 rounded-2xl font-mono font-bold shadow-sm text-xl border border-slate-100 dark:border-slate-800 tabular-nums">
+          <div className="bg-white dark:bg-slate-900 px-4 py-2 rounded-xl font-mono font-bold shadow-sm text-lg border border-slate-100 dark:border-slate-800">
             {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
           </div>
         </div>
-
-        {/* Test Area */}
-        <div className="flex-1 bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 md:p-10 shadow-xl border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-between overflow-hidden">
-          {/* Matrix Container */}
-          <div className="w-full flex-1 flex flex-col items-center justify-center min-h-0 py-4">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 md:p-6 shadow-2xl border border-slate-100 dark:border-slate-800 min-h-[400px] flex flex-col">
+          <div className="flex-1">
+            <h3 className="text-xl md:text-2xl font-bold mb-4 dark:text-white leading-tight">{currentQ.content}</h3>
             {currentQ.svgContent && (
-              <div className="w-full aspect-square max-w-[400px] md:max-w-[480px] bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.03)] border border-slate-50 dark:border-slate-800 relative group">
+              <div className="max-w-[260px] mx-auto mb-4 text-slate-800 dark:text-slate-100">
                 {typeof currentQ.svgContent === 'string' ? (
-                  <div className="w-full h-full p-2" dangerouslySetInnerHTML={{ __html: currentQ.svgContent }} />
+                  <div dangerouslySetInnerHTML={{ __html: currentQ.svgContent }} />
                 ) : (
-                  <div className="w-full h-full p-2">{currentQ.svgContent}</div>
+                  currentQ.svgContent
                 )}
               </div>
             )}
-            {currentQ.imageUrl && (
-              <div className="max-w-[400px] w-full aspect-square flex items-center justify-center p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <img src={currentQ.imageUrl} alt="Zadanie" className="max-w-full max-h-full object-contain rounded-lg" />
-              </div>
-            )}
+            {currentQ.imageUrl && <div className="max-w-[260px] mx-auto mb-4"><img src={currentQ.imageUrl} alt="Zadanie" className="w-full h-auto rounded-xl shadow-sm" /></div>}
           </div>
-
-          {/* Options Grid */}
-          <div className="w-full mt-8">
-             <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
-              {currentQ.options.map((opt, idx) => {
-                const isSvg = typeof opt === 'string' && opt.startsWith('<svg');
-                return (
-                  <button 
-                    key={idx} 
-                    onClick={(e) => { e.currentTarget.blur(); handleAnswer(idx); }} 
-                    className="group relative flex flex-col items-center gap-3 active:scale-95 transition-all outline-none"
-                  >
-                    <div className="w-full aspect-square bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-700/50 rounded-2xl flex items-center justify-center p-2 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors shadow-sm">
-                      {isSvg ? (
-                        <div className="w-full h-full text-slate-800 dark:text-slate-100" dangerouslySetInnerHTML={{ __html: opt }} />
-                      ) : (
-                        <span className="text-xl font-bold dark:text-white">{opt}</span>
-                      )}
-                    </div>
-                    <span className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center text-sm font-black group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                      {idx + 1}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-auto">
+            {currentQ.options.map((opt, idx) => {
+              const isSvg = typeof opt === 'string' && opt.startsWith('<svg');
+              return (
+                <button key={idx} onClick={(e) => { e.currentTarget.blur(); handleAnswer(idx); }} className={`p-3 md:p-4 border-2 border-slate-100 dark:border-slate-800 rounded-xl hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all font-bold text-base active:scale-[0.98] flex items-center ${isSvg ? 'justify-center' : 'text-left'}`}>
+                  {!isSvg && <span className="mr-3 font-black text-blue-600/30 text-lg">{String.fromCharCode(65 + idx)}</span>}
+                  {isSvg ? (
+                    <div className="w-16 h-16 text-slate-800 dark:text-slate-100" dangerouslySetInnerHTML={{ __html: opt }} />
+                  ) : (
+                    opt
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1724,11 +1694,108 @@ const Checkout = () => {
     productName = 'Test Szybkości Reakcji';
     price = '4,99';
     redirectUrl = '/test-reakcji';
+  } else if (typeParam === 'alzheimer') {
+    productName = 'Test Funkcji Poznawczych';
+    price = '4,99';
+    redirectUrl = '/test-funkcji-poznawczych';
+  } else if (typeParam === 'adhd') {
+    productName = 'Test ADHD (ASRS)';
+    price = '4,99';
+    redirectUrl = '/test-adhd';
   }
+
+  const sendConfirmationEmail = async (toEmail: string, product: string, price: string) => {
+    const year = new Date().getFullYear();
+    const dateStr = new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
+    try {
+      await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: toEmail,
+          subject: `✅ Potwierdzenie zakupu – brainmediq`,
+          html: `
+<!DOCTYPE html>
+<html lang="pl">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Inter,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 0">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)">
+
+        <!-- Header -->
+        <tr><td style="background:#1e293b;padding:36px 48px;text-align:center">
+          <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.2em;text-transform:uppercase">Centrum Badań Psychometrycznych</p>
+          <h1 style="margin:8px 0 0;font-size:32px;font-weight:900;color:#ffffff;letter-spacing:-0.02em">brainmediq</h1>
+        </td></tr>
+
+        <!-- Green stripe -->
+        <tr><td style="background:#10b981;padding:14px 48px">
+          <p style="margin:0;font-size:13px;font-weight:700;color:#ffffff;letter-spacing:0.05em">✅ ZAMÓWIENIE ZREALIZOWANE</p>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td style="padding:40px 48px">
+          <h2 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#1e293b">Dziękujemy za zakup!</h2>
+          <p style="margin:0 0 28px;color:#64748b;line-height:1.7;font-size:15px">
+            Twoje zamówienie zostało pomyślnie zrealizowane. Dostęp do produktu jest już aktywny.
+          </p>
+
+          <!-- Order box -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;margin-bottom:28px">
+            <tr><td style="padding:20px 24px;border-bottom:1px solid #e2e8f0">
+              <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Produkt</p>
+              <p style="margin:4px 0 0;font-size:16px;font-weight:700;color:#1e293b">${product}</p>
+            </td></tr>
+            <tr><td style="padding:20px 24px;border-bottom:1px solid #e2e8f0">
+              <table width="100%"><tr>
+                <td><p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Kwota</p>
+                <p style="margin:4px 0 0;font-size:16px;font-weight:700;color:#1e293b">${price} PLN</p></td>
+                <td align="right"><p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">Data</p>
+                <p style="margin:4px 0 0;font-size:14px;font-weight:600;color:#475569">${dateStr}</p></td>
+              </tr></table>
+            </td></tr>
+            <tr><td style="padding:20px 24px">
+              <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.1em">E-mail</p>
+              <p style="margin:4px 0 0;font-size:14px;font-weight:600;color:#475569">${toEmail}</p>
+            </td></tr>
+          </table>
+
+          <p style="margin:0 0 8px;color:#475569;line-height:1.7;font-size:14px">
+            Po ukończeniu testu Twój <strong>certyfikat IQ oraz szczegółowy wynik</strong> zostaną automatycznie wysłane na ten adres e-mail w osobnej wiadomości.
+          </p>
+        </td></tr>
+
+        <!-- CTA -->
+        <tr><td style="padding:0 48px 40px;text-align:center">
+          <a href="https://brainmediq.pl" style="display:inline-block;background:#2563eb;color:#ffffff;font-weight:700;font-size:15px;padding:16px 40px;border-radius:12px;text-decoration:none;letter-spacing:0.02em">
+            Wróć do aplikacji →
+          </a>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center">
+          <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6">
+            © ${year} brainmediq Polska · kontakt@brainmediq.pl<br>
+            Ta wiadomość jest automatycznym potwierdzeniem. Nie odpowiadaj na ten e-mail.
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+        }),
+      });
+    } catch (e) {
+      console.warn('Email sending failed (non-critical):', e);
+    }
+  };
 
   const handlePay = (bypass: boolean = false) => {
     setLoading(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       setLoading(false);
       const updatedSaved = { ...saved, email: email || 'test@example.com' };
       
@@ -1742,6 +1809,8 @@ const Checkout = () => {
       else if (typeParam === 'pamiec') updatedSaved.hasPamiec = true;
       else if (typeParam === 'koncentracja') updatedSaved.hasKoncentracja = true;
       else if (typeParam === 'reakcja') updatedSaved.hasReakcja = true;
+      else if (typeParam === 'alzheimer') updatedSaved.hasAlzheimer = true;
+      else if (typeParam === 'adhd') updatedSaved.hasADHD = true;
       else {
         updatedSaved.isPaid = true;
         updatedSaved.isPro = typeParam === 'pro';
@@ -1749,6 +1818,11 @@ const Checkout = () => {
       }
       
       localStorage.setItem('iq_results', JSON.stringify(updatedSaved));
+
+      if (email && email.includes('@') && !bypass) {
+        await sendConfirmationEmail(email, productName, price);
+      }
+
       navigate(redirectUrl);
     }, 1500);
   };
@@ -1818,57 +1892,165 @@ const Checkout = () => {
 };
 
 const CertificateTemplate = ({ data, userName }: { data: ReportData, userName: string }) => {
+  const certId = `BMQ-${data.stats.iqScore}-${new Date().getFullYear()}-${Math.random().toString(36).substring(2,7).toUpperCase()}`;
+  const dateStr = new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
+  const domainLabels: Record<string, string> = {
+    MATRIX: 'Macierze', NUMBER_SERIES: 'Ciągi', ANALOGY: 'Analogie', SPATIAL: 'Przestrzeń', LOGIC: 'Logika',
+  };
+
   return (
-    <div className="w-[1123px] h-[794px] bg-white text-slate-900 p-16 flex flex-col items-center justify-center relative border-[24px] border-blue-600/10" style={{ fontFamily: 'Inter, sans-serif' }}>
-      <div className="absolute top-12 left-12 w-32 h-32 opacity-10">
-        <Logos.BrainGrid size={128} className="text-blue-600" />
-      </div>
-      <div className="absolute bottom-12 right-12 w-32 h-32 opacity-10">
-        <Logos.BrainGrid size={128} className="text-blue-600" />
-      </div>
-      
-      <div className="text-center mb-12">
-        <h1 className="text-6xl font-black text-slate-900 tracking-tight uppercase mb-4">Certyfikat IQ</h1>
-        <p className="text-2xl text-slate-500 uppercase tracking-widest">
-          Wystawiony przez <BrandName className="text-2xl" /> Polska
-        </p>
+    <div style={{
+      width: '1123px', height: '794px',
+      backgroundColor: '#fbfbf9', // Elegancki, bardzo jasny kremowy
+      position: 'relative',
+      boxSizing: 'border-box',
+      overflow: 'hidden',
+      fontFamily: '"Georgia", "Times New Roman", serif',
+      color: '#1a202c',
+    }}>
+      {/* ── RAMKI CERTYFIKATU ── */}
+      {/* Zewnętrzna gruba ramka w eleganckim, ciemnym granacie */}
+      <div style={{ position: 'absolute', top: '35px', left: '35px', right: '35px', bottom: '35px', border: '5px solid #1e3a8a', pointerEvents: 'none' }} />
+      {/* Wewnętrzna cieńsza ramka w złotym/brązowym kolorze */}
+      <div style={{ position: 'absolute', top: '44px', left: '44px', right: '44px', bottom: '44px', border: '1px solid #b4914d', pointerEvents: 'none' }} />
+      {/* Ozdobne kwadraciki w rogach (aby to trzymało się idealnie, pozycjonowanie absolutne) */}
+      <div style={{ position: 'absolute', top: '40px', left: '40px', width: '9px', height: '9px', backgroundColor: '#1e3a8a' }} />
+      <div style={{ position: 'absolute', top: '40px', right: '40px', width: '9px', height: '9px', backgroundColor: '#1e3a8a' }} />
+      <div style={{ position: 'absolute', bottom: '40px', left: '40px', width: '9px', height: '9px', backgroundColor: '#1e3a8a' }} />
+      <div style={{ position: 'absolute', bottom: '40px', right: '40px', width: '9px', height: '9px', backgroundColor: '#1e3a8a' }} />
+
+      {/* ── ZNAK WODNY (w tle) ── */}
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        fontSize: '280px', fontWeight: 900, color: '#1e3a8a', opacity: 0.03,
+        letterSpacing: '-0.05em', pointerEvents: 'none'
+      }}>
+        brainmediq
       </div>
 
-      <div className="text-center mb-16">
-        <p className="text-xl text-slate-600 mb-6">Niniejszym zaświadcza się, że</p>
-        <h2 className="text-5xl font-bold text-blue-600 border-b-2 border-blue-200 pb-4 inline-block min-w-[400px]">
-          {userName || "Uczestnik Badania"}
-        </h2>
+      {/* ── ZAWARTOŚĆ GŁÓWNA ── */}
+      <div style={{ position: 'absolute', top: '75px', left: '0', right: '0', textAlign: 'center' }}>
+        
+        {/* LOGO I NAZWA INSTYTUCJI */}
+        <div style={{ marginBottom: '35px' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: '60px', height: '60px', backgroundColor: '#1e3a8a', borderRadius: '50%', marginBottom: '15px'
+          }}>
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2C7.58172 2 4 5.58172 4 10C4 12.3906 5.05093 14.5357 6.71212 16H17.2879C18.9491 14.5357 20 12.3906 20 10C20 5.58172 16.4183 2 12 2Z" />
+              <path d="M12 8v4l3 3" />
+            </svg>
+          </div>
+          <div style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.35em', color: '#1e3a8a', fontFamily: 'Inter, Arial, sans-serif' }}>
+            Centrum Badań Psychometrycznych
+          </div>
+          <div style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '0.05em', color: '#475569', marginTop: '4px' }}>
+            brainmediq Polska
+          </div>
+        </div>
+
+        {/* TYTUŁ DOKUMENTU */}
+        <div style={{ fontSize: '58px', fontWeight: 400, color: '#1e3a8a', letterSpacing: '0.12em', margin: '0 0 45px 0' }}>
+          CERTYFIKAT IQ
+        </div>
+
+        {/* DEDYKACJA */}
+        <div style={{ fontSize: '17px', fontStyle: 'italic', color: '#475569', marginBottom: '20px' }}>
+          Niniejszym zaświadcza się, że
+        </div>
+        
+        <div style={{ fontSize: '52px', fontWeight: 700, fontStyle: 'italic', color: '#0f172a', marginBottom: '8px' }}>
+          {userName || 'Uczestnik Badania'}
+        </div>
+        <div style={{ width: '450px', height: '1px', backgroundColor: '#b4914d', margin: '0 auto 30px auto' }} />
+
+        <div style={{ fontSize: '16px', color: '#475569', lineHeight: '1.8', maxWidth: '600px', margin: '0 auto 40px auto' }}>
+          wypełnił/a oficjalny standaryzowany test inteligencji na platformie brainmediq
+          i w wyniku profesjonalnego pomiaru psychometrycznego uzyskał/a wynik ogólny:
+        </div>
+
+        {/* SEKCJA WYNIKU GŁÓWNEGO */}
+        <div style={{ display: 'inline-block', position: 'relative', marginBottom: '30px' }}>
+          {/* Ramka ozdobna dookoła wyniku */}
+          <div style={{ position: 'absolute', top: '-15px', bottom: '-15px', left: '-50px', right: '-50px', borderTop: '2px solid #b4914d', borderBottom: '2px solid #b4914d' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '30px' }}>
+            <div style={{ fontSize: '110px', fontWeight: 400, color: '#1e3a8a', lineHeight: '1' }}>
+              {data.stats.iqScore}
+            </div>
+            <div style={{ textAlign: 'left', borderLeft: '1px solid #cbd5e1', paddingLeft: '20px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', fontWeight: 700, fontFamily: 'Inter, sans-serif' }}>
+                Skala Wechslera (SD 15)
+              </div>
+              <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a', marginTop: '6px' }}>
+                Percentyl: {data.stats.percentile}%
+              </div>
+              <div style={{ fontSize: '13px', color: '#475569', marginTop: '4px', fontStyle: 'italic' }}>
+                Przedział ufności (95%): {data.stats.confidenceInterval[0]} – {data.stats.confidenceInterval[1]}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* WYNIKI SZCZEGÓŁOWE (SUB-DOMENY) */}
+        <div style={{ width: '750px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '16px 0' }}>
+          {Object.entries(data.stats.domainScores).map(([key, val]) => (
+            <div key={key} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '20px', fontWeight: 700, color: '#1e3a8a' }}>{Math.round(val as number)}</div>
+              <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
+                {domainLabels[key] || key}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="flex items-center gap-16 mb-16">
-        <div className="text-center">
-          <p className="text-sm text-slate-500 uppercase tracking-widest font-bold mb-2">Wynik Ogólny</p>
-          <div className="text-8xl font-black text-slate-900">{data.stats.iqScore}</div>
-        </div>
-        <div className="w-px h-32 bg-slate-200"></div>
-        <div className="text-left space-y-4">
-          <div>
-            <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Percentyl</p>
-            <p className="text-2xl font-bold text-slate-800">{data.stats.percentile}%</p>
+      {/* ── STOPKA (PODPISY I PIECZĘĆ) ── */}
+      <div style={{ position: 'absolute', bottom: '80px', left: '90px', right: '90px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        
+        {/* Lewy blok: Data i ID */}
+        <div style={{ textAlign: 'center', width: '220px' }}>
+          <div style={{ fontSize: '17px', color: '#0f172a', borderBottom: '1px solid #94a3b8', paddingBottom: '6px', marginBottom: '8px' }}>
+            {dateStr}
           </div>
-          <div>
-            <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Data Badania</p>
-            <p className="text-xl font-medium text-slate-800">{new Date().toLocaleDateString('pl-PL')}</p>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.15em', color: '#475569', fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
+            Data Badania
+          </div>
+          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '12px', fontFamily: 'Inter, sans-serif' }}>
+            ID: {certId}
           </div>
         </div>
-      </div>
 
-      <div className="absolute bottom-16 left-16">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-white">
-            <Icons.Award />
-          </div>
-          <div>
-            <p className="font-bold text-slate-900"><BrandName className="text-lg" /> Polska</p>
-            <p className="text-sm text-slate-500">Certyfikowany Pomiar Inteligencji</p>
+        {/* Środkowy blok: Złota pieczęć */}
+        <div style={{
+          width: '100px', height: '100px', borderRadius: '50%', backgroundColor: '#b4914d',
+          border: '3px double #ffffff', boxShadow: '0 0 0 2px #b4914d',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'
+        }}>
+          {/* Tekst na około pieczęci w CSS (uproszczony dla html2canvas) */}
+          <div style={{ position: 'absolute', inset: '6px', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '50%' }} />
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 15l-2 5l9-5l-9-5z"/>
+            <circle cx="12" cy="12" r="10" stroke="#ffffff" strokeWidth="1" strokeDasharray="2 2" />
+          </svg>
+          <div style={{ position: 'absolute', color: '#ffffff', fontSize: '7px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', width: '100%', textAlign: 'center', top: '24px' }}>
+            SEAL OF<br/>EXCELLENCE
           </div>
         </div>
+
+        {/* Prawy blok: Podpis */}
+        <div style={{ textAlign: 'center', width: '220px' }}>
+          <div style={{ fontSize: '32px', color: '#1e3a8a', borderBottom: '1px solid #94a3b8', paddingBottom: '6px', marginBottom: '8px', fontFamily: '"Brush Script MT", "Palatino Linotype", cursive', fontStyle: 'italic' }}>
+            brainmediq
+          </div>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.15em', color: '#475569', fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
+            Główny Analityk
+          </div>
+          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '12px', fontFamily: 'Inter, sans-serif' }}>
+            www.brainmediq.pl
+          </div>
+        </div>
+        
       </div>
     </div>
   );
@@ -1881,9 +2063,11 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
   const [userName, setUserName] = useState("");
   const [animate, setAnimate] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const certificateRef = useRef<HTMLDivElement>(null);
+  const emailSentRef = useRef(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('iq_results');
@@ -1928,6 +2112,17 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
     } else navigate('/');
   }, [navigate]);
 
+  // Auto-send results email once report is ready and certificate is rendered
+  useEffect(() => {
+    if (!loading && data && animate) {
+      // Give certificate element time to render fully in the hidden div
+      const timer = setTimeout(() => {
+        sendResultsEmail(data, userName);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, animate, data]);
+
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
     setUserName(newName);
@@ -1935,6 +2130,172 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
       const updated = { ...data, userName: newName };
       setData(updated);
       localStorage.setItem('iq_results', JSON.stringify(updated));
+    }
+  };
+
+  const generateCertificatePdfBase64 = async (): Promise<string | null> => {
+    if (!certificateRef.current) return null;
+    try {
+      window.scrollTo(0, 0);
+      await new Promise(r => setTimeout(r, 200));
+      const canvas = await html2canvas(certificateRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: 1123,
+        windowHeight: 794,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      pdf.addImage(imgData, 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+      const dataUri = pdf.output('datauristring');
+      return dataUri.split(',')[1];
+    } catch (e) {
+      console.error('PDF generation failed:', e);
+      return null;
+    }
+  };
+
+  const sendResultsEmail = async (reportData: ReportData, name: string) => {
+    const toEmail = (reportData as ReportData & { email?: string }).email;
+    if (!toEmail || !toEmail.includes('@')) return;
+
+    const sessionKey = `certEmailSent_${reportData.timestamp}`;
+    if (localStorage.getItem(sessionKey)) return;
+    if (emailSentRef.current) return;
+    emailSentRef.current = true;
+
+    setEmailStatus('sending');
+    const year = new Date().getFullYear();
+    const dateStr = new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
+    const displayName = name || 'Uczestnik Badania';
+
+    const pdfBase64 = await generateCertificatePdfBase64();
+
+    const domainLabels: Record<string, string> = {
+      MATRIX: 'Myślenie matrycowe',
+      NUMBER_SERIES: 'Ciągi liczbowe',
+      ANALOGY: 'Analogie',
+      SPATIAL: 'Wyobraźnia przestrzenna',
+      LOGIC: 'Logika',
+    };
+
+    const domainRows = Object.entries(reportData.stats.domainScores)
+      .map(([key, val]) => `
+        <tr>
+          <td style="padding:10px 16px;font-size:13px;color:#475569;border-bottom:1px solid #f1f5f9">${domainLabels[key] || key}</td>
+          <td style="padding:10px 16px;text-align:right;border-bottom:1px solid #f1f5f9">
+            <div style="display:inline-block;background:#e0e7ff;border-radius:6px;padding:2px 10px;font-weight:700;font-size:13px;color:#3730a3">${Math.round(val)}</div>
+          </td>
+        </tr>`).join('');
+
+    const html = `
+<!DOCTYPE html>
+<html lang="pl">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Inter,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 0">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)">
+
+        <!-- Header -->
+        <tr><td style="background:#1e293b;padding:36px 48px;text-align:center">
+          <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;letter-spacing:0.2em;text-transform:uppercase">Centrum Badań Psychometrycznych</p>
+          <h1 style="margin:8px 0 0;font-size:32px;font-weight:900;color:#ffffff;letter-spacing:-0.02em">brainmediq</h1>
+          <p style="margin:10px 0 0;font-size:13px;color:#94a3b8">Twój certyfikat i wyniki testu IQ</p>
+        </td></tr>
+
+        <!-- Blue accent -->
+        <tr><td style="background:#2563eb;padding:14px 48px">
+          <p style="margin:0;font-size:13px;font-weight:700;color:#ffffff;letter-spacing:0.05em">🏆 WYNIKI BADANIA GOTOWE</p>
+        </td></tr>
+
+        <!-- Greeting -->
+        <tr><td style="padding:40px 48px 20px">
+          <h2 style="margin:0 0 8px;font-size:22px;font-weight:800;color:#1e293b">Cześć, ${displayName}!</h2>
+          <p style="margin:0;color:#64748b;line-height:1.7;font-size:15px">
+            Twoje badanie zostało zakończone. Poniżej znajdziesz pełne wyniki testu IQ. <strong>Certyfikat w formacie PDF</strong> jest dołączony do tej wiadomości jako załącznik.
+          </p>
+        </td></tr>
+
+        <!-- Score hero -->
+        <tr><td style="padding:0 48px 32px">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="background:#1e293b;border-radius:16px;padding:32px;text-align:center" width="45%">
+                <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.15em">Wynik IQ</p>
+                <p style="margin:8px 0;font-size:64px;font-weight:900;color:#ffffff;line-height:1">${reportData.stats.iqScore}</p>
+                <p style="margin:0;font-size:12px;color:#64748b">Przedział: ${reportData.stats.confidenceInterval[0]}–${reportData.stats.confidenceInterval[1]}</p>
+              </td>
+              <td width="10%"></td>
+              <td style="vertical-align:middle" width="45%">
+                <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px 20px;margin-bottom:12px">
+                  <p style="margin:0;font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.1em">Percentyl</p>
+                  <p style="margin:4px 0 0;font-size:24px;font-weight:900;color:#15803d">${reportData.stats.percentile}%</p>
+                </div>
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px 20px">
+                  <p style="margin:0;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.1em">Data badania</p>
+                  <p style="margin:4px 0 0;font-size:14px;font-weight:700;color:#1d4ed8">${dateStr}</p>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- Domain scores -->
+        <tr><td style="padding:0 48px 32px">
+          <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#1e293b;text-transform:uppercase;letter-spacing:0.1em">Wyniki w kategoriach</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">
+            ${domainRows}
+          </table>
+        </td></tr>
+
+        <!-- Certificate note -->
+        <tr><td style="padding:0 48px 32px">
+          <div style="background:#fefce8;border:1px solid #fde047;border-radius:14px;padding:20px 24px">
+            <p style="margin:0;font-size:14px;font-weight:700;color:#713f12">📎 Certyfikat PDF w załączniku</p>
+            <p style="margin:8px 0 0;font-size:13px;color:#92400e;line-height:1.6">
+              Do tej wiadomości dołączony jest Certyfikat Ilorazu Inteligencji w formacie PDF. Możesz go pobrać, wydrukować lub udostępnić.
+            </p>
+          </div>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center">
+          <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6">
+            © ${year} brainmediq Polska · kontakt@brainmediq.pl<br>
+            Ta wiadomość jest automatyczną odpowiedzią. Nie odpowiadaj na ten e-mail.
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+    try {
+      const res = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: toEmail,
+          subject: `🏆 Twój Certyfikat IQ ${reportData.stats.iqScore} – brainmediq`,
+          html,
+          ...(pdfBase64 ? { attachment: { filename: `Certyfikat_IQ_${displayName.replace(/\s+/g, '_')}.pdf`, content: pdfBase64 } } : {}),
+        }),
+      });
+      if (res.ok) {
+        setEmailStatus('sent');
+        localStorage.setItem(sessionKey, '1');
+      } else {
+        setEmailStatus('error');
+        emailSentRef.current = false;
+      }
+    } catch {
+      setEmailStatus('error');
+      emailSentRef.current = false;
     }
   };
 
@@ -1999,7 +2360,30 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
            <div>
              <h1 className="text-5xl font-bold dark:text-white mb-3">{data.isPro ? "Szczegółowa Analiza IQ" : "Wynik Twojego Testu"}</h1>
              <p className="text-slate-500 dark:text-slate-400 text-lg">{data.isPro ? "Zaawansowana Analiza Psychometryczna — Model CHC v2.5" : "Oficjalny Wynik i Certyfikat Inteligencji"}</p>
-              <p className="text-blue-600 font-bold mt-2 no-print">{data.isPro ? "Pełny raport oraz certyfikat zostały wysłane na Twój adres e-mail." : "Twój wynik oraz certyfikat zostały wysłane na Twój adres e-mail."}</p>
+              <div className="mt-2 no-print flex items-center gap-3">
+                {emailStatus === 'sending' && (
+                  <span className="flex items-center gap-2 text-blue-600 font-bold text-sm">
+                    <div className="w-4 h-4 border-2 border-blue-400 border-t-blue-600 rounded-full animate-spin"/>
+                    Wysyłanie certyfikatu na e-mail...
+                  </span>
+                )}
+                {emailStatus === 'sent' && (
+                  <span className="flex items-center gap-2 text-emerald-600 font-bold text-sm">
+                    <CheckCircle2 className="w-4 h-4"/> Certyfikat PDF wysłany na Twój e-mail!
+                  </span>
+                )}
+                {emailStatus === 'error' && (
+                  <span className="flex items-center gap-2 text-rose-500 font-bold text-sm">
+                    <AlertTriangle className="w-4 h-4"/> Błąd wysyłki —
+                    <button onClick={() => { emailSentRef.current = false; data && sendResultsEmail(data, userName); }} className="underline hover:no-underline">
+                      spróbuj ponownie
+                    </button>
+                  </span>
+                )}
+                {emailStatus === 'idle' && (
+                  <span className="text-slate-400 text-sm">{data.isPro ? "Przygotowujemy pełny raport i certyfikat..." : "Przygotowujemy certyfikat..."}</span>
+                )}
+              </div>
              {userName && <p className="text-xl font-bold text-blue-600 mt-2 print:block hidden">Certyfikat wystawiony dla: {userName}</p>}
            </div>
         </div>
@@ -2991,6 +3375,575 @@ const ReactionTest = () => {
   );
 };
 
+// --- ALZHEIMER TEST ---
+
+const alzheimerQuestions = [
+  {
+    id: 1,
+    category: 'Orientacja czasowa',
+    question: 'Który mamy teraz rok?',
+    type: 'text' as const,
+    correctAnswer: new Date().getFullYear().toString(),
+    points: 1,
+  },
+  {
+    id: 2,
+    category: 'Orientacja czasowa',
+    question: 'Jaka jest teraz pora roku?',
+    type: 'choice' as const,
+    options: ['Wiosna', 'Lato', 'Jesień', 'Zima'],
+    correctAnswer: (() => {
+      const m = new Date().getMonth();
+      if (m >= 2 && m <= 4) return 'Wiosna';
+      if (m >= 5 && m <= 7) return 'Lato';
+      if (m >= 8 && m <= 10) return 'Jesień';
+      return 'Zima';
+    })(),
+    points: 1,
+  },
+  {
+    id: 3,
+    category: 'Orientacja czasowa',
+    question: 'Który mamy miesiąc?',
+    type: 'choice' as const,
+    options: ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'],
+    correctAnswer: ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'][new Date().getMonth()],
+    points: 1,
+  },
+  {
+    id: 4,
+    category: 'Orientacja czasowa',
+    question: 'Który mamy dzień tygodnia?',
+    type: 'choice' as const,
+    options: ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'],
+    correctAnswer: ['Niedziela','Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota'][new Date().getDay()],
+    points: 1,
+  },
+  {
+    id: 5,
+    category: 'Pamięć krótkotrwała',
+    question: 'Przeczytaj uważnie trzy słowa i spróbuj je zapamiętać:\n\n🍎 JABŁKO — 🏠 DOM — 🌊 MORZE\n\nCzy możesz je teraz powtórzyć (wpisz wszystkie trzy)?',
+    type: 'memory_register' as const,
+    correctAnswer: 'jabłko dom morze',
+    points: 3,
+    hint: 'jabłko, dom, morze',
+  },
+  {
+    id: 6,
+    category: 'Uwaga i obliczenia',
+    question: 'Odejmij 7 od 100. Następnie odejmuj 7 kolejno pięć razy. Jaki jest ostatni wynik?',
+    type: 'choice' as const,
+    options: ['58', '63', '65', '72'],
+    correctAnswer: '65',
+    points: 5,
+  },
+  {
+    id: 7,
+    category: 'Pamięć — przypomnienie',
+    question: 'Jakie trzy słowa prosiłem Cię wcześniej zapamiętać?',
+    type: 'choice' as const,
+    options: [
+      'Jabłko, dom, morze',
+      'Gruszka, ogród, rzeka',
+      'Jabłko, las, góra',
+      'Dom, chmura, morze',
+    ],
+    correctAnswer: 'Jabłko, dom, morze',
+    points: 3,
+  },
+  {
+    id: 8,
+    category: 'Język i rozumienie',
+    question: 'Co robi się z parasolem, gdy pada deszcz?',
+    type: 'choice' as const,
+    options: ['Zamyka się go', 'Otwiera się go', 'Odkłada się go', 'Wyrzuca się go'],
+    correctAnswer: 'Otwiera się go',
+    points: 1,
+  },
+  {
+    id: 9,
+    category: 'Język i rozumienie',
+    question: 'Dokończ zdanie: "Kamień wrzucony do wody..."',
+    type: 'choice' as const,
+    options: ['...płynie', '...tonie', '...wyparowuje', '...spala się'],
+    correctAnswer: '...tonie',
+    points: 1,
+  },
+  {
+    id: 10,
+    category: 'Orientacja przestrzenna',
+    question: 'Gdzie zazwyczaj jest słońce o godzinie 12:00 w południe?',
+    type: 'choice' as const,
+    options: ['Na wschodzie', 'Na zachodzie', 'Na południu (wysoko)', 'Na północy'],
+    correctAnswer: 'Na południu (wysoko)',
+    points: 1,
+  },
+  {
+    id: 11,
+    category: 'Myślenie abstrakcyjne',
+    question: 'Co łączy jabłko, banan i pomarańczę?',
+    type: 'choice' as const,
+    options: ['Są okrągłe', 'Są owocami', 'Są żółte', 'Rosną na drzewach'],
+    correctAnswer: 'Są owocami',
+    points: 1,
+  },
+  {
+    id: 12,
+    category: 'Myślenie abstrakcyjne',
+    question: 'Pociąg jest do torów jak samolot jest do...?',
+    type: 'choice' as const,
+    options: ['Chmur', 'Nieba', 'Pasa startowego', 'Skrzydeł'],
+    correctAnswer: 'Pasa startowego',
+    points: 1,
+  },
+  {
+    id: 13,
+    category: 'Pamięć epizodyczna',
+    question: 'Co robiłeś/aś wczoraj rano?',
+    type: 'self_report' as const,
+    options: ['Pamiętam dokładnie', 'Pamiętam ogólnie', 'Mam trudności z przypomnieniem', 'Nie pamiętam'],
+    correctAnswer: 'Pamiętam dokładnie',
+    points: 3,
+  },
+  {
+    id: 14,
+    category: 'Koncentracja',
+    question: 'Czy potrafisz skupić uwagę na jednej czynności przez co najmniej 20 minut bez przerwy?',
+    type: 'self_report' as const,
+    options: ['Tak, bez problemu', 'Raczej tak', 'Mam z tym trudności', 'Nie, bardzo trudne'],
+    correctAnswer: 'Tak, bez problemu',
+    points: 2,
+  },
+  {
+    id: 15,
+    category: 'Funkcje wykonawcze',
+    question: 'Wyobraź sobie, że planujesz wyjazd. W jakiej kolejności wykonujesz kroki?',
+    type: 'choice' as const,
+    options: [
+      'Pakuję → rezerwuję → wyjeżdżam → planuję',
+      'Planuję → rezerwuję → pakuję → wyjeżdżam',
+      'Wyjeżdżam → planuję → rezerwuję → pakuję',
+      'Rezerwuję → wyjeżdżam → planuję → pakuję',
+    ],
+    correctAnswer: 'Planuję → rezerwuję → pakuję → wyjeżdżam',
+    points: 2,
+  },
+];
+
+const AlzheimerTest = () => {
+  const navigate = useNavigate();
+  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
+  const hasAccess = saved.hasAlzheimer === true;
+
+  const [phase, setPhase] = useState<'intro' | 'test' | 'result'>('intro');
+  const [currentQ, setCurrentQ] = useState(0);
+  const [answers, setAnswers] = useState<string[]>(Array(alzheimerQuestions.length).fill(''));
+  const [selected, setSelected] = useState<string>('');
+  const [textInput, setTextInput] = useState('');
+
+  const totalPoints = alzheimerQuestions.reduce((s, q) => s + q.points, 0);
+
+  const calcScore = () => {
+    let score = 0;
+    alzheimerQuestions.forEach((q, i) => {
+      const ans = answers[i]?.toLowerCase().trim();
+      if (q.type === 'memory_register') {
+        const words = ['jabłko', 'dom', 'morze'];
+        words.forEach(w => { if (ans?.includes(w)) score++; });
+      } else if (q.type === 'self_report') {
+        const idx = (q.options as string[]).indexOf(answers[i]);
+        const maxIdx = (q.options as string[]).indexOf(q.correctAnswer as string);
+        const earned = Math.max(0, q.points - idx);
+        score += Math.min(earned, q.points);
+      } else if (ans === (q.correctAnswer as string).toLowerCase()) {
+        score += q.points;
+      }
+    });
+    return score;
+  };
+
+  const handleNext = () => {
+    const q = alzheimerQuestions[currentQ];
+    const val = q.type === 'text' || q.type === 'memory_register' ? textInput : selected;
+    const newAnswers = [...answers];
+    newAnswers[currentQ] = val;
+    setAnswers(newAnswers);
+
+    if (currentQ + 1 < alzheimerQuestions.length) {
+      setCurrentQ(currentQ + 1);
+      setSelected('');
+      setTextInput('');
+    } else {
+      setAnswers(newAnswers);
+      setPhase('result');
+    }
+  };
+
+  const score = phase === 'result' ? calcScore() : 0;
+  const pct = Math.round((score / totalPoints) * 100);
+
+  const getInterpretation = (pct: number) => {
+    if (pct >= 85) return { label: 'Wynik prawidłowy', color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200', desc: 'Twoje wyniki wskazują na prawidłowe funkcjonowanie poznawcze w badanych obszarach. Nie stwierdzono niepokojących odchyleń.' };
+    if (pct >= 65) return { label: 'Wynik w normie z drobnymi odchyleniami', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200', desc: 'Większość wyników jest w normie, jednak niektóre obszary mogą wymagać uwagi. Zalecamy regularną aktywność umysłową.' };
+    if (pct >= 45) return { label: 'Wynik poniżej normy', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200', desc: 'Wyniki sugerują możliwe trudności w kilku obszarach poznawczych. Warto skonsultować się z lekarzem pierwszego kontaktu.' };
+    return { label: 'Wynik wskazujący na trudności', color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20 border-rose-200', desc: 'Wyniki mogą wskazywać na istotne trudności poznawcze. Zalecamy pilną konsultację z lekarzem lub neurologiem.' };
+  };
+
+  if (!hasAccess) {
+    return (
+      <div className="max-w-2xl mx-auto py-32 px-6 text-center">
+        <div className="bg-white dark:bg-slate-900 p-16 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+          <div className="w-20 h-20 bg-teal-100 dark:bg-teal-900/30 rounded-3xl flex items-center justify-center mx-auto mb-8">
+            <Brain className="w-10 h-10 text-teal-600" />
+          </div>
+          <h2 className="text-3xl font-bold mb-4 dark:text-white">Test Funkcji Poznawczych</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-8">Aby uzyskać dostęp do tego testu, dokonaj zakupu.</p>
+          <Link to="/platnosc?type=alzheimer" className="inline-flex items-center px-8 py-4 bg-teal-600 text-white rounded-2xl font-bold hover:bg-teal-700 transition-all shadow-lg">
+            Kup za 4,99 PLN
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'intro') {
+    return (
+      <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
+        <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+          <div className="w-20 h-20 bg-teal-100 dark:bg-teal-900/30 rounded-3xl flex items-center justify-center mb-8">
+            <Brain className="w-10 h-10 text-teal-600" />
+          </div>
+          <h1 className="text-4xl font-bold mb-4 dark:text-white">Test Funkcji Poznawczych</h1>
+          <p className="text-slate-500 dark:text-slate-400 mb-6 text-lg leading-relaxed">
+            Ten test bada orientację, pamięć, uwagę, język i myślenie abstrakcyjne. Składa się z {alzheimerQuestions.length} pytań i zajmuje ok. 10 minut.
+          </p>
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6 mb-8">
+            <div className="flex gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-amber-800 dark:text-amber-300 mb-1">Ważna informacja medyczna</p>
+                <p className="text-amber-700 dark:text-amber-400 text-sm leading-relaxed">
+                  Ten test ma wyłącznie charakter edukacyjny i orientacyjny. <strong>Nie jest narzędziem diagnostycznym</strong> i nie zastępuje badania lekarskiego ani specjalistycznej oceny neuropsychologicznej. Wyniki testu nie stanowią porady medycznej ani diagnozy choroby Alzheimera lub demencji. W razie jakichkolwiek obaw dotyczących funkcji poznawczych skonsultuj się z lekarzem.
+                </p>
+              </div>
+            </div>
+          </div>
+          <button onClick={() => setPhase('test')} className="w-full bg-teal-600 text-white py-5 rounded-2xl font-bold text-lg hover:bg-teal-700 transition-all shadow-lg shadow-teal-500/20">
+            Rozpocznij Test
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'result') {
+    const interp = getInterpretation(pct);
+    return (
+      <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
+        <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl space-y-8">
+          <div className="text-center">
+            <div className="text-7xl font-black text-teal-600 mb-2">{score}<span className="text-3xl text-slate-400">/{totalPoints}</span></div>
+            <p className={`text-2xl font-bold ${interp.color}`}>{interp.label}</p>
+          </div>
+
+          <div className={`border rounded-2xl p-6 ${interp.bg}`}>
+            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{interp.desc}</p>
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6">
+            <div className="flex gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <p className="text-amber-700 dark:text-amber-400 text-sm leading-relaxed">
+                <strong>Przypomnienie:</strong> Ten wynik ma charakter wyłącznie orientacyjny i nie stanowi diagnozy medycznej ani porady lekarskiej. Nie zastępuje profesjonalnej oceny klinicznej. Jeśli masz obawy co do swojego zdrowia poznawczego, skonsultuj się z lekarzem.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            {alzheimerQuestions.map((q, i) => {
+              const ans = answers[i]?.toLowerCase().trim();
+              let correct = false;
+              if (q.type === 'memory_register') {
+                correct = ['jabłko','dom','morze'].every(w => ans?.includes(w));
+              } else if (q.type === 'self_report') {
+                correct = answers[i] === q.correctAnswer;
+              } else {
+                correct = ans === (q.correctAnswer as string).toLowerCase();
+              }
+              return (
+                <div key={q.id} className={`p-4 rounded-2xl border text-sm ${correct ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200' : 'bg-rose-50 dark:bg-rose-900/20 border-rose-200'}`}>
+                  <p className="font-bold text-slate-700 dark:text-slate-300 mb-1">{q.category}</p>
+                  <p className={correct ? 'text-emerald-600' : 'text-rose-600'}>{correct ? '✓ Prawidłowa odpowiedź' : `✗ Oczekiwano: ${q.correctAnswer}`}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          <Link to="/inne-testy" className="block w-full text-center bg-teal-600 text-white py-5 rounded-2xl font-bold hover:bg-teal-700 transition-all">
+            Powrót do testów
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const q = alzheimerQuestions[currentQ];
+  const progress = ((currentQ) / alzheimerQuestions.length) * 100;
+  const canProceed = q.type === 'text' || q.type === 'memory_register' ? textInput.trim().length > 0 : selected !== '';
+
+  return (
+    <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
+      <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+        <div className="mb-8">
+          <div className="flex justify-between text-sm text-slate-500 mb-2">
+            <span>Pytanie {currentQ + 1} z {alzheimerQuestions.length}</span>
+            <span className="font-bold text-teal-600">{q.category}</span>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+            <div className="bg-teal-500 h-2 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+
+        <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-8 leading-relaxed whitespace-pre-line">{q.question}</h2>
+
+        {(q.type === 'text' || q.type === 'memory_register') ? (
+          <textarea
+            value={textInput}
+            onChange={e => setTextInput(e.target.value)}
+            placeholder={q.type === 'memory_register' ? 'Wpisz zapamiętane słowa...' : 'Wpisz odpowiedź...'}
+            className="w-full px-4 py-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white focus:outline-none focus:border-teal-500 resize-none"
+            rows={3}
+          />
+        ) : (
+          <div className="space-y-3">
+            {(q.options as string[]).map((opt) => (
+              <button
+                key={opt}
+                onClick={() => setSelected(opt)}
+                className={`w-full text-left px-6 py-4 rounded-2xl border-2 font-medium transition-all ${selected === opt ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-teal-300'}`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <button
+          onClick={handleNext}
+          disabled={!canProceed}
+          className="mt-8 w-full bg-teal-600 text-white py-5 rounded-2xl font-bold text-lg hover:bg-teal-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {currentQ + 1 === alzheimerQuestions.length ? 'Zobacz wyniki' : 'Następne pytanie'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// --- ADHD TEST ---
+
+const adhdQuestions = [
+  { id: 1, part: 'A', text: 'Jak często masz trudności z dokończeniem ostatnich szczegółów projektu, gdy najtrudniejsza część jest już za Tobą?' },
+  { id: 2, part: 'A', text: 'Jak często masz trudności z porządkowaniem spraw, gdy musisz wykonać zadanie wymagające organizacji?' },
+  { id: 3, part: 'A', text: 'Jak często masz problem z zapamiętywaniem spotkań lub zobowiązań?' },
+  { id: 4, part: 'A', text: 'Gdy masz zadanie wymagające dużo myślenia, jak często unikasz jego rozpoczęcia lub odkładasz je na później?' },
+  { id: 5, part: 'A', text: 'Jak często wiercisz się lub kręcisz rękami/nogami, gdy musisz siedzieć przez dłuższy czas?' },
+  { id: 6, part: 'A', text: 'Jak często czujesz się nadmiernie aktywny/a i zmuszony/a do działania, jakby napędzał/a Cię jakiś silnik?' },
+  { id: 7, part: 'B', text: 'Jak często popełniasz nieostrożne błędy, gdy pracujesz nad nudnym lub trudnym projektem?' },
+  { id: 8, part: 'B', text: 'Jak często masz trudności z utrzymaniem uwagi przy wykonywaniu nudnych lub powtarzalnych czynności?' },
+  { id: 9, part: 'B', text: 'Jak często masz trudności z koncentracją, gdy ktoś do Ciebie mówi, nawet bezpośrednio?' },
+  { id: 10, part: 'B', text: 'Jak często gubisz lub masz trudności ze znalezieniem przedmiotów w domu lub w pracy?' },
+  { id: 11, part: 'B', text: 'Jak często rozpraszają Cię otaczające hałasy lub zdarzenia?' },
+  { id: 12, part: 'B', text: 'Jak często wstajesz ze swojego miejsca na spotkaniach lub w innych sytuacjach, gdy powinieneś/powinnaś siedzieć?' },
+  { id: 13, part: 'B', text: 'Jak często czujesz się niespokojny/a lub pobudzony/a?' },
+  { id: 14, part: 'B', text: 'Jak często masz trudności z odpoczywaniem lub relaksowaniem się, gdy masz chwilę wolnego?' },
+  { id: 15, part: 'B', text: 'Jak często mówisz za dużo w sytuacjach towarzyskich?' },
+  { id: 16, part: 'B', text: 'Jak często kończysz zdania rozmówców lub mówisz coś przed nimi, gdy uczestniczysz w rozmowie?' },
+  { id: 17, part: 'B', text: 'Jak często masz trudności z czekaniem na swoją kolej w sytuacjach, gdy kolejność ma znaczenie?' },
+  { id: 18, part: 'B', text: 'Jak często przerywasz innym, gdy są zajęci?' },
+];
+
+const adhdFrequencies = ['Nigdy', 'Rzadko', 'Czasami', 'Często', 'Bardzo często'];
+
+const ADHDTest = () => {
+  const navigate = useNavigate();
+  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
+  const hasAccess = saved.hasADHD === true;
+
+  const [phase, setPhase] = useState<'intro' | 'test' | 'result'>('intro');
+  const [answers, setAnswers] = useState<number[]>(Array(adhdQuestions.length).fill(-1));
+  const [currentQ, setCurrentQ] = useState(0);
+
+  const partAScore = answers.slice(0, 6).reduce((s, v) => s + Math.max(0, v), 0);
+  const totalScore = answers.reduce((s, v) => s + Math.max(0, v), 0);
+  const partAPositive = answers.slice(0, 6).filter((v, i) => {
+    const thresholds = [2, 2, 2, 2, 3, 3];
+    return v >= thresholds[i];
+  }).length;
+
+  const getResult = () => {
+    if (partAPositive >= 4) return {
+      label: 'Wysokie prawdopodobieństwo ADHD',
+      color: 'text-rose-600',
+      bg: 'bg-rose-50 dark:bg-rose-900/20 border-rose-200',
+      desc: 'Twoje odpowiedzi w kluczowej części testu są wysoce zgodne z objawami ADHD u dorosłych. Zdecydowanie zalecamy konsultację z psychiatrą lub psychologiem specjalizującym się w ADHD.',
+    };
+    if (partAPositive >= 2 || totalScore >= 24) return {
+      label: 'Możliwe objawy ADHD',
+      color: 'text-amber-600',
+      bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200',
+      desc: 'Część Twoich odpowiedzi sugeruje obecność pewnych objawów związanych z ADHD. Może warto porozmawiać z lekarzem lub psychologiem, szczególnie jeśli objawy wpływają na codzienne funkcjonowanie.',
+    };
+    return {
+      label: 'Niskie prawdopodobieństwo ADHD',
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200',
+      desc: 'Twoje odpowiedzi nie wskazują na silne objawy ADHD. Jeśli jednak masz obawy dotyczące koncentracji lub impulsywności, zawsze możesz skonsultować się ze specjalistą.',
+    };
+  };
+
+  if (!hasAccess) {
+    return (
+      <div className="max-w-2xl mx-auto py-32 px-6 text-center">
+        <div className="bg-white dark:bg-slate-900 p-16 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+          <div className="w-20 h-20 bg-violet-100 dark:bg-violet-900/30 rounded-3xl flex items-center justify-center mx-auto mb-8">
+            <Zap className="w-10 h-10 text-violet-600" />
+          </div>
+          <h2 className="text-3xl font-bold mb-4 dark:text-white">Test ADHD (ASRS)</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-8">Aby uzyskać dostęp do tego testu, dokonaj zakupu.</p>
+          <Link to="/platnosc?type=adhd" className="inline-flex items-center px-8 py-4 bg-violet-600 text-white rounded-2xl font-bold hover:bg-violet-700 transition-all shadow-lg">
+            Kup za 4,99 PLN
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'intro') {
+    return (
+      <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
+        <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+          <div className="w-20 h-20 bg-violet-100 dark:bg-violet-900/30 rounded-3xl flex items-center justify-center mb-8">
+            <Zap className="w-10 h-10 text-violet-600" />
+          </div>
+          <h1 className="text-4xl font-bold mb-2 dark:text-white">Test ADHD</h1>
+          <p className="text-sm font-bold text-violet-600 mb-4 uppercase tracking-widest">Skala ASRS v1.1 (WHO)</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-6 text-lg leading-relaxed">
+            Kwestionariusz oparty na Skali Samooceny ADHD dla Dorosłych (ASRS v1.1), opracowanej przez WHO i Uniwersytet Harvarda. Składa się z {adhdQuestions.length} pytań i zajmuje ok. 5–8 minut.
+          </p>
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6 mb-8">
+            <div className="flex gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-amber-800 dark:text-amber-300 mb-1">Ważna informacja medyczna</p>
+                <p className="text-amber-700 dark:text-amber-400 text-sm leading-relaxed">
+                  Ten test ma wyłącznie charakter przesiewowy i edukacyjny. <strong>Nie jest narzędziem diagnostycznym</strong> i nie zastępuje oceny klinicznej przeprowadzonej przez wykwalifikowanego specjalistę. Wyniki nie stanowią diagnozy ADHD ani żadnej innej choroby, ani porady medycznej. Diagnoza ADHD wymaga kompleksowej oceny psychiatrycznej lub psychologicznej.
+                </p>
+              </div>
+            </div>
+          </div>
+          <button onClick={() => setPhase('test')} className="w-full bg-violet-600 text-white py-5 rounded-2xl font-bold text-lg hover:bg-violet-700 transition-all shadow-lg shadow-violet-500/20">
+            Rozpocznij Test
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'result') {
+    const result = getResult();
+    return (
+      <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
+        <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl space-y-8">
+          <div className="text-center">
+            <div className="text-6xl font-black text-violet-600 mb-2">{totalScore}<span className="text-2xl text-slate-400">/{adhdQuestions.length * 4}</span></div>
+            <p className={`text-2xl font-bold ${result.color}`}>{result.label}</p>
+            <p className="text-sm text-slate-500 mt-1">Część A: {partAPositive}/6 kluczowych objawów</p>
+          </div>
+
+          <div className={`border rounded-2xl p-6 ${result.bg}`}>
+            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{result.desc}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-5 text-center">
+              <p className="text-3xl font-black text-violet-600">{partAScore}</p>
+              <p className="text-sm text-slate-500 mt-1">Wynik Część A</p>
+              <p className="text-xs text-slate-400">(6 kluczowych pytań)</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-5 text-center">
+              <p className="text-3xl font-black text-slate-700 dark:text-slate-200">{totalScore}</p>
+              <p className="text-sm text-slate-500 mt-1">Wynik łączny</p>
+              <p className="text-xs text-slate-400">(wszystkie 18 pytań)</p>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6">
+            <div className="flex gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <p className="text-amber-700 dark:text-amber-400 text-sm leading-relaxed">
+                <strong>Przypomnienie:</strong> Wyniki tego testu nie stanowią diagnozy medycznej ani porady lekarskiej. Nie zastępują oceny przeprowadzonej przez psychiatrę lub psychologa. Jeśli masz obawy, skonsultuj się ze specjalistą.
+              </p>
+            </div>
+          </div>
+
+          <Link to="/inne-testy" className="block w-full text-center bg-violet-600 text-white py-5 rounded-2xl font-bold hover:bg-violet-700 transition-all">
+            Powrót do testów
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const q = adhdQuestions[currentQ];
+  const progress = (currentQ / adhdQuestions.length) * 100;
+
+  return (
+    <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
+      <div className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
+        <div className="mb-8">
+          <div className="flex justify-between text-sm text-slate-500 mb-2">
+            <span>Pytanie {currentQ + 1} z {adhdQuestions.length}</span>
+            <span className={`font-bold px-3 py-1 rounded-full text-xs ${q.part === 'A' ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+              Część {q.part} {q.part === 'A' ? '(kluczowa)' : ''}
+            </span>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+            <div className="bg-violet-500 h-2 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Oceń częstotliwość w ciągu ostatnich 6 miesięcy</p>
+        <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-8 leading-relaxed">{q.text}</h2>
+
+        <div className="space-y-3">
+          {adhdFrequencies.map((freq, idx) => (
+            <button
+              key={freq}
+              onClick={() => {
+                const newAnswers = [...answers];
+                newAnswers[currentQ] = idx;
+                setAnswers(newAnswers);
+                setTimeout(() => {
+                  if (currentQ + 1 < adhdQuestions.length) {
+                    setCurrentQ(currentQ + 1);
+                  } else {
+                    setPhase('result');
+                  }
+                }, 180);
+              }}
+              className={`w-full text-left px-6 py-4 rounded-2xl border-2 font-medium transition-all flex items-center gap-4 ${answers[currentQ] === idx ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300' : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-violet-300'}`}
+            >
+              <span className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold flex-shrink-0 border-current">{idx}</span>
+              {freq}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const OtherTests = () => {
   const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
 
@@ -3038,7 +3991,31 @@ const OtherTests = () => {
       status: 'Dostępny',
       link: '/test-reakcji',
       hasAccess: saved.hasReakcja === true
-    }
+    },
+    {
+      id: 'alzheimer',
+      title: 'Test Funkcji Poznawczych',
+      price: '4,99 PLN',
+      desc: 'Zbadaj orientację, pamięć, uwagę i język. Test inspirowany metodologią MMSE/SAGE. Wyłącznie cel edukacyjny — nie jest diagnozą medyczną.',
+      icon: <Brain className="w-full h-full" />,
+      color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400',
+      status: 'Dostępny',
+      link: '/test-funkcji-poznawczych',
+      hasAccess: saved.hasAlzheimer === true,
+      disclaimer: true,
+    },
+    {
+      id: 'adhd',
+      title: 'Test ADHD (ASRS)',
+      price: '4,99 PLN',
+      desc: 'Kwestionariusz przesiewowy oparty na skali WHO ASRS v1.1. Wyłącznie cel edukacyjny — nie jest diagnozą medyczną.',
+      icon: <Zap className="w-full h-full" />,
+      color: 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
+      status: 'Dostępny',
+      link: '/test-adhd',
+      hasAccess: saved.hasADHD === true,
+      disclaimer: true,
+    },
   ];
 
   return (
@@ -3074,6 +4051,12 @@ const OtherTests = () => {
               </span>
             </div>
             <h3 className="text-3xl font-bold mb-2 dark:text-white">{test.title}</h3>
+            {'disclaimer' in test && test.disclaimer && (
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Nie jest diagnozą medyczną</span>
+              </div>
+            )}
             <p className="text-slate-500 dark:text-slate-400 text-base leading-relaxed mb-10 flex-1">
               {test.desc}
             </p>
@@ -3360,6 +4343,45 @@ const PurchaseModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
   );
 };
 
+const CookieBanner = () => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const consent = localStorage.getItem('cookie_consent');
+    if (!consent) {
+      setIsVisible(true);
+    }
+  }, []);
+
+  const handleAccept = () => {
+    localStorage.setItem('cookie_consent', 'true');
+    setIsVisible(false);
+  };
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 no-print">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800">
+          <div className="flex-1 text-sm text-slate-300 leading-relaxed">
+            <h4 className="text-white font-bold text-base mb-1">Cenimy Twoją prywatność</h4>
+            Nasza strona używa plików cookies niezbędnych do prawidłowego działania aplikacji, obsługi płatności oraz do celów analitycznych. Dalsze korzystanie ze strony oznacza wyrażenie zgody na ich użycie. Więcej informacji znajdziesz w <Link to="/prywatnosc" onClick={() => window.scrollTo(0,0)} className="text-blue-400 hover:text-blue-300 underline underline-offset-2">Polityce Prywatności</Link>.
+          </div>
+          <div className="flex shrink-0 gap-3 w-full md:w-auto">
+            <button 
+              onClick={handleAccept}
+              className="flex-1 md:flex-none px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-colors whitespace-nowrap"
+            >
+              Akceptuję
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- APP ROOT ---
 
 const App = () => {
@@ -3396,6 +4418,8 @@ const App = () => {
             <Route path="/test-pamieci" element={<MemoryTest />} />
             <Route path="/test-koncentracji" element={<ConcentrationTest />} />
             <Route path="/test-reakcji" element={<ReactionTest />} />
+            <Route path="/test-funkcji-poznawczych" element={<AlzheimerTest />} />
+            <Route path="/test-adhd" element={<ADHDTest />} />
             <Route path="/prywatnosc" element={<div className="max-w-3xl mx-auto py-32 px-6"><h2>Polityka Prywatności</h2></div>} />
             <Route path="/regulamin" element={<div className="max-w-3xl mx-auto py-32 px-6"><h2>Regulamin</h2></div>} />
             <Route path="*" element={<div className="p-32 text-center text-2xl font-bold">404 - Strony nie znaleziono</div>} />
@@ -3403,6 +4427,7 @@ const App = () => {
         </main>
         <Footer openPurchaseModal={() => setIsPurchaseModalOpen(true)} />
         <PurchaseModal isOpen={isPurchaseModalOpen} onClose={() => setIsPurchaseModalOpen(false)} />
+        <CookieBanner />
       </div>
     </HashRouter>
   );
