@@ -10,7 +10,6 @@ export const COLORS = {
 
 // Logo branding components
 export const Logos = {
-  // CONCEPT A: Brain Grid (Recommended - references logic matrices)
   BrainGrid: ({ size = 24, className = "" }: { size?: number, className?: string }) => (
     <svg 
       width={size} 
@@ -20,21 +19,49 @@ export const Logos = {
       className={className}
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path 
-        d="M12 2C7.58172 2 4 5.58172 4 10C4 12.3906 5.05093 14.5357 6.71212 16H17.2879C18.9491 14.5357 20 12.3906 20 10C20 5.58172 16.4183 2 12 2Z" 
-        stroke="currentColor" 
-        strokeWidth="1.5" 
+      <path
+        d="M9.7 4.2C7.35 4.2 5.45 6 5.45 8.25C3.95 8.75 3 10.05 3 11.65C3 13.15 3.85 14.45 5.1 15.05C5.05 15.25 5.03 15.48 5.03 15.7C5.03 17.98 6.88 19.8 9.15 19.8C10.25 19.8 11.22 19.38 12 18.68C12.78 19.38 13.75 19.8 14.85 19.8C17.12 19.8 18.97 17.98 18.97 15.7C18.97 15.48 18.95 15.25 18.9 15.05C20.15 14.45 21 13.15 21 11.65C21 10.05 20.05 8.75 18.55 8.25C18.55 6 16.65 4.2 14.3 4.2C13.42 4.2 12.62 4.45 12 4.88C11.38 4.45 10.58 4.2 9.7 4.2Z"
+        fill="currentColor"
+        fillOpacity="0.14"
+        stroke="currentColor"
+        strokeWidth="1.45"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 4.9V18.5"
+        stroke="currentColor"
+        strokeWidth="1.35"
         strokeLinecap="round"
       />
-      <circle cx="9" cy="8" r="1" fill="currentColor" />
-      <circle cx="12" cy="8" r="1" fill="currentColor" />
-      <circle cx="15" cy="8" r="1" fill="currentColor" />
-      <circle cx="9" cy="11" r="1" fill="currentColor" />
-      <circle cx="12" cy="11" r="1" fill="currentColor" />
-      <circle cx="15" cy="11" r="1" fill="currentColor" />
-      <circle cx="12" cy="14" r="1" fill="currentColor" />
-      <path d="M9 19H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M10 22H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path
+        d="M8.2 8.1C9.3 8.1 10.05 8.72 10.05 9.68C10.05 10.7 9.25 11.3 8.25 11.3"
+        stroke="currentColor"
+        strokeWidth="1.35"
+        strokeLinecap="round"
+      />
+      <path
+        d="M15.8 8.1C14.7 8.1 13.95 8.72 13.95 9.68C13.95 10.7 14.75 11.3 15.75 11.3"
+        stroke="currentColor"
+        strokeWidth="1.35"
+        strokeLinecap="round"
+      />
+      <path
+        d="M7.6 14.05C8.85 13.35 10.1 13.85 10.65 15.05"
+        stroke="currentColor"
+        strokeWidth="1.35"
+        strokeLinecap="round"
+      />
+      <path
+        d="M16.4 14.05C15.15 13.35 13.9 13.85 13.35 15.05"
+        stroke="currentColor"
+        strokeWidth="1.35"
+        strokeLinecap="round"
+      />
+      <circle cx="8.15" cy="8.1" r="0.95" fill="currentColor" />
+      <circle cx="15.85" cy="8.1" r="0.95" fill="currentColor" />
+      <circle cx="7.6" cy="14.05" r="0.95" fill="currentColor" />
+      <circle cx="16.4" cy="14.05" r="0.95" fill="currentColor" />
     </svg>
   ),
 

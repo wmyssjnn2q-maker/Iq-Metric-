@@ -25,3 +25,152 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
 }
+
+/* --- IQ: wygląd narzędzia pomiarowego (neutralny, „kartka testowa”) --- */
+.iq-test-session.iq-assessment-ui {
+  --iq-bg: #e4e4e7;
+  --iq-surface: #f4f4f5;
+  --iq-paper: #ffffff;
+  --iq-border: #d4d4d8;
+  --iq-border-strong: #a1a1aa;
+  --iq-ink: #18181b;
+  --iq-muted: #52525b;
+  --iq-faint: #71717a;
+  --iq-progress-track: #d4d4d8;
+  --iq-progress-fill: #27272a;
+  min-height: 100vh;
+  background-color: var(--iq-bg);
+  font-family: 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.015em;
+}
+
+.dark .iq-test-session.iq-assessment-ui {
+  --iq-bg: #09090b;
+  --iq-surface: #0c0c0e;
+  --iq-paper: #18181b;
+  --iq-border: #3f3f46;
+  --iq-border-strong: #52525b;
+  --iq-ink: #fafafa;
+  --iq-muted: #a1a1aa;
+  --iq-faint: #71717a;
+  --iq-progress-track: #3f3f46;
+  --iq-progress-fill: #e4e4e7;
+}
+
+.iq-test-session .iq-matrix-frame {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: min(100%, 30rem);
+  padding: 1.25rem 1.5rem 1.5rem;
+  background: var(--iq-paper);
+  border: 1px solid var(--iq-border-strong);
+  border-radius: 2px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.85);
+}
+
+.dark .iq-test-session .iq-matrix-frame {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+.iq-test-session .iq-matrix-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+  filter: none;
+}
+
+.dark .iq-test-session .iq-matrix-svg {
+  filter: none;
+}
+
+.iq-test-session .iq-stimulus-panel {
+  background: var(--iq-surface);
+  border: none;
+  box-shadow: none;
+}
+
+.iq-test-session .iq-assessment-topbar {
+  border-bottom: 1px solid var(--iq-border);
+  background: var(--iq-paper);
+}
+
+.iq-test-session .iq-assessment-sheet {
+  background: var(--iq-paper);
+  border: 1px solid var(--iq-border);
+  border-radius: 2px;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 4px 24px rgb(0 0 0 / 0.06);
+}
+
+.dark .iq-test-session .iq-assessment-sheet {
+  box-shadow: 0 4px 28px rgb(0 0 0 / 0.45);
+}
+
+.iq-test-session .iq-answers-panel {
+  background: var(--iq-surface);
+  border-top: 1px solid var(--iq-border);
+}
+
+.iq-test-session .iq-option-btn {
+  min-height: 6.25rem;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--iq-border);
+  border-radius: 2px;
+  background: var(--iq-paper);
+  color: var(--iq-ink);
+  box-shadow: none;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.iq-test-session .iq-option-btn:hover {
+  border-color: var(--iq-border-strong);
+  background: var(--iq-surface);
+  box-shadow: 0 0 0 1px var(--iq-border-strong);
+}
+
+.iq-test-session .iq-option-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--iq-paper), 0 0 0 4px var(--iq-ink);
+}
+
+.iq-test-session .iq-option-letter {
+  font-family: 'IBM Plex Sans', ui-monospace, monospace;
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--iq-muted);
+  border: 1px solid var(--iq-border);
+  background: var(--iq-surface);
+  border-radius: 2px;
+}
+
+.iq-test-session .iq-option-btn:hover .iq-option-letter {
+  color: var(--iq-ink);
+  border-color: var(--iq-border-strong);
+}
+
+.iq-test-session .iq-option-btn .iq-option-svg-host {
+  width: 100%;
+  max-width: 8rem;
+  height: 8rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.iq-test-session .iq-option-svg-host svg.iq-cell-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.iq-test-session .iq-timer-box {
+  font-family: ui-monospace, 'Cascadia Code', 'IBM Plex Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}

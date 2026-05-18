@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Grid3X3, Target, Zap, ArrowRight, Search, Cpu, Dna, Lightbulb, Atom, LayoutDashboard, TrendingUp, ShieldCheck, Briefcase, Layout, BarChart3, Globe, Rocket, Award, BadgeCheck, Fingerprint, Star, ArrowUpCircle, CheckCircle2, Brain, Percent, Info, PieChart, BrainCircuit, Activity, Trophy, AreaChart, ClipboardList, Check, Clock, Sun, Moon, AlertTriangle, Lock, Mail } from 'lucide-react';
+import { Users, Grid3X3, Target, Zap, ArrowRight, Search, Cpu, Dna, Lightbulb, Atom, LayoutDashboard, TrendingUp, ShieldCheck, Briefcase, Layout, BarChart3, Globe, Rocket, Award, BadgeCheck, Fingerprint, Star, ArrowUpCircle, CheckCircle2, Brain, Percent, Info, PieChart, BrainCircuit, Activity, Trophy, AreaChart, ClipboardList, Check, Clock, Sun, Moon, AlertTriangle, Lock, Mail, Layers, LayoutGrid, Eye, Gauge, ClipboardCheck, SlidersHorizontal } from 'lucide-react';
 import { HashRouter, Routes, Route, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import { 
   ComposableMap, 
@@ -12,9 +12,20 @@ import {
   Graticule
 } from "react-simple-maps";
 import { TestState, Question, QuestionType, UserStats, ReportData } from './types';
+import { IQ_AGE_BRACKETS, getAgeBracketById } from './ageBrackets';
 import { QUESTIONS } from './questions';
 import { Icons, COLORS, Logos } from './constants';
 import { generateDetailedReport } from './services/geminiService';
+import {
+  DOMAIN_ITEMS,
+  buildPlanFromDomains,
+  resolveDevelopmentPlan,
+  getDomainLevel,
+  normalizeDiffLabel,
+  type PlanStep,
+} from './reportHelpers';
+import { REGULAMIN_MARKDOWN } from './regulaminContent';
+import { PRIVACY_POLICY_MARKDOWN } from './privacyPolicyContent';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -146,11 +157,10 @@ const FloatingThematicIcons = () => {
 // --- BRANDING COMPONENTS ---
 
 const BrandName = ({ className = "" }: { className?: string }) => (
-  <span className={`font-display tracking-tighter antialiased ${className}`}>
-    <span className="font-semibold opacity-90">brainmed</span>
-    <span className="relative inline-block font-black text-transparent bg-clip-text bg-gradient-to-br from-blue-600 to-indigo-700">
-      iq
-      <span className="absolute -right-1.5 bottom-1.5 w-1 h-1 bg-blue-500 rounded-full animate-pulse"></span>
+  <span className={`font-display tracking-tight antialiased ${className}`}>
+    <span className="font-black text-slate-950 dark:text-white">Brain</span>
+    <span className="font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+      mediq
     </span>
   </span>
 );
@@ -160,11 +170,10 @@ const BrandLogo = ({ size = "nav", className = "" }: { size?: "nav" | "footer" |
   const isFooter = size === "footer";
   
   return (
-    <div className={`flex items-center space-x-3 select-none ${className}`}>
-      <div className={`${isNav ? 'text-blue-600' : 'text-blue-600'} transition-colors`}>
+    <div className={`flex items-center gap-3 select-none ${className}`}>
+      <div className={`${isNav ? 'h-9 w-9 rounded-2xl' : isFooter ? 'h-12 w-12 rounded-3xl' : 'h-16 w-16 rounded-[1.6rem]'} flex items-center justify-center bg-blue-600 text-white shadow-lg shadow-blue-600/20 ring-1 ring-blue-400/30 transition-colors`}>
         <Logos.BrainGrid 
-          size={isNav ? 28 : isFooter ? 48 : 64} 
-          className="animate-spin-soft"
+          size={isNav ? 24 : isFooter ? 32 : 42} 
         />
       </div>
       <BrandName className={isNav ? 'text-xl' : isFooter ? 'text-2xl' : 'text-5xl'} />
@@ -174,28 +183,105 @@ const BrandLogo = ({ size = "nav", className = "" }: { size?: "nav" | "footer" |
 
 // --- VISUAL COMPONENTS FOR REPORT ---
 
-const DomainBar = ({ label, value, desc, level, animate }: { label: string; value: number; desc: string; level: string; animate: boolean }) => (
-  <div className="group">
-    <div className="flex justify-between items-end mb-2">
-      <div className="flex flex-col">
-        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{label}</span>
-        <span className="text-[10px] text-slate-400">{desc}</span>
+const DomainBar = ({
+  label,
+  value,
+  desc,
+  level,
+  animate,
+}: {
+  label: string;
+  value: number;
+  desc: string;
+  level: string;
+  animate: boolean;
+}) => {
+  const pct = Math.max(0, Math.min(100, Math.round(value)));
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/50">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{label}</span>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{desc}</p>
+        </div>
+        <div className="shrink-0 text-right">
+          <span className="text-2xl font-black tabular-nums text-blue-600 dark:text-blue-400">{pct}%</span>
+          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{level}</p>
+        </div>
       </div>
-      <div className="text-right">
-        <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter">{level}</span>
-        <span className="ml-2 text-[10px] font-bold text-slate-300">{value}%</span>
+      <div
+        className="relative h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${label}: ${pct}%`}
+      >
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-[width] duration-700 ease-out"
+          style={{ width: `${pct}%`, minWidth: pct > 0 ? '4px' : 0 }}
+        />
       </div>
     </div>
-    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden relative">
-      <div 
-        className="h-full bg-blue-600 transition-transform duration-1000 ease-out origin-left no-print" 
-        style={{ transform: animate ? `scaleX(${value / 100})` : 'scaleX(0)' }}
-      ></div>
-      <div 
-        className="hidden print:block h-full bg-blue-600" 
-        style={{ width: `${value}%` }}
-      ></div>
+  );
+};
+
+const DomainProfilePanel = ({
+  domainScores,
+  animate,
+}: {
+  domainScores: UserStats['domainScores'];
+  animate: boolean;
+}) => (
+  <div className="space-y-4">
+    <p className="text-center text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+      Każdy pasek pokazuje wynik w danej części testu (0–100%). Im wyżej, tym więcej poprawnych odpowiedzi w tej kategorii.
+    </p>
+    {DOMAIN_ITEMS.map((d) => {
+      const value = domainScores[d.key] ?? 0;
+      const { label: level } = getDomainLevel(value);
+      return (
+        <DomainBar label={d.label} value={value} desc={d.desc} level={level} animate={animate} />
+      );
+    })}
+  </div>
+);
+
+const DevelopmentPlanPanel = ({ steps }: { steps: PlanStep[] }) => (
+  <div className="space-y-6">
+    <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-5 dark:border-blue-900/50 dark:bg-blue-950/30">
+      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Jak korzystać z planu</p>
+      <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+        Masz 5 krótkich kroków — od obszaru, który wymaga najwięcej uwagi, do utrwalenia mocnych stron. Wykonuj po jednym kroku dziennie.
+      </p>
     </div>
+    <ol className="space-y-4">
+      {steps.map((rec, i) => (
+        <li
+          key={`${rec.title}-${i}`}
+          className="list-none rounded-2xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+        >
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white">
+              {i + 1}
+            </span>
+            <h5 className="flex-1 text-base font-bold text-slate-800 dark:text-slate-100">{rec.title}</h5>
+          </div>
+          {rec.domainLabel && (
+            <p className="mb-2 text-xs font-medium text-blue-600 dark:text-blue-400">Obszar: {rec.domainLabel}</p>
+          )}
+          <div className="mb-3 flex flex-wrap gap-2">
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              ⏱ {rec.time}
+            </span>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+              {normalizeDiffLabel(rec.diff)}
+            </span>
+          </div>
+          <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">{rec.desc}</p>
+        </li>
+      ))}
+    </ol>
   </div>
 );
 
@@ -271,8 +357,8 @@ const HeroIllustration = () => (
   <div className="relative w-full h-[500px] flex items-center justify-center">
     <div className="absolute inset-0 bg-blue-600/5 dark:bg-blue-400/5 rounded-[3rem] -rotate-6 animate-pulse"></div>
     <div className="absolute inset-0 bg-blue-600/10 dark:bg-blue-400/10 rounded-[3rem] rotate-3"></div>
-    <div className="relative w-64 h-64 text-blue-600 dark:text-blue-400 drop-shadow-2xl">
-      <Logos.BrainGrid size={256} className="animate-spin-soft" />
+    <div className="relative flex h-64 w-64 items-center justify-center rounded-[4rem] bg-white text-blue-600 shadow-2xl shadow-blue-600/10 ring-1 ring-blue-100 dark:bg-slate-900 dark:text-blue-400 dark:ring-blue-900/40">
+      <Logos.BrainGrid size={180} />
     </div>
     {/* Decorative floating elements */}
     <div className="absolute top-1/4 left-1/4 w-4 h-4 bg-blue-400 rounded-lg rotate-12 animate-bounce shadow-lg"></div>
@@ -626,7 +712,7 @@ const Footer = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => (
 // --- HOMEPAGE: REPORT PREVIEW SECTION ---
 
 const HomepageReportPreview = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
-  const [activeTab, setActiveTab] = useState("podsumowanie");
+  const [activeTab, setActiveTab] = useState("domeny");
   const [animate, setAnimate] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -653,21 +739,17 @@ const HomepageReportPreview = ({ openPurchaseModal }: { openPurchaseModal: () =>
         [QuestionType.NUMBER_SERIES]: 65,
         [QuestionType.ANALOGY]: 82
       },
-      confidenceInterval: [108, 116]
+      confidenceInterval: [108, 116],
+      ageBracketId: '25-34',
+      ageBracketLabel: '25–34 lata',
     },
     analysis: {
       summary: "Twój wynik (112) jest bardzo wysoki. Świetnie radzisz sobie z logicznym myśleniem i szybkim kojarzeniem faktów w codziennych sytuacjach.",
       strengths: ["Bardzo szybkie łączenie faktów", "Łatwe wyłapywanie reguł i wzorców", "Skuteczne oddzielanie ważnych informacji od szumu"],
-      weaknesses: ["Wyobraźnia przestrzenna przy trudniejszych bryłach", "Tempo pracy przy wielu rzeczach naraz"],
+      weaknesses: ["Wyobraźnia przestrzenna — warto poćwiczyć", "Skupienie przy wielu zadaniach naraz"],
       careerPaths: ["Analityk Danych", "Architekt Systemów", "Strateg Biznesowy"],
       personalityTraits: ["Analityczność", "Skrupulatność", "Kreatywne rozwiązywanie problemów"],
-      recommendations: [
-        { title: "Trening Matryc", time: "10 min", diff: "Średni", desc: "Zadania oparte na zmianie dwóch zmiennych jednocześnie." },
-        { title: "Rotacja 3D", time: "15 min", diff: "Wysoki", desc: "Skup się na rzutowaniu izometrycznym brył złożonych." },
-        { title: "Pamięć Operacyjna", time: "5 min", diff: "Niski", desc: "Ciągi cyfr wstecznie i naprzemiennie." },
-        { title: "Analiza Logiczna", time: "10 min", diff: "Średni", desc: "Rozwiązywanie zagadek typu 'kto kłamie, kto mówi prawdę'." },
-        { title: "Szybkie Czytanie", time: "15 min", diff: "Średni", desc: "Trening poszerzania pola widzenia i szybkiego skanowania tekstu." }
-      ]
+      recommendations: []
     }
   };
 
@@ -704,6 +786,11 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic max-w-prose">
                   "{analysis?.summary || `Twój wynik (${stats.iqScore}) jest bardzo dobry. Wykazujesz sprawne i logiczne myślenie.`}"
                 </p>
+                {stats.ageBracketLabel && (
+                  <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                    Norma odniesienia: <span className="font-semibold text-slate-700 dark:text-slate-300">{stats.ageBracketLabel}</span>
+                  </p>
+                )}
               </div>
             </div>
             {data.isPro && (
@@ -754,13 +841,9 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
         return (
           <div className="space-y-6 animate-in animate-slide-in-from-bottom duration-500">
             <h4 className="font-bold text-center flex items-center justify-center gap-2 text-slate-800 dark:text-slate-100">
-              <BrainCircuit size={20} className="text-blue-500" /> Szczegółowy profil domen
+              <BrainCircuit size={20} className="text-blue-500" /> Profil 5 domen
             </h4>
-            <DomainBar label="Wzorce i schematy" value={stats.domainScores.MATRIX} desc="Dostrzeganie reguł wizualnych" level={stats.domainScores.MATRIX > 65 ? "Wysoki" : stats.domainScores.MATRIX > 30 ? "Średni" : "Podstawowy"} animate={animate} />
-            <DomainBar label="Logika" value={stats.domainScores.LOGIC} desc="Wyciąganie wniosków" level={stats.domainScores.LOGIC > 65 ? "Wysoki" : stats.domainScores.LOGIC > 30 ? "Średni" : "Podstawowy"} animate={animate} />
-            <DomainBar label="Wyobraźnia" value={stats.domainScores.SPATIAL} desc="Wyobraźnia przestrzenna" level={stats.domainScores.SPATIAL > 65 ? "Wysoki" : stats.domainScores.SPATIAL > 30 ? "Średni" : "Podstawowy"} animate={animate} />
-            <DomainBar label="Matematyka" value={stats.domainScores.NUMBER_SERIES} desc="Praca z liczbami" level={stats.domainScores.NUMBER_SERIES > 65 ? "Wysoki" : stats.domainScores.NUMBER_SERIES > 30 ? "Średni" : "Podstawowy"} animate={animate} />
-            <DomainBar label="Słownictwo" value={stats.domainScores.ANALOGY} desc="Rozumienie relacji" level={stats.domainScores.ANALOGY > 65 ? "Wysoki" : stats.domainScores.ANALOGY > 30 ? "Średni" : "Podstawowy"} animate={animate} />
+            <DomainProfilePanel domainScores={stats.domainScores} animate={animate} />
           </div>
         );
       case "percentyl":
@@ -776,37 +859,27 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
                   : `Twój wynik wskazuje, że jesteś sprawniejszy poznawczo niż ${stats.percentile}% populacji w naszym modelu referencyjnym.`
                 }
               </p>
+              {stats.ageBracketLabel && (
+                <p className="text-[11px] text-slate-500 text-center mb-6 px-6 leading-relaxed">
+                  Percentyl i skala IQ są liczone względem zadeklarowanej grupy wiekowej: <strong>{stats.ageBracketLabel}</strong>.
+                  Porównanie dotyczy modelu referencyjnego w obrębie tej grupy, a nie całej populacji bez podziału wieku.
+                </p>
+              )}
               <PercentileAxis val={stats.percentile} animate={animate} label={`Twój wynik: ${stats.percentile}%`} />
             </div>
           </div>
         );
-      case "rekomendacje":
-        const recs = analysis?.recommendations || [
-          { title: "Trening Matryc", time: "10 min", diff: "Średni", desc: "Zadania oparte na zmianie dwóch zmiennych jednocześnie." },
-          { title: "Rotacja 3D", time: "15 min", diff: "Wysoki", desc: "Skup się na rzutowaniu izometrycznym brył złożonych." },
-          { title: "Pamięć Operacyjna", time: "5 min", diff: "Niski", desc: "Ciągi cyfr wstecznie i naprzemiennie." },
-          { title: "Analiza Logiczna", time: "10 min", diff: "Średni", desc: "Rozwiązywanie zagadek typu 'kto kłamie, kto mówi prawdę'." },
-          { title: "Szybkie Czytanie", time: "15 min", diff: "Średni", desc: "Trening poszerzania pola widzenia i szybkiego skanowania tekstu." }
-        ];
+      case "rekomendacje": {
+        const planSteps = resolveDevelopmentPlan(stats.domainScores, analysis?.recommendations);
         return (
           <div className="space-y-6 animate-in animate-slide-in-from-bottom duration-500">
             <h4 className="font-bold text-center flex items-center justify-center gap-2 text-slate-800 dark:text-slate-100">
-              <Rocket size={20} className="text-blue-500" /> Plan rozwoju poznawczego
+              <Rocket size={20} className="text-blue-500" /> Plan rozwoju — 5 kroków
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {recs.map((rec, i) => (
-              <div key={i} className="p-5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm hover:translate-y-[-2px] transition-transform">
-                <h5 className="font-bold text-sm mb-1">{rec.title}</h5>
-                <div className="flex gap-2 mb-3">
-                  <span className="text-[9px] font-black bg-blue-50 dark:bg-blue-900/40 text-blue-600 px-2 py-0.5 rounded uppercase">{rec.time}</span>
-                  <span className="text-[9px] font-black bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded uppercase">{rec.diff}</span>
-                </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">{rec.desc}</p>
-              </div>
-            ))}
-            </div>
+            <DevelopmentPlanPanel steps={planSteps} />
           </div>
         );
+      }
       case "certyfikat":
         return (
           <div className="animate-in animate-slide-in-from-bottom duration-500 flex justify-center">
@@ -816,7 +889,9 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
               
               <div className="text-center relative z-10">
                 <div className="flex justify-center mb-6">
-                  <Logos.BrainGrid size={48} className="text-blue-600" />
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
+                    <Logos.BrainGrid size={36} />
+                  </div>
                 </div>
                 <h3 className="text-2xl font-serif font-bold mb-2 dark:text-white">Certyfikat Inteligencji</h3>
                 <div className="w-16 h-0.5 bg-blue-600 mx-auto mb-8"></div>
@@ -1090,15 +1165,15 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
               className="flex space-x-8 whitespace-nowrap px-8 py-4 transform-gpu"
             >
               {[
-                { id: 'osobowosc', title: 'Test Osobowości', icon: <Users />, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', link: '/test-osobowosci', desc: 'Odkryj swój profil psychologiczny i dominujące cechy charakteru.' },
-                { id: 'pamiec', title: 'Test Pamięci', icon: <Grid3X3 />, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', link: '/test-pamieci', desc: 'Sprawdź pojemność swojej pamięci roboczej i zdolność zapamiętywania.' },
-                { id: 'koncentracja', title: 'Test Koncentracji', icon: <Target />, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', link: '/test-koncentracji', desc: 'Zmierz swoją odporność na dystraktory i zdolność skupienia uwagi.' },
-                { id: 'reakcja', title: 'Szybkość Reakcji', icon: <Zap />, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', link: '/test-reakcji', desc: 'Zbadaj swój czas reakcji na bodźce wzrokowe w milisekundach.' },
+                { id: 'osobowosc', title: 'Test Osobowości', icon: <Layers />, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', link: '/test-osobowosci', desc: 'Odkryj swój profil psychologiczny i dominujące cechy charakteru.' },
+                { id: 'pamiec', title: 'Test Pamięci', icon: <LayoutGrid />, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', link: '/test-pamieci', desc: 'Sprawdź pojemność swojej pamięci roboczej i zdolność zapamiętywania.' },
+                { id: 'koncentracja', title: 'Test Koncentracji', icon: <Eye />, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', link: '/test-koncentracji', desc: 'Zmierz swoją odporność na dystraktory i zdolność skupienia uwagi.' },
+                { id: 'reakcja', title: 'Szybkość Reakcji', icon: <Gauge />, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', link: '/test-reakcji', desc: 'Zbadaj swój czas reakcji na bodźce wzrokowe w milisekundach.' },
                 // Duplicate for loop
-                { id: 'osobowosc-2', title: 'Test Osobowości', icon: <Users />, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', link: '/test-osobowosci', desc: 'Odkryj swój profil psychologiczny i dominujące cechy charakteru.' },
-                { id: 'pamiec-2', title: 'Test Pamięci', icon: <Grid3X3 />, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', link: '/test-pamieci', desc: 'Sprawdź pojemność swojej pamięci roboczej i zdolność zapamiętywania.' },
-                { id: 'koncentracja-2', title: 'Test Koncentracji', icon: <Target />, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', link: '/test-koncentracji', desc: 'Zmierz swoją odporność na dystraktory i zdolność skupienia uwagi.' },
-                { id: 'reakcja-2', title: 'Szybkość Reakcji', icon: <Zap />, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', link: '/test-reakcji', desc: 'Zbadaj swój czas reakcji na bodźce wzrokowe w milisekundach.' },
+                { id: 'osobowosc-2', title: 'Test Osobowości', icon: <Layers />, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', link: '/test-osobowosci', desc: 'Odkryj swój profil psychologiczny i dominujące cechy charakteru.' },
+                { id: 'pamiec-2', title: 'Test Pamięci', icon: <LayoutGrid />, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', link: '/test-pamieci', desc: 'Sprawdź pojemność swojej pamięci roboczej i zdolność zapamiętywania.' },
+                { id: 'koncentracja-2', title: 'Test Koncentracji', icon: <Eye />, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', link: '/test-koncentracji', desc: 'Zmierz swoją odporność na dystraktory i zdolność skupienia uwagi.' },
+                { id: 'reakcja-2', title: 'Szybkość Reakcji', icon: <Gauge />, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', link: '/test-reakcji', desc: 'Zbadaj swój czas reakcji na bodźce wzrokowe w milisekundach.' },
               ].map((test, idx) => (
                 <Link 
                   key={`${test.id}-${idx}`}
@@ -1142,7 +1217,7 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
               className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-xl dark:shadow-none flex flex-col relative overflow-hidden"
             >
               <div className="flex flex-wrap gap-2 mb-8 justify-center items-start content-start relative z-10 h-auto md:h-32 mt-4">
-                {["30 pytań", "Wynik + Certyfikat", "Wysyłka na e-mail"].map(tag => (
+                {["19 pytań", "Wynik + Certyfikat", "Wysyłka na e-mail"].map(tag => (
                   <span key={tag} className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-bold px-4 py-1.5 rounded-full uppercase tracking-widest">{tag}</span>
                 ))}
               </div>
@@ -1200,36 +1275,39 @@ const TestSession = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const qCount = 30; // Standard test length
-    
-    // Group by difficulty and shuffle within each group
-    const byDiff: Record<number, Question[]> = {};
-    [...QUESTIONS].sort(() => 0.5 - Math.random()).forEach(q => {
-      if (!byDiff[q.difficulty]) byDiff[q.difficulty] = [];
-      byDiff[q.difficulty].push(q);
-    });
-    
-    const diffLevels = Object.keys(byDiff).map(Number).sort((a, b) => a - b);
-    const perLevel = Math.ceil(qCount / diffLevels.length);
-    
-    let selectedQuestions: Question[] = [];
-    diffLevels.forEach(level => {
-      selectedQuestions = selectedQuestions.concat(byDiff[level].slice(0, perLevel));
-    });
-    
-    // Trim to exact qCount and sort by difficulty
-    selectedQuestions = selectedQuestions.slice(0, qCount).sort((a, b) => a.difficulty - b.difficulty);
+    const qCount = QUESTIONS.length;
+
+    const byId = (a: { id: string }, b: { id: string }) => a.id.localeCompare(b.id);
+
+    const easyPool = QUESTIONS.filter(q => q.difficulty <= 4).sort((a, b) => a.difficulty - b.difficulty || byId(a, b));
+    const mediumPool = QUESTIONS.filter(q => q.difficulty >= 5 && q.difficulty <= 7).sort((a, b) => a.difficulty - b.difficulty || byId(a, b));
+    const hardPool = QUESTIONS.filter(q => q.difficulty >= 8).sort((a, b) => a.difficulty - b.difficulty || byId(a, b));
+
+    const takeFromPool = (pool: Question[], count: number) => pool.slice(0, Math.min(count, pool.length));
+
+    const easyPart = takeFromPool(easyPool, 10);
+    const mediumPart = takeFromPool(mediumPool, 10);
+    const hardPart = takeFromPool(hardPool, 10);
+
+    let selectedQuestions: Question[] = [...easyPart, ...mediumPart, ...hardPart];
+
+    if (selectedQuestions.length < qCount) {
+      const usedIds = new Set(selectedQuestions.map(q => q.id));
+      const fallback = QUESTIONS.filter(q => !usedIds.has(q.id)).sort((a, b) => a.difficulty - b.difficulty || byId(a, b));
+      selectedQuestions = selectedQuestions.concat(fallback.slice(0, qCount - selectedQuestions.length));
+    }
     
     setState({
       currentQuestionIndex: 0,
-      answers: new Array(qCount).fill(null),
+      answers: new Array(selectedQuestions.length).fill(null),
       startTime: null,
       endTime: null,
       questions: selectedQuestions,
-      isFinished: false
+      isFinished: false,
+      ageBracketId: null,
     });
 
-    setTimeLeft(20 * 60); 
+    setTimeLeft(14 * 60);
   }, []);
 
   const startRealTest = () => {
@@ -1290,14 +1368,17 @@ const TestSession = () => {
     const durationMs = endTime - state.startTime!;
     
     const results = finalAnswers || state.answers;
-    const stats = calculateStats(state.questions, results);
+    const stats = calculateStats(state.questions, results, state.ageBracketId);
     
     const existingSaved = JSON.parse(localStorage.getItem('iq_results') || '{}');
+    const bracket = getAgeBracketById(state.ageBracketId);
     
     // Create new results, explicitly resetting Pro/Max status and old analysis
     const newResults = {
       ...existingSaved,
       stats,
+      ageBracketId: bracket.id,
+      ageBracketLabel: bracket.label,
       timestamp: Date.now(),
       isPaid: false,
       isPro: false,
@@ -1311,7 +1392,11 @@ const TestSession = () => {
     navigate('/wynik');
   };
 
-  const calculateStats = (questions: Question[], answers: (number | null)[]): UserStats => {
+  const calculateStats = (
+    questions: Question[],
+    answers: (number | null)[],
+    ageBracketId: string | null,
+  ): UserStats => {
     let rawScore = 0;
     let maxRawScore = 0;
 
@@ -1333,11 +1418,11 @@ const TestSession = () => {
       }
     });
 
-    // Psychometryczne mapowanie wyników
-    // Zakładamy, że średni wynik w populacji to ok. 45% maksymalnej liczby punktów (biorąc pod uwagę trudność)
-    const meanRaw = maxRawScore * 0.45; 
-    // Odchylenie standardowe dla wyników surowych
-    const stdDevRaw = maxRawScore * 0.18;
+    const bracket = getAgeBracketById(ageBracketId);
+
+    // Psychometryczne mapowanie — średnia i rozrzut zależą od zadeklarowanej grupy wiekowej (uproszczona norma).
+    const meanRaw = maxRawScore * bracket.meanRawFactor;
+    const stdDevRaw = maxRawScore * bracket.stdRawFactor;
 
     // Obliczanie Z-score (ile odchyleń standardowych od średniej)
     let zScore = (rawScore - meanRaw) / stdDevRaw;
@@ -1374,23 +1459,98 @@ const TestSession = () => {
       domainScores[key] = Math.round(uiScore);
     });
 
-    return { iqScore, percentile, domainScores, confidenceInterval: [iqScore - 4, iqScore + 4] };
+    return {
+      iqScore,
+      percentile,
+      domainScores,
+      confidenceInterval: [iqScore - 4, iqScore + 4],
+      ageBracketId: bracket.id,
+      ageBracketLabel: bracket.label,
+    };
   };
 
   if (!state) return <div className="p-20 text-center dark:text-white relative z-10">Inicjalizacja...</div>;
 
+  if (state.ageBracketId === null) {
+    return (
+      <div className="iq-test-session iq-assessment-ui relative z-10 px-4 py-12 md:py-16">
+        <div className="mx-auto max-w-xl">
+          <div className="mb-8 text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--iq-muted)]">
+              Przed rozpoczęciem
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--iq-ink)] md:text-3xl">
+              Przedział wiekowy
+            </h2>
+            <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[var(--iq-muted)]">
+              Wybierz grupę, do której należysz. Wynik IQ i percentyl zostaną odniesione do uproszczonej normy dla tej grupy (jak w
+              standaryzowanych testach z podziałem wiekowym).
+            </p>
+          </div>
+          <div className="iq-assessment-sheet overflow-hidden">
+            <div className="iq-assessment-topbar px-6 py-4 md:px-8">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--iq-faint)]">
+                Twoja grupa
+              </p>
+              <p className="mt-2 text-sm text-[var(--iq-muted)]">
+                Wybierz jedną opcję — możesz wrócić tylko przed rozpoczęciem rozgrzewki.
+              </p>
+            </div>
+            <div className="iq-answers-panel px-4 py-5 md:px-6 md:py-6">
+              <div className="flex flex-col gap-2">
+                {IQ_AGE_BRACKETS.map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() =>
+                      setState((prev) => (prev ? { ...prev, ageBracketId: b.id } : null))
+                    }
+                    className="iq-option-btn flex min-h-[3.25rem] flex-row items-center gap-3 px-4 py-3 text-left"
+                  >
+                    <span className="flex-1 text-[15px] font-medium text-[var(--iq-ink)]">{b.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!trainingDone) {
     return (
-      <div className="max-w-2xl mx-auto py-32 px-6 relative z-10">
-        <h2 className="text-4xl font-bold mb-8">Zadanie Próbne</h2>
-        <div className="bg-white dark:bg-slate-900 p-10 md:p-14 rounded-[3rem] border border-slate-200 shadow-xl">
-          <h4 className="font-bold mb-10 text-xl leading-relaxed">Instrukcja: Wybierz liczbę, która logicznie uzupełnia ciąg: 2, 4, 6, 8, ...?</h4>
-          <div className="grid grid-cols-2 gap-5">
-            {['9', '10', '12', '14'].map((opt, i) => (
-              <button key={i} onClick={startRealTest} className="p-6 border-2 border-slate-100 rounded-[2rem] hover:border-blue-500 hover:bg-blue-50 transition-all font-bold text-lg">
-                {opt}
+      <div className="iq-test-session iq-assessment-ui relative z-10 px-4 py-12 md:py-16">
+        <div className="mx-auto max-w-xl">
+          <div className="mb-8 text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--iq-muted)]">
+              Rozgrzewka
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--iq-ink)] md:text-3xl">
+              Przed rozpoczęciem
+            </h2>
+            <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[var(--iq-muted)]">
+              Test zawiera wyłącznie zadania przygotowane na podstawie przesłanych screenów. Wybierz przycisk poniżej, gdy jesteś gotowy.
+            </p>
+          </div>
+          <div className="iq-assessment-sheet overflow-hidden">
+            <div className="iq-assessment-topbar px-6 py-4 md:px-8">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--iq-faint)]">
+                Instrukcja
+              </p>
+              <h4 className="mt-2 text-base font-medium leading-relaxed text-[var(--iq-ink)] md:text-lg">
+                W każdym zadaniu wybierz jedną odpowiedź, która najlepiej uzupełnia brakujące pole w układzie.
+              </h4>
+            </div>
+            <div className="iq-answers-panel px-4 py-6 md:px-8 md:py-8">
+              <button
+                type="button"
+                onClick={startRealTest}
+                className="iq-option-btn flex min-h-[4.5rem] w-full flex-row items-center justify-center gap-3 px-4 py-4 text-center text-lg font-semibold text-[var(--iq-ink)]"
+              >
+                Rozpocznij test
               </button>
-            ))}
+            </div>
           </div>
         </div>
       </div>
@@ -1401,23 +1561,69 @@ const TestSession = () => {
   const progress = ((state.currentQuestionIndex + 1) / state.questions.length) * 100;
 
   return (
-    <div className="min-h-screen py-2 px-4 relative z-10" ref={containerRef}>
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex-1 mr-8">
-            <div className="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }}></div>
+    <div
+      className="iq-test-session iq-assessment-ui relative z-10 px-4 py-6 pb-20 md:py-10"
+      ref={containerRef}
+    >
+      <div className="mx-auto max-w-3xl md:max-w-4xl">
+        <header className="iq-assessment-sheet iq-assessment-topbar mb-6 px-4 py-4 md:px-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--iq-faint)]">
+                Sesja pomiarowa · matryce logiczne
+              </p>
+              <p className="mt-1 text-sm text-[var(--iq-muted)]">
+                Pozycja{' '}
+                <span className="font-semibold tabular-nums text-[var(--iq-ink)]">
+                  {String(state.currentQuestionIndex + 1).padStart(2, '0')}
+                </span>
+                <span className="text-[var(--iq-faint)]"> / </span>
+                <span className="tabular-nums text-[var(--iq-muted)]">{state.questions.length}</span>
+              </p>
+            </div>
+            <div className="flex flex-1 flex-col gap-3 sm:max-w-md sm:flex-row sm:items-center sm:justify-end">
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex justify-between text-[11px] font-medium uppercase tracking-wider text-[var(--iq-faint)]">
+                  <span>Postęp</span>
+                  <span className="tabular-nums">{Math.round(progress)}%</span>
+                </div>
+                <div
+                  className="h-1.5 w-full overflow-hidden rounded-none"
+                  style={{ backgroundColor: 'var(--iq-progress-track)' }}
+                >
+                  <div
+                    className="h-full transition-[width] duration-300 ease-out"
+                    style={{
+                      width: `${progress}%`,
+                      backgroundColor: 'var(--iq-progress-fill)',
+                    }}
+                  />
+                </div>
+              </div>
+              <div
+                className="iq-timer-box shrink-0 border px-4 py-2 text-[15px] font-semibold text-[var(--iq-ink)]"
+                style={{
+                  borderColor: 'var(--iq-border-strong)',
+                  backgroundColor: 'var(--iq-paper)',
+                }}
+                aria-live="polite"
+              >
+                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+              </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-900 px-4 py-2 rounded-xl font-mono font-bold shadow-sm text-lg border border-slate-100 dark:border-slate-800">
-            {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-          </div>
-        </div>
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 md:p-6 shadow-2xl border border-slate-100 dark:border-slate-800 min-h-[400px] flex flex-col">
-          <div className="flex-1">
-            <h3 className="text-xl md:text-2xl font-bold mb-4 dark:text-white leading-tight">{currentQ.content}</h3>
+        </header>
+
+        <div className="iq-assessment-sheet overflow-hidden">
+          <div className="iq-stimulus-panel px-5 py-8 md:px-10 md:py-10">
+            <p className="text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--iq-faint)]">
+              Instrukcja
+            </p>
+            <h3 className="mx-auto mt-3 max-w-2xl text-center text-lg font-medium leading-snug text-[var(--iq-ink)] md:text-xl">
+              {currentQ.content}
+            </h3>
             {currentQ.svgContent && (
-              <div className="max-w-[260px] mx-auto mb-4 text-slate-800 dark:text-slate-100">
+              <div className="iq-matrix-frame mt-8 text-[var(--iq-ink)]">
                 {typeof currentQ.svgContent === 'string' ? (
                   <div dangerouslySetInnerHTML={{ __html: currentQ.svgContent }} />
                 ) : (
@@ -1425,22 +1631,62 @@ const TestSession = () => {
                 )}
               </div>
             )}
-            {currentQ.imageUrl && <div className="max-w-[260px] mx-auto mb-4"><img src={currentQ.imageUrl} alt="Zadanie" className="w-full h-auto rounded-xl shadow-sm" /></div>}
+            {currentQ.imageUrl && (
+              <div className="mx-auto mt-6 max-w-md">
+                <img
+                  src={currentQ.imageUrl}
+                  alt="Zadanie"
+                  className="h-auto w-full border border-[var(--iq-border-strong)]"
+                  style={{ backgroundColor: 'var(--iq-paper)' }}
+                />
+              </div>
+            )}
+            <p className="mx-auto mt-8 max-w-xl text-center text-xs leading-relaxed text-[var(--iq-muted)]">
+              Wybierz jedną odpowiedź spośród pól A–F. Tylko jedna opcja jest poprawna.
+            </p>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-auto">
-            {currentQ.options.map((opt, idx) => {
-              const isSvg = typeof opt === 'string' && opt.startsWith('<svg');
-              return (
-                <button key={idx} onClick={(e) => { e.currentTarget.blur(); handleAnswer(idx); }} className={`p-3 md:p-4 border-2 border-slate-100 dark:border-slate-800 rounded-xl hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all font-bold text-base active:scale-[0.98] flex items-center ${isSvg ? 'justify-center' : 'text-left'}`}>
-                  {!isSvg && <span className="mr-3 font-black text-blue-600/30 text-lg">{String.fromCharCode(65 + idx)}</span>}
-                  {isSvg ? (
-                    <div className="w-16 h-16 text-slate-800 dark:text-slate-100" dangerouslySetInnerHTML={{ __html: opt }} />
-                  ) : (
-                    opt
-                  )}
-                </button>
-              );
-            })}
+
+          <div className="iq-answers-panel px-4 py-6 md:px-8 md:py-8">
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--iq-faint)]">
+              Odpowiedzi
+            </p>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-3">
+              {currentQ.options.map((opt, idx) => {
+                const isSvg = typeof opt === 'string' && opt.startsWith('<svg');
+                const letter = String.fromCharCode(65 + idx);
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={(e) => {
+                      e.currentTarget.blur();
+                      handleAnswer(idx);
+                    }}
+                    className={`iq-option-btn group relative flex p-3 text-left focus:outline-none active:scale-[0.99] ${
+                      isSvg ? 'flex-col items-stretch' : 'min-h-[5.5rem] flex-row items-center gap-3'
+                    }`}
+                  >
+                    <span
+                      className={`iq-option-letter inline-flex h-8 w-8 shrink-0 items-center justify-center ${
+                        isSvg ? 'mb-2' : ''
+                      }`}
+                    >
+                      {letter}
+                    </span>
+                    {isSvg ? (
+                      <div
+                        className="iq-option-svg-host flex flex-1 items-center justify-center"
+                        dangerouslySetInnerHTML={{ __html: opt }}
+                      />
+                    ) : (
+                      <span className="flex-1 text-base font-medium text-[var(--iq-ink)] md:text-lg">
+                        {opt}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -1510,7 +1756,7 @@ const Results = () => {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 relative z-10">
         <div className="w-32 h-32 text-blue-600 mb-12 relative">
-          <Logos.BrainGrid size={128} className="animate-spin-slow opacity-20" />
+          <Logos.BrainGrid size={128} className="opacity-20" />
           <div className="absolute inset-0 flex items-center justify-center">
              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
@@ -1555,6 +1801,14 @@ const Results = () => {
         <p className="text-slate-500 dark:text-slate-400 text-lg leading-relaxed">
           Zaliczyliśmy Twoje podejście z dnia {new Date(data.timestamp).toLocaleDateString()}. Wybierz teraz opcję wyświetlenia swojego rezultatu.
         </p>
+        {(data.stats?.ageBracketLabel || data.ageBracketLabel) && (
+          <p className="mt-4 text-sm font-medium text-slate-600 dark:text-slate-300">
+            Grupa wiekowa (norma wyniku):{' '}
+            <span className="rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+              {data.stats?.ageBracketLabel || data.ageBracketLabel}
+            </span>
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -1595,10 +1849,10 @@ const Results = () => {
           <div className="space-y-4 mb-10 text-left w-full">
             {[
               "Wszystko z opcji Standard",
-              "Szczegółowa analiza 5 domen",
-              "Mocne i słabe strony",
-              "Katalog spersonalizowanych ćwiczeń",
-              "Porównanie z grupą wiekową"
+              "Profil 5 domen z paskami wyniku (%)",
+              "Plan rozwoju — 5 jasnych kroków",
+              "Mocne strony i obszary do ćwiczeń",
+              "Percentyl w Twojej grupie wiekowej"
             ].map((item, i) => (
               <div key={i} className="flex items-center text-sm font-medium text-blue-100">
                 <Check size={16} className="text-amber-400 mr-3 shrink-0" /> {item}
@@ -1803,6 +2057,8 @@ const Checkout = () => {
       if (intentParam === 'start' || !intentParam) {
         delete updatedSaved.stats;
         delete updatedSaved.analysis;
+        delete updatedSaved.ageBracketId;
+        delete updatedSaved.ageBracketLabel;
       }
 
       if (typeParam === 'osobowosc') updatedSaved.hasOsobowosc = true;
@@ -1892,165 +2148,262 @@ const Checkout = () => {
 };
 
 const CertificateTemplate = ({ data, userName }: { data: ReportData, userName: string }) => {
-  const certId = `BMQ-${data.stats.iqScore}-${new Date().getFullYear()}-${Math.random().toString(36).substring(2,7).toUpperCase()}`;
+  const certId = `BMQ-${data.stats.iqScore}-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
   const dateStr = new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
   const domainLabels: Record<string, string> = {
-    MATRIX: 'Macierze', NUMBER_SERIES: 'Ciągi', ANALOGY: 'Analogie', SPATIAL: 'Przestrzeń', LOGIC: 'Logika',
+    MATRIX: 'Matryce',
+    NUMBER_SERIES: 'Ciągi',
+    ANALOGY: 'Analogie',
+    SPATIAL: 'Przestrzeń',
+    LOGIC: 'Logika',
   };
+  const displayName = userName || 'Uczestnik Badania';
+  const domains = Object.entries(data.stats.domainScores).map(([key, value]) => ({
+    key,
+    label: domainLabels[key] || key,
+    value: Math.max(0, Math.min(100, Math.round(value as number))),
+  }));
 
   return (
     <div style={{
-      width: '1123px', height: '794px',
-      backgroundColor: '#fbfbf9', // Elegancki, bardzo jasny kremowy
+      width: '1123px',
+      height: '794px',
       position: 'relative',
-      boxSizing: 'border-box',
       overflow: 'hidden',
-      fontFamily: '"Georgia", "Times New Roman", serif',
-      color: '#1a202c',
+      boxSizing: 'border-box',
+      background: 'linear-gradient(135deg, #f8fafc 0%, #fffaf0 45%, #f8fafc 100%)',
+      color: '#0f172a',
+      fontFamily: 'Inter, Arial, sans-serif',
     }}>
-      {/* ── RAMKI CERTYFIKATU ── */}
-      {/* Zewnętrzna gruba ramka w eleganckim, ciemnym granacie */}
-      <div style={{ position: 'absolute', top: '35px', left: '35px', right: '35px', bottom: '35px', border: '5px solid #1e3a8a', pointerEvents: 'none' }} />
-      {/* Wewnętrzna cieńsza ramka w złotym/brązowym kolorze */}
-      <div style={{ position: 'absolute', top: '44px', left: '44px', right: '44px', bottom: '44px', border: '1px solid #b4914d', pointerEvents: 'none' }} />
-      {/* Ozdobne kwadraciki w rogach (aby to trzymało się idealnie, pozycjonowanie absolutne) */}
-      <div style={{ position: 'absolute', top: '40px', left: '40px', width: '9px', height: '9px', backgroundColor: '#1e3a8a' }} />
-      <div style={{ position: 'absolute', top: '40px', right: '40px', width: '9px', height: '9px', backgroundColor: '#1e3a8a' }} />
-      <div style={{ position: 'absolute', bottom: '40px', left: '40px', width: '9px', height: '9px', backgroundColor: '#1e3a8a' }} />
-      <div style={{ position: 'absolute', bottom: '40px', right: '40px', width: '9px', height: '9px', backgroundColor: '#1e3a8a' }} />
+      <div style={{ position: 'absolute', inset: '0', background: 'radial-gradient(circle at 50% 42%, rgba(37, 99, 235, 0.10), transparent 34%)' }} />
+      <div style={{ position: 'absolute', inset: '28px', border: '2px solid #0f2d5c', borderRadius: '30px' }} />
+      <div style={{ position: 'absolute', inset: '40px', border: '1px solid rgba(180, 145, 77, 0.75)', borderRadius: '22px' }} />
+      <div style={{ position: 'absolute', top: '51px', left: '51px', right: '51px', height: '6px', borderTop: '1px solid rgba(15, 45, 92, 0.35)', borderBottom: '1px solid rgba(180, 145, 77, 0.7)' }} />
+      <div style={{ position: 'absolute', bottom: '51px', left: '51px', right: '51px', height: '6px', borderTop: '1px solid rgba(180, 145, 77, 0.7)', borderBottom: '1px solid rgba(15, 45, 92, 0.35)' }} />
 
-      {/* ── ZNAK WODNY (w tle) ── */}
+      {[
+        ['46px', '46px', undefined, undefined],
+        ['46px', undefined, undefined, '46px'],
+        [undefined, '46px', '46px', undefined],
+        [undefined, undefined, '46px', '46px'],
+      ].map(([top, left, bottom, right], i) => (
+        <div key={i} style={{ position: 'absolute', top, left, bottom, right, width: '34px', height: '34px' }}>
+          <div style={{ position: 'absolute', inset: 0, border: '1px solid #b4914d', transform: 'rotate(45deg)' }} />
+          <div style={{ position: 'absolute', inset: '11px', background: '#0f2d5c', borderRadius: '50%' }} />
+        </div>
+      ))}
+
       <div style={{
-        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-        fontSize: '280px', fontWeight: 900, color: '#1e3a8a', opacity: 0.03,
-        letterSpacing: '-0.05em', pointerEvents: 'none'
+        position: 'absolute',
+        left: '50%',
+        top: '47%',
+        transform: 'translate(-50%, -50%)',
+        width: '520px',
+        height: '520px',
+        border: '1px solid rgba(15, 45, 92, 0.08)',
+        borderRadius: '50%',
+      }} />
+      <div style={{
+        position: 'absolute',
+        left: '50%',
+        top: '47%',
+        transform: 'translate(-50%, -50%)',
+        fontSize: '118px',
+        fontWeight: 900,
+        lineHeight: 1,
+        letterSpacing: '-0.08em',
+        color: '#0f2d5c',
+        opacity: 0.035,
+        whiteSpace: 'nowrap',
       }}>
         brainmediq
       </div>
 
-      {/* ── ZAWARTOŚĆ GŁÓWNA ── */}
-      <div style={{ position: 'absolute', top: '75px', left: '0', right: '0', textAlign: 'center' }}>
-        
-        {/* LOGO I NAZWA INSTYTUCJI */}
-        <div style={{ marginBottom: '35px' }}>
+      <div style={{ position: 'absolute', top: '78px', left: '86px', right: '86px', textAlign: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '34px' }}>
+          <div style={{ width: '230px', textAlign: 'left' }}>
+            <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.26em', textTransform: 'uppercase', color: '#64748b' }}>
+              Dokument cyfrowy
+            </div>
+            <div style={{ marginTop: '8px', fontSize: '12px', fontWeight: 700, color: '#0f2d5c' }}>{certId}</div>
+          </div>
+
           <div style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: '60px', height: '60px', backgroundColor: '#1e3a8a', borderRadius: '50%', marginBottom: '15px'
+            width: '82px',
+            height: '82px',
+            borderRadius: '24px',
+            background: 'linear-gradient(135deg, #0f2d5c, #2563eb)',
+            boxShadow: '0 16px 32px rgba(37, 99, 235, 0.18)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}>
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2C7.58172 2 4 5.58172 4 10C4 12.3906 5.05093 14.5357 6.71212 16H17.2879C18.9491 14.5357 20 12.3906 20 10C20 5.58172 16.4183 2 12 2Z" />
-              <path d="M12 8v4l3 3" />
+            <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 10.5C4 6.9 7 4 10.6 4h2.8C17 4 20 6.9 20 10.5c0 2.9-1.9 5.4-4.5 6.2" />
+              <path d="M8.5 16.7C5.9 15.9 4 13.4 4 10.5" />
+              <path d="M9 10h6" />
+              <path d="M12 7v6" />
+              <path d="M8 20h8" />
+              <path d="M12 16v4" />
             </svg>
           </div>
-          <div style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.35em', color: '#1e3a8a', fontFamily: 'Inter, Arial, sans-serif' }}>
-            Centrum Badań Psychometrycznych
-          </div>
-          <div style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '0.05em', color: '#475569', marginTop: '4px' }}>
-            brainmediq Polska
+
+          <div style={{ width: '230px', textAlign: 'right' }}>
+            <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.26em', textTransform: 'uppercase', color: '#64748b' }}>
+              Data badania
+            </div>
+            <div style={{ marginTop: '8px', fontSize: '12px', fontWeight: 700, color: '#0f2d5c' }}>{dateStr}</div>
           </div>
         </div>
 
-        {/* TYTUŁ DOKUMENTU */}
-        <div style={{ fontSize: '58px', fontWeight: 400, color: '#1e3a8a', letterSpacing: '0.12em', margin: '0 0 45px 0' }}>
+        <div style={{ fontSize: '12px', fontWeight: 900, letterSpacing: '0.36em', textTransform: 'uppercase', color: '#b4914d', marginBottom: '14px' }}>
+          Brainmediq Polska
+        </div>
+        <div style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '58px', fontWeight: 700, letterSpacing: '0.08em', color: '#0f2d5c', lineHeight: 1 }}>
           CERTYFIKAT IQ
         </div>
+        <div style={{ width: '170px', height: '2px', background: 'linear-gradient(90deg, transparent, #b4914d, transparent)', margin: '22px auto 28px' }} />
 
-        {/* DEDYKACJA */}
-        <div style={{ fontSize: '17px', fontStyle: 'italic', color: '#475569', marginBottom: '20px' }}>
-          Niniejszym zaświadcza się, że
+        <div style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '18px', fontStyle: 'italic', color: '#475569', marginBottom: '12px' }}>
+          Niniejszym potwierdza się, że
         </div>
-        
-        <div style={{ fontSize: '52px', fontWeight: 700, fontStyle: 'italic', color: '#0f172a', marginBottom: '8px' }}>
-          {userName || 'Uczestnik Badania'}
+        <div style={{
+          display: 'inline-block',
+          minWidth: '560px',
+          padding: '0 38px 12px',
+          borderBottom: '1px solid rgba(180, 145, 77, 0.9)',
+          fontFamily: 'Georgia, Times New Roman, serif',
+          fontSize: '48px',
+          fontWeight: 700,
+          fontStyle: 'italic',
+          color: '#111827',
+          lineHeight: 1.1,
+        }}>
+          {displayName}
         </div>
-        <div style={{ width: '450px', height: '1px', backgroundColor: '#b4914d', margin: '0 auto 30px auto' }} />
 
-        <div style={{ fontSize: '16px', color: '#475569', lineHeight: '1.8', maxWidth: '600px', margin: '0 auto 40px auto' }}>
-          wypełnił/a oficjalny standaryzowany test inteligencji na platformie brainmediq
-          i w wyniku profesjonalnego pomiaru psychometrycznego uzyskał/a wynik ogólny:
+        <div style={{ maxWidth: '690px', margin: '22px auto 20px', fontSize: '15px', lineHeight: 1.7, color: '#475569' }}>
+          ukończył/a test inteligencji na platformie brainmediq.com i uzyskał/a poniższy wynik w pomiarze zdolności poznawczych.
         </div>
 
-        {/* SEKCJA WYNIKU GŁÓWNEGO */}
-        <div style={{ display: 'inline-block', position: 'relative', marginBottom: '30px' }}>
-          {/* Ramka ozdobna dookoła wyniku */}
-          <div style={{ position: 'absolute', top: '-15px', bottom: '-15px', left: '-50px', right: '-50px', borderTop: '2px solid #b4914d', borderBottom: '2px solid #b4914d' }} />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '30px' }}>
-            <div style={{ fontSize: '110px', fontWeight: 400, color: '#1e3a8a', lineHeight: '1' }}>
+        <div style={{
+          width: '690px',
+          margin: '0 auto 24px',
+          padding: '18px 28px',
+          borderRadius: '28px',
+          border: '1px solid rgba(180, 145, 77, 0.55)',
+          background: 'rgba(255, 255, 255, 0.82)',
+          boxShadow: '0 18px 45px rgba(15, 23, 42, 0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '34px',
+        }}>
+          <div style={{ textAlign: 'center', minWidth: '220px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#64748b', marginBottom: '4px' }}>
+              Wynik ogólny
+            </div>
+            <div style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '104px', fontWeight: 700, color: '#0f2d5c', lineHeight: 0.95 }}>
               {data.stats.iqScore}
             </div>
-            <div style={{ textAlign: 'left', borderLeft: '1px solid #cbd5e1', paddingLeft: '20px' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', fontWeight: 700, fontFamily: 'Inter, sans-serif' }}>
-                Skala Wechslera (SD 15)
-              </div>
-              <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a', marginTop: '6px' }}>
-                Percentyl: {data.stats.percentile}%
-              </div>
-              <div style={{ fontSize: '13px', color: '#475569', marginTop: '4px', fontStyle: 'italic' }}>
-                Przedział ufności (95%): {data.stats.confidenceInterval[0]} – {data.stats.confidenceInterval[1]}
-              </div>
+            <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#b4914d' }}>
+              IQ score
             </div>
+          </div>
+
+          <div style={{ width: '1px', height: '132px', background: 'linear-gradient(#ffffff, #cbd5e1, #ffffff)' }} />
+
+          <div style={{ textAlign: 'left', width: '300px' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#64748b' }}>Percentyl</div>
+              <div style={{ fontSize: '34px', fontWeight: 900, color: '#111827', marginTop: '2px' }}>{data.stats.percentile}%</div>
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#64748b' }}>Przedział ufności 95%</div>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f2d5c', marginTop: '4px' }}>{data.stats.confidenceInterval[0]} - {data.stats.confidenceInterval[1]}</div>
+            </div>
+            {data.stats.ageBracketLabel ? (
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#64748b' }}>Norma wieku</div>
+                <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f2d5c', marginTop: '4px' }}>{data.stats.ageBracketLabel}</div>
+              </div>
+            ) : null}
           </div>
         </div>
 
-        {/* WYNIKI SZCZEGÓŁOWE (SUB-DOMENY) */}
-        <div style={{ width: '750px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '16px 0' }}>
-          {Object.entries(data.stats.domainScores).map(([key, val]) => (
-            <div key={key} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#1e3a8a' }}>{Math.round(val as number)}</div>
-              <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', marginTop: '6px', fontFamily: 'Inter, sans-serif' }}>
-                {domainLabels[key] || key}
+        <div style={{ width: '760px', margin: '0 auto', display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, domains.length)}, 1fr)`, gap: '10px' }}>
+          {domains.map((domain) => (
+            <div key={domain.key} style={{
+              padding: '12px 10px',
+              borderRadius: '16px',
+              background: 'rgba(255, 255, 255, 0.68)',
+              border: '1px solid rgba(226, 232, 240, 0.95)',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '18px', fontWeight: 900, color: '#0f2d5c' }}>{domain.value}%</div>
+              <div style={{ height: '4px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden', margin: '7px 0 8px' }}>
+                <div style={{ height: '100%', width: `${domain.value}%`, background: 'linear-gradient(90deg, #2563eb, #b4914d)', borderRadius: '999px' }} />
               </div>
+              <div style={{ fontSize: '8px', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748b' }}>{domain.label}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── STOPKA (PODPISY I PIECZĘĆ) ── */}
-      <div style={{ position: 'absolute', bottom: '80px', left: '90px', right: '90px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        
-        {/* Lewy blok: Data i ID */}
-        <div style={{ textAlign: 'center', width: '220px' }}>
-          <div style={{ fontSize: '17px', color: '#0f172a', borderBottom: '1px solid #94a3b8', paddingBottom: '6px', marginBottom: '8px' }}>
-            {dateStr}
+      <div style={{ position: 'absolute', bottom: '78px', left: '92px', right: '92px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+        <div style={{ width: '245px', textAlign: 'center' }}>
+          <div style={{ borderBottom: '1px solid #94a3b8', paddingBottom: '8px', fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+            brainmediq.com
           </div>
-          <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.15em', color: '#475569', fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
-            Data Badania
-          </div>
-          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '12px', fontFamily: 'Inter, sans-serif' }}>
-            ID: {certId}
+          <div style={{ marginTop: '9px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#64748b' }}>
+            Platforma badania
           </div>
         </div>
 
-        {/* Środkowy blok: Złota pieczęć */}
         <div style={{
-          width: '100px', height: '100px', borderRadius: '50%', backgroundColor: '#b4914d',
-          border: '3px double #ffffff', boxShadow: '0 0 0 2px #b4914d',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'
+          width: '104px',
+          height: '104px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, #d8b45c 0%, #b4914d 58%, #8a6a2f 100%)',
+          boxShadow: '0 0 0 4px rgba(180, 145, 77, 0.26), 0 16px 28px rgba(15, 23, 42, 0.12)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          color: '#ffffff',
         }}>
-          {/* Tekst na około pieczęci w CSS (uproszczony dla html2canvas) */}
-          <div style={{ position: 'absolute', inset: '6px', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '50%' }} />
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 15l-2 5l9-5l-9-5z"/>
-            <circle cx="12" cy="12" r="10" stroke="#ffffff" strokeWidth="1" strokeDasharray="2 2" />
+          <div style={{ position: 'absolute', inset: '9px', border: '1px solid rgba(255, 255, 255, 0.55)', borderRadius: '50%' }} />
+          <div style={{ position: 'absolute', top: '19px', left: 0, right: 0, textAlign: 'center', fontSize: '7px', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            verified
+          </div>
+          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 3l2.35 4.76l5.25.76l-3.8 3.7l.9 5.23L12 15l-4.7 2.47l.9-5.23l-3.8-3.7l5.25-.76L12 3z" />
           </svg>
-          <div style={{ position: 'absolute', color: '#ffffff', fontSize: '7px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'Inter, sans-serif', width: '100%', textAlign: 'center', top: '24px' }}>
-            SEAL OF<br/>EXCELLENCE
+          <div style={{ position: 'absolute', bottom: '19px', left: 0, right: 0, textAlign: 'center', fontSize: '7px', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            result
           </div>
         </div>
 
-        {/* Prawy blok: Podpis */}
-        <div style={{ textAlign: 'center', width: '220px' }}>
-          <div style={{ fontSize: '32px', color: '#1e3a8a', borderBottom: '1px solid #94a3b8', paddingBottom: '6px', marginBottom: '8px', fontFamily: '"Brush Script MT", "Palatino Linotype", cursive', fontStyle: 'italic' }}>
-            brainmediq
+        <div style={{ width: '245px', textAlign: 'center' }}>
+          <div style={{
+            borderBottom: '1px solid #94a3b8',
+            paddingBottom: '8px',
+            fontFamily: 'Georgia, Times New Roman, serif',
+            fontSize: '30px',
+            fontStyle: 'italic',
+            fontWeight: 700,
+            color: '#0f2d5c',
+          }}>
+            Brainmediq
           </div>
-          <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.15em', color: '#475569', fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
-            Główny Analityk
-          </div>
-          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '12px', fontFamily: 'Inter, sans-serif' }}>
-            www.brainmediq.com
+          <div style={{ marginTop: '9px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#64748b' }}>
+            Autoryzacja systemowa
           </div>
         </div>
-        
+      </div>
+
+      <div style={{ position: 'absolute', bottom: '42px', left: '90px', right: '90px', textAlign: 'center', fontSize: '9px', color: '#94a3b8', lineHeight: 1.5 }}>
+        Certyfikat ma charakter informacyjno-rozwojowy i potwierdza wynik uzyskany w teście online. Nie stanowi diagnozy klinicznej ani dokumentu urzędowego.
       </div>
     </div>
   );
@@ -2190,6 +2543,11 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
           </td>
         </tr>`).join('');
 
+    const ageNormRow =
+      reportData.stats.ageBracketLabel != null && reportData.stats.ageBracketLabel !== ''
+        ? `<p style="margin:10px 0 0;font-size:12px;color:#94a3b8">Norma: grupa wiekowa <strong style="color:#e2e8f0">${reportData.stats.ageBracketLabel}</strong></p>`
+        : '';
+
     const html = `
 <!DOCTYPE html>
 <html lang="pl">
@@ -2226,6 +2584,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
               <td style="background:#1e293b;border-radius:16px;padding:32px;text-align:center" width="45%">
                 <p style="margin:0;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.15em">Wynik IQ</p>
                 <p style="margin:8px 0;font-size:64px;font-weight:900;color:#ffffff;line-height:1">${reportData.stats.iqScore}</p>
+                ${ageNormRow}
                 <p style="margin:0;font-size:12px;color:#64748b">Przedział: ${reportData.stats.confidenceInterval[0]}–${reportData.stats.confidenceInterval[1]}</p>
               </td>
               <td width="10%"></td>
@@ -2356,7 +2715,9 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
       <div className="max-w-[1120px] mx-auto py-24 px-6 animate-in animate-fade-in duration-1000 relative z-10" ref={reportRef}>
       <div className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
         <div className="flex items-center space-x-6">
-           <Logos.BrainGrid size={64} className="text-blue-600 animate-spin-soft" />
+           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-blue-600 text-white shadow-xl shadow-blue-600/20">
+             <Logos.BrainGrid size={42} />
+           </div>
            <div>
              <h1 className="text-5xl font-bold dark:text-white mb-3">{data.isPro ? "Szczegółowa Analiza IQ" : "Wynik Twojego Testu"}</h1>
              <p className="text-slate-500 dark:text-slate-400 text-lg">{data.isPro ? "Zaawansowana Analiza Psychometryczna — Model CHC v2.5" : "Oficjalny Wynik i Certyfikat Inteligencji"}</p>
@@ -2555,12 +2916,21 @@ const PersonalityTest = () => {
     }, 2000);
   };
 
+  const sortedTraits = scores
+    ? Object.entries(scores).sort(([, a], [, b]) => (b as number) - (a as number))
+    : [];
+  const strongestTrait = sortedTraits[0];
+  const calmestTrait = sortedTraits[sortedTraits.length - 1];
+  const balancedTraits = sortedTraits.filter(([, value]) => (value as number) >= 40 && (value as number) <= 60).length;
+  const strongestTraitInfo = strongestTrait ? traitInfo[strongestTrait[0] as keyof typeof traitInfo] : null;
+  const calmestTraitInfo = calmestTrait ? traitInfo[calmestTrait[0] as keyof typeof traitInfo] : null;
+
   return (
     <div className="max-w-4xl mx-auto py-24 px-6 relative z-10 min-h-[70vh] flex flex-col justify-center">
       {step === 'intro' && (
         <div className="text-center animate-in fade-in zoom-in duration-500">
           <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
-            <Users className="w-10 h-10" />
+            <Layers className="w-10 h-10" />
           </div>
           <h1 className="text-5xl font-bold mb-6 dark:text-white">Test Osobowości (Big Five)</h1>
           <p className="text-xl text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
@@ -2671,6 +3041,38 @@ const PersonalityTest = () => {
                 </div>
               );
             })}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="rounded-3xl border border-indigo-100 bg-indigo-50/70 p-6 text-center dark:border-indigo-900/40 dark:bg-indigo-950/20">
+              <div className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-300">Najsilniejsza cecha</div>
+              <div className="mt-3 text-xl font-black text-indigo-700 dark:text-indigo-300">{strongestTraitInfo?.name}</div>
+              <div className="mt-1 text-sm font-bold text-indigo-500">{strongestTrait?.[1]}%</div>
+            </div>
+            <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-800/30">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Profil zbalansowany</div>
+              <div className="mt-3 text-3xl font-black text-slate-900 dark:text-white">{balancedTraits}/5</div>
+            </div>
+            <div className="rounded-3xl border border-blue-100 bg-blue-50/70 p-6 text-center dark:border-blue-900/40 dark:bg-blue-950/20">
+              <div className="text-[10px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Najniższy wymiar</div>
+              <div className="mt-3 text-xl font-black text-blue-700 dark:text-blue-300">{calmestTraitInfo?.name}</div>
+              <div className="mt-1 text-sm font-bold text-blue-500">{calmestTrait?.[1]}%</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <h3 className="mb-3 text-lg font-bold dark:text-white">Jak czytać profil?</h3>
+              <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                Wynik nie ocenia osobowości jako dobrej lub złej. Pokazuje raczej preferowany styl działania: sposób reagowania na ludzi, stres, obowiązki, nowość i współpracę.
+              </p>
+            </div>
+            <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <h3 className="mb-3 text-lg font-bold dark:text-white">Najważniejszy wniosek</h3>
+              <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                Najmocniej wyróżnia się u Ciebie obszar: <strong className="text-slate-800 dark:text-slate-100">{strongestTraitInfo?.name}</strong>. Najniższy wynik w obszarze <strong className="text-slate-800 dark:text-slate-100">{calmestTraitInfo?.name}</strong> oznacza, że ta cecha rzadziej dominuje w Twoich typowych reakcjach.
+              </p>
+            </div>
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/30 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 text-center mb-12">
@@ -2805,13 +3207,27 @@ const MemoryTest = () => {
 
   const capacity = sequence.length - 1; // The length they successfully completed
   const interpretation = getResultInterpretation(capacity);
+  const completedLevels = Math.max(0, level - 1);
+  const nextGoal = capacity + 1;
+  const resultNote =
+    capacity < 5
+      ? 'Wynik warto traktować ostrożnie, jeśli test był wykonywany w hałasie, pośpiechu albo przy zmęczeniu.'
+      : capacity <= 6
+        ? 'To stabilny wynik dla codziennych zadań wymagających zapamiętywania położenia i kolejności.'
+        : 'Taki wynik sugeruje sprawne utrzymywanie informacji przestrzennej oraz dobrą kontrolę uwagi.';
+  const trainingTips =
+    capacity < 5
+      ? ['Wykonuj krótkie serie 3-4 elementów i zwiększaj długość dopiero po kilku bezbłędnych próbach.', 'Przed klikaniem odtwórz sekwencję w głowie jeszcze raz, bez pośpiechu.']
+      : capacity <= 6
+        ? ['Ćwicz grupowanie kafelków w małe wzory, np. linia, róg, przekątna.', 'Zwiększaj trudność stopniowo: najpierw dokładność, później tempo.']
+        : ['Utrzymuj wynik przez trudniejsze układy, zmieniając tempo i długość sekwencji.', 'Dobrym kolejnym celem jest stabilne powtarzanie sekwencji o jeden element dłuższej.'];
 
   return (
     <div className="max-w-4xl mx-auto py-24 px-6 relative z-10 min-h-[70vh] flex flex-col justify-center">
       {step === 'intro' && (
         <div className="text-center animate-in fade-in zoom-in duration-500">
           <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
-            <Grid3X3 className="w-10 h-10" />
+            <LayoutGrid className="w-10 h-10" />
           </div>
           <h1 className="text-5xl font-bold mb-6 dark:text-white">Test Pamięci Przestrzennej</h1>
           <p className="text-xl text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
@@ -2886,6 +3302,41 @@ const MemoryTest = () => {
             <p className="text-slate-500 dark:text-slate-400">{interpretation.desc}</p>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="rounded-3xl border border-emerald-100 bg-emerald-50/70 p-6 text-center dark:border-emerald-900/40 dark:bg-emerald-950/20">
+              <div className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">Ukończone poziomy</div>
+              <div className="mt-3 text-3xl font-black text-emerald-700 dark:text-emerald-300">{completedLevels}</div>
+            </div>
+            <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-800/30">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Najdłuższa sekwencja</div>
+              <div className="mt-3 text-3xl font-black text-slate-900 dark:text-white">{capacity}</div>
+            </div>
+            <div className="rounded-3xl border border-blue-100 bg-blue-50/70 p-6 text-center dark:border-blue-900/40 dark:bg-blue-950/20">
+              <div className="text-[10px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Kolejny cel</div>
+              <div className="mt-3 text-3xl font-black text-blue-700 dark:text-blue-300">{nextGoal}</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <h3 className="mb-3 text-lg font-bold dark:text-white">Co oznacza wynik?</h3>
+              <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                Test sprawdza, ile elementów przestrzennych potrafisz utrzymać w pamięci i odtworzyć w poprawnej kolejności. {resultNote}
+              </p>
+            </div>
+            <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <h3 className="mb-3 text-lg font-bold dark:text-white">Jak poprawiać wynik?</h3>
+              <div className="space-y-3">
+                {trainingTips.map((tip, i) => (
+                  <div key={i} className="flex gap-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                    <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-black text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">{i + 1}</span>
+                    <span>{tip}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="bg-slate-50 dark:bg-slate-800/30 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 text-center mb-12">
             <h3 className="text-xl font-bold dark:text-white mb-4">Wyślij wyniki na e-mail</h3>
             <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
@@ -2907,12 +3358,6 @@ const MemoryTest = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button 
-              onClick={startGame}
-              className="px-8 py-4 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20"
-            >
-              Spróbuj ponownie
-            </button>
             <Link to="/inne-testy" className="px-8 py-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all relative group">
               Inne testy
             </Link>
@@ -3017,13 +3462,22 @@ const ConcentrationTest = () => {
   };
 
   const interpretation = getResultInterpretation(score, errors);
+  const totalAnswers = score + errors;
+  const accuracy = totalAnswers > 0 ? Math.round((score / totalAnswers) * 100) : 0;
+  const pace = Math.round(totalAnswers / 0.5);
+  const concentrationTips =
+    accuracy < 75
+      ? ['Najpierw zwolnij tempo i skup się na kolorze liter, nie na treści słowa.', 'Pomaga krótkie nazwanie koloru w myślach przed kliknięciem odpowiedzi.']
+      : score < 25
+        ? ['Masz dobrą dokładność, więc kolejnym celem jest stopniowe zwiększanie tempa.', 'Ćwicz krótkimi seriami po 30 sekund, zachowując jak najmniej błędów.']
+        : ['Utrzymuj balans między szybkością i dokładnością; nie zwiększaj tempa kosztem błędów.', 'Dla dalszego rozwoju dodawaj rozpraszacze, np. cichy dźwięk lub presję czasu.'];
 
   return (
     <div className="max-w-4xl mx-auto py-24 px-6 relative z-10 min-h-[70vh] flex flex-col justify-center">
       {step === 'intro' && (
         <div className="text-center animate-in fade-in zoom-in duration-500">
           <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
-            <Target className="w-10 h-10" />
+            <Eye className="w-10 h-10" />
           </div>
           <h1 className="text-5xl font-bold mb-6 dark:text-white">Test Koncentracji (Stroop)</h1>
           <p className="text-xl text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
@@ -3118,6 +3572,41 @@ const ConcentrationTest = () => {
             <p className="text-slate-500 dark:text-slate-400">{interpretation.desc}</p>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="rounded-3xl border border-amber-100 bg-amber-50/70 p-6 text-center dark:border-amber-900/40 dark:bg-amber-950/20">
+              <div className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">Skuteczność</div>
+              <div className="mt-3 text-3xl font-black text-amber-700 dark:text-amber-300">{accuracy}%</div>
+            </div>
+            <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-800/30">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Odpowiedzi</div>
+              <div className="mt-3 text-3xl font-black text-slate-900 dark:text-white">{totalAnswers}</div>
+            </div>
+            <div className="rounded-3xl border border-blue-100 bg-blue-50/70 p-6 text-center dark:border-blue-900/40 dark:bg-blue-950/20">
+              <div className="text-[10px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Tempo / min</div>
+              <div className="mt-3 text-3xl font-black text-blue-700 dark:text-blue-300">{pace}</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <h3 className="mb-3 text-lg font-bold dark:text-white">Co mierzy ten wynik?</h3>
+              <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                Wynik pokazuje, jak szybko potrafisz ignorować znaczenie słowa i reagować tylko na kolor czcionki. To praktyczna miara uwagi selektywnej, kontroli impulsu i odporności na dystraktory.
+              </p>
+            </div>
+            <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <h3 className="mb-3 text-lg font-bold dark:text-white">Jak poprawiać wynik?</h3>
+              <div className="space-y-3">
+                {concentrationTips.map((tip, i) => (
+                  <div key={i} className="flex gap-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                    <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[10px] font-black text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">{i + 1}</span>
+                    <span>{tip}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="bg-slate-50 dark:bg-slate-800/30 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 text-center mb-12">
             <h3 className="text-xl font-bold dark:text-white mb-4">Wyślij wyniki na e-mail</h3>
             <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
@@ -3139,12 +3628,6 @@ const ConcentrationTest = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button 
-              onClick={startGame}
-              className="px-8 py-4 bg-amber-500 text-white rounded-2xl font-bold hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20"
-            >
-              Spróbuj ponownie
-            </button>
             <Link to="/inne-testy" className="px-8 py-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all relative group">
               Inne testy
             </Link>
@@ -3239,13 +3722,24 @@ const ReactionTest = () => {
 
   const averageTime = times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
   const interpretation = getResultInterpretation(averageTime);
+  const bestTime = times.length > 0 ? Math.min(...times) : 0;
+  const slowestTime = times.length > 0 ? Math.max(...times) : 0;
+  const stabilityRange = slowestTime - bestTime;
+  const consistencyLabel =
+    stabilityRange <= 80 ? 'Bardzo stabilnie' : stabilityRange <= 160 ? 'Stabilnie' : 'Duża zmienność';
+  const reactionTips =
+    averageTime <= 320
+      ? ['Utrzymuj tę szybkość, ale pilnuj, żeby nie klikać przed zmianą koloru.', 'Dalszy progres zwykle zależy od koncentracji, snu i jakości sprzętu.']
+      : averageTime <= 450
+        ? ['Skup wzrok na środku pola i trzymaj palec gotowy przed zmianą koloru.', 'Ćwicz krótkimi seriami; po kilku minutach reakcja zwykle zaczyna zwalniać.']
+        : ['Wykonaj test ponownie innego dnia, jeśli byłeś/aś zmęczony/a lub rozproszony/a.', 'Sprawdź też opóźnienie myszy, gładzika i monitora, bo mocno wpływa na wynik.'];
 
   return (
     <div className="max-w-4xl mx-auto py-24 px-6 relative z-10 min-h-[70vh] flex flex-col justify-center">
       {step === 'intro' && (
         <div className="text-center animate-in fade-in zoom-in duration-500">
           <div className="w-20 h-20 bg-rose-100 dark:bg-rose-900/30 text-rose-600 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
-            <Zap className="w-10 h-10" />
+            <Gauge className="w-10 h-10" />
           </div>
           <h1 className="text-5xl font-bold mb-6 dark:text-white">Test Szybkości Reakcji</h1>
           <p className="text-xl text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
@@ -3338,6 +3832,42 @@ const ReactionTest = () => {
             ))}
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="rounded-3xl border border-emerald-100 bg-emerald-50/70 p-6 text-center dark:border-emerald-900/40 dark:bg-emerald-950/20">
+              <div className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">Najlepsza próba</div>
+              <div className="mt-3 text-3xl font-black text-emerald-700 dark:text-emerald-300">{bestTime} ms</div>
+            </div>
+            <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-800/30">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stabilność</div>
+              <div className="mt-3 text-xl font-black text-slate-900 dark:text-white">{consistencyLabel}</div>
+              <div className="mt-1 text-xs font-bold text-slate-400">rozrzut {stabilityRange} ms</div>
+            </div>
+            <div className="rounded-3xl border border-rose-100 bg-rose-50/70 p-6 text-center dark:border-rose-900/40 dark:bg-rose-950/20">
+              <div className="text-[10px] font-black uppercase tracking-widest text-rose-700 dark:text-rose-300">Najwolniejsza próba</div>
+              <div className="mt-3 text-3xl font-black text-rose-700 dark:text-rose-300">{slowestTime} ms</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <h3 className="mb-3 text-lg font-bold dark:text-white">Co oznacza wynik?</h3>
+              <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                Średnia pokazuje typowy czas reakcji, a rozrzut między próbami mówi, czy reakcje były równe. Na wynik wpływa uwaga, zmęczenie, stres oraz opóźnienie urządzenia.
+              </p>
+            </div>
+            <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <h3 className="mb-3 text-lg font-bold dark:text-white">Jak poprawiać wynik?</h3>
+              <div className="space-y-3">
+                {reactionTips.map((tip, i) => (
+                  <div key={i} className="flex gap-3 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                    <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-100 text-[10px] font-black text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">{i + 1}</span>
+                    <span>{tip}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div className="bg-slate-50 dark:bg-slate-800/30 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 text-center mb-12">
             <h3 className="text-xl font-bold dark:text-white mb-4">Wyślij wyniki na e-mail</h3>
             <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
@@ -3359,12 +3889,6 @@ const ReactionTest = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button 
-              onClick={startGame}
-              className="px-8 py-4 bg-rose-600 text-white rounded-2xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-500/20"
-            >
-              Spróbuj ponownie
-            </button>
             <Link to="/inne-testy" className="px-8 py-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all relative group">
               Inne testy
             </Link>
@@ -3594,7 +4118,7 @@ const AlzheimerTest = () => {
       <div className="max-w-2xl mx-auto py-32 px-6 text-center">
         <div className="bg-white dark:bg-slate-900 p-16 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
           <div className="w-20 h-20 bg-teal-100 dark:bg-teal-900/30 rounded-3xl flex items-center justify-center mx-auto mb-8">
-            <Brain className="w-10 h-10 text-teal-600" />
+            <ClipboardCheck className="w-10 h-10 text-teal-600" />
           </div>
           <h2 className="text-3xl font-bold mb-4 dark:text-white">Test Funkcji Poznawczych</h2>
           <p className="text-slate-500 dark:text-slate-400 mb-8">Aby uzyskać dostęp do tego testu, dokonaj zakupu.</p>
@@ -3611,7 +4135,7 @@ const AlzheimerTest = () => {
       <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
         <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
           <div className="w-20 h-20 bg-teal-100 dark:bg-teal-900/30 rounded-3xl flex items-center justify-center mb-8">
-            <Brain className="w-10 h-10 text-teal-600" />
+            <ClipboardCheck className="w-10 h-10 text-teal-600" />
           </div>
           <h1 className="text-4xl font-bold mb-4 dark:text-white">Test Funkcji Poznawczych</h1>
           <p className="text-slate-500 dark:text-slate-400 mb-6 text-lg leading-relaxed">
@@ -3638,6 +4162,13 @@ const AlzheimerTest = () => {
 
   if (phase === 'result') {
     const interp = getInterpretation(pct);
+    const cognitiveAreas = new Set(alzheimerQuestions.map((q) => q.category)).size;
+    const nextSteps =
+      pct >= 85
+        ? ['Utrzymuj regularną aktywność umysłową, sen i ruch.', 'Powtórz test okresowo tylko wtedy, gdy zauważysz zmianę funkcjonowania.']
+        : pct >= 65
+          ? ['Zwróć uwagę na obszary z błędami i obserwuj, czy trudności powtarzają się w codziennym życiu.', 'Warto zadbać o sen, nawodnienie i spokojne warunki pracy umysłowej.']
+          : ['Rozważ konsultację z lekarzem rodzinnym lub specjalistą, szczególnie jeśli trudności są nowe.', 'Zapisz przykłady sytuacji z codzienności, w których pamięć lub orientacja sprawiają problem.'];
     return (
       <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
         <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl space-y-8">
@@ -3648,6 +4179,33 @@ const AlzheimerTest = () => {
 
           <div className={`border rounded-2xl p-6 ${interp.bg}`}>
             <p className="text-slate-700 dark:text-slate-300 leading-relaxed">{interp.desc}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-2xl bg-teal-50 p-5 text-center dark:bg-teal-900/20">
+              <p className="text-[10px] font-black uppercase tracking-widest text-teal-700 dark:text-teal-300">Procent wyniku</p>
+              <p className="mt-2 text-3xl font-black text-teal-700 dark:text-teal-300">{pct}%</p>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-5 text-center dark:bg-slate-800">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Obszary</p>
+              <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{cognitiveAreas}</p>
+            </div>
+            <div className="rounded-2xl bg-blue-50 p-5 text-center dark:bg-blue-900/20">
+              <p className="text-[10px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Charakter testu</p>
+              <p className="mt-2 text-sm font-bold text-blue-700 dark:text-blue-300">orientacyjny</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-800/30">
+            <h3 className="mb-4 text-lg font-bold dark:text-white">Co dalej?</h3>
+            <div className="space-y-3">
+              {nextSteps.map((step, i) => (
+                <div key={i} className="flex gap-3 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                  <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-100 text-[10px] font-black text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">{i + 1}</span>
+                  <span>{step}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-6">
@@ -3807,7 +4365,7 @@ const ADHDTest = () => {
       <div className="max-w-2xl mx-auto py-32 px-6 text-center">
         <div className="bg-white dark:bg-slate-900 p-16 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
           <div className="w-20 h-20 bg-violet-100 dark:bg-violet-900/30 rounded-3xl flex items-center justify-center mx-auto mb-8">
-            <Zap className="w-10 h-10 text-violet-600" />
+            <SlidersHorizontal className="w-10 h-10 text-violet-600" />
           </div>
           <h2 className="text-3xl font-bold mb-4 dark:text-white">Test ADHD (ASRS)</h2>
           <p className="text-slate-500 dark:text-slate-400 mb-8">Aby uzyskać dostęp do tego testu, dokonaj zakupu.</p>
@@ -3824,7 +4382,7 @@ const ADHDTest = () => {
       <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
         <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl">
           <div className="w-20 h-20 bg-violet-100 dark:bg-violet-900/30 rounded-3xl flex items-center justify-center mb-8">
-            <Zap className="w-10 h-10 text-violet-600" />
+            <SlidersHorizontal className="w-10 h-10 text-violet-600" />
           </div>
           <h1 className="text-4xl font-bold mb-2 dark:text-white">Test ADHD</h1>
           <p className="text-sm font-bold text-violet-600 mb-4 uppercase tracking-widest">Skala ASRS v1.1 (WHO)</p>
@@ -3852,6 +4410,15 @@ const ADHDTest = () => {
 
   if (phase === 'result') {
     const result = getResult();
+    const maxScore = adhdQuestions.length * 4;
+    const scorePct = Math.round((totalScore / maxScore) * 100);
+    const partBPersistent = answers.slice(6).filter((v) => v >= 3).length;
+    const nextSteps =
+      partAPositive >= 4
+        ? ['Zapisz konkretne przykłady trudności z pracy, nauki i życia domowego.', 'Umów konsultację ze specjalistą, który może przeprowadzić pełną ocenę kliniczną.']
+        : partAPositive >= 2 || totalScore >= 24
+          ? ['Obserwuj, czy objawy powtarzają się w kilku obszarach życia, a nie tylko w jednej sytuacji.', 'Pomocne może być omówienie wyniku z psychologiem lub lekarzem, jeśli trudności przeszkadzają na co dzień.']
+          : ['Wynik nie wskazuje na silny wzorzec objawów, ale dbaj o sen, organizację dnia i przerwy w pracy.', 'Jeśli mimo wyniku masz duże trudności z uwagą, warto skonsultować konkretne objawy.'];
     return (
       <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
         <div className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-xl space-y-8">
@@ -3875,6 +4442,33 @@ const ADHDTest = () => {
               <p className="text-3xl font-black text-slate-700 dark:text-slate-200">{totalScore}</p>
               <p className="text-sm text-slate-500 mt-1">Wynik łączny</p>
               <p className="text-xs text-slate-400">(wszystkie 18 pytań)</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-2xl bg-violet-50 p-5 text-center dark:bg-violet-900/20">
+              <p className="text-[10px] font-black uppercase tracking-widest text-violet-700 dark:text-violet-300">Natężenie</p>
+              <p className="mt-2 text-3xl font-black text-violet-700 dark:text-violet-300">{scorePct}%</p>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-5 text-center dark:bg-slate-800">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Część B często</p>
+              <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{partBPersistent}</p>
+            </div>
+            <div className="rounded-2xl bg-blue-50 p-5 text-center dark:bg-blue-900/20">
+              <p className="text-[10px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Skala</p>
+              <p className="mt-2 text-sm font-bold text-blue-700 dark:text-blue-300">ASRS v1.1</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-800/30">
+            <h3 className="mb-4 text-lg font-bold dark:text-white">Co dalej?</h3>
+            <div className="space-y-3">
+              {nextSteps.map((step, i) => (
+                <div key={i} className="flex gap-3 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                  <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[10px] font-black text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">{i + 1}</span>
+                  <span>{step}</span>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -3953,7 +4547,7 @@ const OtherTests = () => {
       title: 'Test Osobowości',
       price: '4,99 PLN',
       desc: 'Poznaj swój unikalny profil psychologiczny oparty na modelu Wielkiej Piątki (Big Five).',
-      icon: <Users className="w-full h-full" />,
+      icon: <Layers className="w-full h-full" />,
       color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400',
       status: 'Dostępny',
       link: '/test-osobowosci',
@@ -3964,7 +4558,7 @@ const OtherTests = () => {
       title: 'Test Pamięci Przestrzennej',
       price: '4,99 PLN',
       desc: 'Sprawdź pojemność swojej pamięci krótkotrwałej i roboczej w serii interaktywnych zadań.',
-      icon: <Grid3X3 className="w-full h-full" />,
+      icon: <LayoutGrid className="w-full h-full" />,
       color: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
       status: 'Dostępny',
       link: '/test-pamieci',
@@ -3975,7 +4569,7 @@ const OtherTests = () => {
       title: 'Test Koncentracji',
       price: '4,99 PLN',
       desc: 'Zmierz swoją zdolność do utrzymania uwagi i ignorowania dystraktorów.',
-      icon: <Target className="w-full h-full" />,
+      icon: <Eye className="w-full h-full" />,
       color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
       status: 'Dostępny',
       link: '/test-koncentracji',
@@ -3986,7 +4580,7 @@ const OtherTests = () => {
       title: 'Szybkość Reakcji',
       price: '4,99 PLN',
       desc: 'Zbadaj swój czas reakcji na bodźce wzrokowe i słuchowe w milisekundach.',
-      icon: <Zap className="w-full h-full" />,
+      icon: <Gauge className="w-full h-full" />,
       color: 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400',
       status: 'Dostępny',
       link: '/test-reakcji',
@@ -3997,7 +4591,7 @@ const OtherTests = () => {
       title: 'Test Funkcji Poznawczych',
       price: '4,99 PLN',
       desc: 'Zbadaj orientację, pamięć, uwagę i język. Test inspirowany metodologią MMSE/SAGE. Wyłącznie cel edukacyjny — nie jest diagnozą medyczną.',
-      icon: <Brain className="w-full h-full" />,
+      icon: <ClipboardCheck className="w-full h-full" />,
       color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400',
       status: 'Dostępny',
       link: '/test-funkcji-poznawczych',
@@ -4009,7 +4603,7 @@ const OtherTests = () => {
       title: 'Test ADHD (ASRS)',
       price: '4,99 PLN',
       desc: 'Kwestionariusz przesiewowy oparty na skali WHO ASRS v1.1. Wyłącznie cel edukacyjny — nie jest diagnozą medyczną.',
-      icon: <Zap className="w-full h-full" />,
+      icon: <SlidersHorizontal className="w-full h-full" />,
       color: 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
       status: 'Dostępny',
       link: '/test-adhd',
@@ -4087,7 +4681,7 @@ const FAQ = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
       {[
         { q: "Czy test jest w pełni anonimowy?", a: "Tak, Twoje dane osobowe nie są wymagane do rozpoczęcia testu. Adres e-mail prosimy podać jedynie w celu przesłania gotowego raportu i certyfikatu po zakończeniu badania." },
-        { q: "Ile trwa test i ile ma pytań?", a: "Czas trwania i liczba pytań zależą od wybranego badania. Standardowy test IQ oraz Analiza PRO składają się z 30 zadań (ok. 15 min). Inne testy specjalistyczne, jak test osobowości (15 pytań) czy testy szybkości reakcji, mają własne, krótsze ramy czasowe." },
+        { q: "Ile trwa test i ile ma pytań?", a: "Czas trwania i liczba pytań zależą od wybranego badania. Standardowy test IQ oraz Analiza PRO składają się z 19 zadań opartych na matrycach i wzorcach logicznych (ok. 12-14 min). Inne testy specjalistyczne, jak test osobowości (15 pytań) czy testy szybkości reakcji, mają własne, krótsze ramy czasowe." },
         { q: "Czym różni się wersja Standard od Analizy PRO?", a: "Wersja Standard zawiera wynik punktowy i certyfikat. Analiza PRO to rozszerzony raport badający 5 kluczowych domen poznawczych, Twój percentyl na tle populacji oraz spersonalizowane wskazówki rozwojowe." },
         { q: "Jak i kiedy otrzymam swój wynik?", a: "Wynik zobaczysz na ekranie natychmiast po zakończeniu testu. Pełny dostęp do analizy oraz certyfikat zostaną odblokowane w profilu i wysłane na Twój adres e-mail w ciągu kilku minut od zakupu." },
         { q: "Czy certyfikat jest uznawany oficjalnie?", a: "Nasz test opiera się na uznanych metodach psychometrycznych, jednak certyfikat ma charakter edukacyjno-rozwojowy. Nie zastępuje on diagnozy klinicznej ani oficjalnych testów Mensy." },
@@ -4170,11 +4764,11 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[800px]">
             <div className="p-8 bg-white dark:bg-slate-900 border rounded-3xl border-blue-200 shadow-sm">
               <h4 className="font-bold text-lg mb-3">Struktura testu</h4>
-              <p className="text-sm text-slate-500 leading-relaxed">Test składa się z 30 zadań podzielonych na 5 domen poznawczych (matryce, ciągi liczbowe, analogie, wyobraźnia przestrzenna, logika).</p>
+              <p className="text-sm text-slate-500 leading-relaxed">Test składa się z 19 zadań opartych na matrycach i wzorcach logicznych, podzielonych na 5 domen poznawczych (matryce, ciągi liczbowe, analogie, wyobraźnia przestrzenna, logika).</p>
             </div>
             <div className="p-8 bg-white dark:bg-slate-900 border rounded-3xl shadow-sm">
-              <h4 className="font-bold text-lg mb-3">Limit czasu (15 min)</h4>
-              <p className="text-sm text-slate-500 leading-relaxed">Masz średnio 30 sekund na zadanie. Czas ten wymusza sprawne procesowanie informacji, co jest kluczowym elementem inteligencji płynnej.</p>
+              <h4 className="font-bold text-lg mb-3">Limit czasu (14 min)</h4>
+              <p className="text-sm text-slate-500 leading-relaxed">Masz średnio około 45 sekund na zadanie. Czas ten wymusza sprawne procesowanie informacji, co jest kluczowym elementem inteligencji płynnej.</p>
             </div>
           </div>
         </div>
@@ -4328,7 +4922,7 @@ const PurchaseModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
           </div>
           <h2 className="text-3xl font-bold mb-4 dark:text-white">Gotowy na wyzwanie?</h2>
           <p className="text-slate-500 dark:text-slate-400 mb-10 leading-relaxed">
-            Test trwa około 15-20 minut i składa się z 30 zadań logicznych. Upewnij się, że masz chwilę spokoju i nikt Ci nie będzie przeszkadzał.
+            Test trwa około 12-14 minut i składa się z 19 zadań logicznych. Upewnij się, że masz chwilę spokoju i nikt Ci nie będzie przeszkadzał.
           </p>
           
           <div className="flex flex-col gap-4">
@@ -4342,6 +4936,99 @@ const PurchaseModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
     </div>
   );
 };
+
+const renderLegalInline = (text: string) =>
+  text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+const LegalDocumentPage = ({
+  markdown,
+  title,
+  description,
+}: {
+  markdown: string;
+  title: string;
+  description: string;
+}) => {
+  const lines = markdown.split('\n');
+
+  return (
+    <div className="relative z-10 mx-auto max-w-4xl px-6 py-24 md:py-32">
+      <article className="rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-800 dark:bg-slate-900 md:p-12">
+        <div className="mb-10 border-b border-slate-100 pb-8 dark:border-slate-800">
+          <p className="mb-3 text-[11px] font-black uppercase tracking-[0.25em] text-blue-600">
+            Dokument prawny
+          </p>
+          <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white md:text-5xl">
+            {title}
+          </h1>
+          <p className="mt-4 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+            {description}
+          </p>
+        </div>
+
+        <div className="space-y-4 text-sm leading-7 text-slate-600 dark:text-slate-300 md:text-base">
+          {lines.map((line, index) => {
+            const trimmed = line.trim();
+            if (!trimmed) return <div key={index} className="h-1" />;
+            if (trimmed === '---') {
+              return <hr key={index} className="my-8 border-slate-100 dark:border-slate-800" />;
+            }
+            if (trimmed.startsWith('# ')) {
+              return (
+                <h2 key={index} className="mt-2 text-3xl font-black text-slate-900 dark:text-white">
+                  {trimmed.replace(/^#\s+/, '')}
+                </h2>
+              );
+            }
+            if (trimmed.startsWith('## ')) {
+              return (
+                <h3 key={index} className="pt-8 text-xl font-bold text-slate-900 dark:text-white">
+                  {trimmed.replace(/^##\s+/, '')}
+                </h3>
+              );
+            }
+            if (trimmed.startsWith('- ')) {
+              return (
+                <p
+                  key={index}
+                  className="pl-5 text-slate-600 before:mr-2 before:content-['•'] dark:text-slate-300"
+                  dangerouslySetInnerHTML={{ __html: renderLegalInline(trimmed.replace(/^-\s+/, '')) }}
+                />
+              );
+            }
+            return (
+              <p
+                key={index}
+                dangerouslySetInnerHTML={{ __html: renderLegalInline(trimmed) }}
+              />
+            );
+          })}
+        </div>
+      </article>
+    </div>
+  );
+};
+
+const RegulaminPage = () => (
+  <LegalDocumentPage
+    markdown={REGULAMIN_MARKDOWN}
+    title="Regulamin"
+    description="Zasady korzystania z serwisu brainmediq.com."
+  />
+);
+
+const PrivacyPolicyPage = () => (
+  <LegalDocumentPage
+    markdown={PRIVACY_POLICY_MARKDOWN}
+    title="Polityka prywatności"
+    description="Informacje o przetwarzaniu danych osobowych, cookies i prawach użytkownika."
+  />
+);
 
 const CookieBanner = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -4420,8 +5107,8 @@ const App = () => {
             <Route path="/test-reakcji" element={<ReactionTest />} />
             <Route path="/test-funkcji-poznawczych" element={<AlzheimerTest />} />
             <Route path="/test-adhd" element={<ADHDTest />} />
-            <Route path="/prywatnosc" element={<div className="max-w-3xl mx-auto py-32 px-6"><h2>Polityka Prywatności</h2></div>} />
-            <Route path="/regulamin" element={<div className="max-w-3xl mx-auto py-32 px-6"><h2>Regulamin</h2></div>} />
+            <Route path="/prywatnosc" element={<PrivacyPolicyPage />} />
+            <Route path="/regulamin" element={<RegulaminPage />} />
             <Route path="*" element={<div className="p-32 text-center text-2xl font-bold">404 - Strony nie znaleziono</div>} />
           </Routes>
         </main>

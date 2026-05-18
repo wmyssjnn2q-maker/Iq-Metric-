@@ -15,9 +15,9 @@ export const generateDetailedReport = async (stats: UserStats): Promise<Detailed
         strengths: ["Błyskawiczne łączenie faktów", "Świetna intuicja i wyobraźnia", "Bardzo szybkie uczenie się"],
         weaknesses: ["Zbyt głębokie analizowanie prostych spraw", "Niecierpliwość przy powolnych zadaniach"],
         recommendations: [
-          { title: "Teoria Gier", time: "20 min", diff: "Wysoki", desc: "Poznaj zasady podejmowania najlepszych decyzji." },
-          { title: "Programowanie", time: "30 min", diff: "Wysoki", desc: "Trenuj czystą logikę poprzez pisanie kodu." },
-          { title: "Filozofia", time: "15 min", diff: "Średni", desc: "Rozwijaj precyzyjne myślenie i argumentację." }
+          { title: "Krok 1: Macierze", time: "10 min dziennie", diff: "Łatwe", desc: "Rozwiązuj 5 prostych zadań z układem 3×3. Szukaj, co zmienia się w wierszu i kolumnie." },
+          { title: "Krok 2: Przestrzeń", time: "15 min dziennie", diff: "Średnie", desc: "Składaj puzzle lub rysuj bryły z dwóch stron — ćwicz obracanie figur w głowie." },
+          { title: "Krok 3: Logika", time: "10 min dziennie", diff: "Średnie", desc: "Krótkie zagadki „kto mówi prawdę” — zapisuj krok po kroku, dlaczego tak wnioskujesz." },
         ],
         careerPaths: ["Architekt Systemów", "Strateg", "Naukowiec"],
         personalityTraits: ["Otwartość", "Innowacyjność", "Niezależność"]
@@ -28,9 +28,9 @@ export const generateDetailedReport = async (stats: UserStats): Promise<Detailed
         strengths: ["Logiczne i uporządkowane myślenie", "Dobre dostrzeganie schematów", "Jasne wyciąganie wniosków"],
         weaknesses: ["Trudniejsze zadania przestrzenne (3D)", "Praca pod bardzo dużą presją czasu"],
         recommendations: [
-          { title: "Trening Matryc", time: "10 min", diff: "Średni", desc: "Ćwicz dostrzeganie reguł zmieniających się naraz." },
-          { title: "Sudoku", time: "15 min", diff: "Średni", desc: "Idealny trening dla logicznego myślenia." },
-          { title: "Zagadki Logiczne", time: "10 min", diff: "Średni", desc: "Rozwiązywanie problemów o różnej trudności." }
+          { title: "Krok 1: Macierze", time: "10 min dziennie", diff: "Średnie", desc: "Ćwicz układy 3×3 — zapisuj regułę w każdym wierszu." },
+          { title: "Krok 2: Ciągi liczb", time: "10 min dziennie", diff: "Łatwe", desc: "Znajdź przyrost w ciągu (np. +2, +3) i sprawdź na kolejnych liczbach." },
+          { title: "Krok 3: Analogie", time: "10 min dziennie", diff: "Średnie", desc: "Pary słów: szukaj tej samej relacji, nie tylko podobieństwa." },
         ],
         careerPaths: ["Manager", "Analityk", "Inżynier"],
         personalityTraits: ["Zrównoważenie", "Skrupulatność", "Praktyczność"]
@@ -41,9 +41,9 @@ export const generateDetailedReport = async (stats: UserStats): Promise<Detailed
         strengths: ["Praktyczne rozwiązywanie problemów", "Dbałość o ważne szczegóły", "Dobre wyczucie relacji między faktami"],
         weaknesses: ["Szybka analiza dużej ilości danych", "Zadania oparte na czystej logice"],
         recommendations: [
-          { title: "Podstawy Logiki", time: "10 min", diff: "Niski", desc: "Proste ćwiczenia na wyciąganie wniosków." },
-          { title: "Puzzle 3D", time: "15 min", diff: "Niski", desc: "Zabawa formą, która rozwija wyobraźnię." },
-          { title: "Gry Słowne", time: "15 min", diff: "Niski", desc: "Rozwijanie zasobu słów i sprawności kojarzenia." }
+          { title: "Krok 1: Logika", time: "10 min dziennie", diff: "Łatwe", desc: "Proste zagadki z dwoma zdaniami — kto na pewno kłamie?" },
+          { title: "Krok 2: Macierze", time: "10 min dziennie", diff: "Łatwe", desc: "Zacznij od najprostszych układów 3×3 w internecie." },
+          { title: "Krok 3: Pamięć", time: "5 min dziennie", diff: "Łatwe", desc: "Zapamiętaj 5 cyfr, potem 6 — bez pośpiechu." },
         ],
         careerPaths: ["Koordynator", "Specjalista", "Doradca"],
         personalityTraits: ["Konkretność", "Cierpliwość", "Uważność"]
@@ -65,12 +65,12 @@ export const generateDetailedReport = async (stats: UserStats): Promise<Detailed
           properties: {
             title: { type: Type.STRING },
             time: { type: Type.STRING, description: "Czas trwania np. '10 min'" },
-            diff: { type: Type.STRING, description: "Trudność: 'Niski', 'Średni', 'Wysoki'" },
-            desc: { type: Type.STRING }
+            diff: { type: Type.STRING, description: "Trudność: 'Łatwe', 'Średnie' lub 'Trudniejsze'" },
+            desc: { type: Type.STRING, description: "Jedno zdanie: co konkretnie robić (prosty język, bez żargonu)" }
           },
           required: ["title", "time", "diff", "desc"]
         },
-        description: "Dokładnie 5 spersonalizowanych rekomendacji ćwiczeń."
+        description: "Dokładnie 5 kroków planu rozwoju (Krok 1–5), od najsłabszej domeny. Tytuły krótkie, opisy po polsku, zrozumiałe dla każdego."
       },
       careerPaths: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3 sugerowane ścieżki kariery pasujące do profilu." },
       personalityTraits: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3 cechy osobowości często skorelowane z tym profilem." }
@@ -80,10 +80,10 @@ export const generateDetailedReport = async (stats: UserStats): Promise<Detailed
 
     const apiCall = ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Przeanalizuj wyniki testu IQ: Wynik ogólny ${stats.iqScore} (Percentyl ${stats.percentile}). 
+      contents: `Przeanalizuj wyniki testu IQ: Wynik ogólny ${stats.iqScore} (Percentyl ${stats.percentile}${stats.ageBracketLabel ? ` w grupie wiekowej: ${stats.ageBracketLabel}` : ''}). 
       Wyniki domenowe: Matryce: ${stats.domainScores.MATRIX}, Ciągi: ${stats.domainScores.NUMBER_SERIES}, 
       Logika: ${stats.domainScores.LOGIC}, Przestrzeń: ${stats.domainScores.SPATIAL}, Analogie: ${stats.domainScores.ANALOGY}.
-      Stwórz szczegółowy raport psychometryczny.`,
+      Uwzględnij w interpretacji zadeklarowany przedział wiekowy użytkownika (jeśli podany). Pisz prostym językiem (bez żargonu psychologicznego). W rekomendacjach podaj konkretne, krótkie ćwiczenia na każdy dzień.`,
       config: {
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         temperature: 0.7,

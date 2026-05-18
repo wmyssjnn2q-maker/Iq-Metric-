@@ -7,13 +7,21 @@ export default defineConfig(({ mode }) => {
     return {
       server: {
         port: 3000,
-        host: '0.0.0.0',
+        /** IPv4 — unika problemów, gdy „localhost” idzie w ::1, a serwer tylko na IPv4 */
+        host: '127.0.0.1',
+        strictPort: false,
+        open: false,
         proxy: {
           '/api': {
             target: 'http://localhost:3002',
             changeOrigin: true,
           }
         }
+      },
+      preview: {
+        port: 4173,
+        host: '127.0.0.1',
+        strictPort: false,
       },
       plugins: [react()],
       define: {

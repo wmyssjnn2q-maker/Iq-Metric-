@@ -28,6 +28,8 @@ export interface TestState {
   endTime: number | null;
   questions: Question[];
   isFinished: boolean;
+  /** null = użytkownik jeszcze nie wybrał przedziału wiekowego */
+  ageBracketId: string | null;
 }
 
 export interface UserStats {
@@ -37,6 +39,9 @@ export interface UserStats {
     [key in QuestionType]: number;
   };
   confidenceInterval: [number, number];
+  /** Przedział wiekowy zadeklarowany przed testem — użyty do normy wyniku */
+  ageBracketId?: string;
+  ageBracketLabel?: string;
 }
 
 export interface DetailedAnalysis {
@@ -56,4 +61,7 @@ export interface ReportData {
   analysis?: DetailedAnalysis;
   isPro?: boolean;
   isMax?: boolean;
+  /** Duplikat dla starszych zapisów w localStorage — preferuj stats.ageBracket* */
+  ageBracketId?: string;
+  ageBracketLabel?: string;
 }
