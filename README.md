@@ -15,6 +15,13 @@ View your app in AI Studio: https://ai.studio/apps/ae4d776b-e8ec-4e5d-a01d-51fe7
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Set the required keys in `.env.local`:
+   `GEMINI_API_KEY=...`
+   `RESEND_API_KEY=...`
+   Optional: `RESEND_FROM_EMAIL=noreply@your-verified-domain.com`
 3. Run the app:
    `npm run dev`
+
+`npm run dev` starts both the Vite frontend and the local email API used by `/api/send-email`.
+
+For deployment, configure the same environment variables in your hosting provider.

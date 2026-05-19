@@ -181,6 +181,96 @@ const BrandLogo = ({ size = "nav", className = "" }: { size?: "nav" | "footer" |
   );
 };
 
+const buildResultEmailHtml = ({
+  title,
+  subtitle,
+  summary,
+  rows,
+}: {
+  title: string;
+  subtitle: string;
+  summary: string;
+  rows: Array<{ label: string; value: string | number }>;
+}) => {
+  const year = new Date().getFullYear();
+  const rowsHtml = rows
+    .map(
+      (row) => `
+        <tr>
+          <td style="padding:14px 18px;border-bottom:1px solid #e2e8f0;color:#64748b;font-size:13px">${row.label}</td>
+          <td style="padding:14px 18px;border-bottom:1px solid #e2e8f0;text-align:right;color:#0f172a;font-size:14px;font-weight:800">${row.value}</td>
+        </tr>`,
+    )
+    .join('');
+
+  return `
+<!DOCTYPE html>
+<html lang="pl">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:Inter,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 0">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(15,23,42,0.08)">
+        <tr><td style="background:#1e293b;padding:34px 44px;text-align:center">
+          <p style="margin:0;font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:0.2em;text-transform:uppercase">brainmediq</p>
+          <h1 style="margin:8px 0 0;font-size:28px;font-weight:900;color:#ffffff">${title}</h1>
+          <p style="margin:10px 0 0;font-size:13px;color:#cbd5e1">${subtitle}</p>
+        </td></tr>
+        <tr><td style="padding:34px 44px 20px">
+          <h2 style="margin:0 0 10px;font-size:20px;font-weight:900;color:#0f172a">Twoje wyniki są gotowe</h2>
+          <p style="margin:0;color:#64748b;line-height:1.7;font-size:15px">${summary}</p>
+        </td></tr>
+        <tr><td style="padding:0 44px 34px">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;background:#f8fafc">
+            ${rowsHtml}
+          </table>
+        </td></tr>
+        <tr><td style="background:#f8fafc;padding:22px 44px;border-top:1px solid #e2e8f0;text-align:center">
+          <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6">
+            © ${year} brainmediq Polska · kontakt@brainmediq.com<br>
+            Ta wiadomość została wygenerowana automatycznie po zakończeniu testu.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+};
+
+const sendResultEmail = async ({
+  to,
+  subject,
+  title,
+  subtitle,
+  summary,
+  rows,
+}: {
+  to: string;
+  subject: string;
+  title: string;
+  subtitle: string;
+  summary: string;
+  rows: Array<{ label: string; value: string | number }>;
+}) => {
+  if (!to.includes('@')) throw new Error('Podaj poprawny adres e-mail.');
+
+  const res = await fetch('/api/send-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      to,
+      subject,
+      html: buildResultEmailHtml({ title, subtitle, summary, rows }),
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error || 'Nie udało się wysłać wiadomości.');
+  }
+};
+
 // --- VISUAL COMPONENTS FOR REPORT ---
 
 const DomainBar = ({
@@ -1811,6 +1901,37 @@ const Results = () => {
         )}
       </div>
 
+      <div className="mx-auto max-w-2xl rounded-[2rem] border border-blue-100 bg-blue-50/70 p-6 shadow-sm dark:border-blue-900/40 dark:bg-blue-950/20">
+        <div className="mb-4 flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
+            <Mail className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-900 dark:text-white">Wyślij wynik na e-mail</h3>
+            <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              Podaj adres teraz, a po odblokowaniu raportu wyślemy wynik i certyfikat automatycznie na Twoją skrzynkę.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <input
+            type="email"
+            value={email}
+            onChange={handleEmailChange}
+            placeholder="Twój e-mail"
+            className="flex-1 rounded-2xl border border-blue-100 bg-white px-4 py-4 text-sm outline-none transition-all focus:ring-2 focus:ring-blue-500 dark:border-blue-900/50 dark:bg-slate-900 dark:text-white"
+          />
+          <button
+            type="button"
+            disabled={!email.includes('@')}
+            onClick={() => alert('Adres e-mail zapisany. Po odblokowaniu raport zostanie wysłany automatycznie.')}
+            className="rounded-2xl bg-blue-600 px-6 py-4 text-sm font-bold text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Zapisz do wysyłki
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
         {/* Standard */}
         <div className="bg-white dark:bg-slate-900 p-10 md:p-12 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col items-center text-center relative hover:border-slate-300 dark:hover:border-slate-700 transition-all">
@@ -2510,13 +2631,16 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
     }
   };
 
-  const sendResultsEmail = async (reportData: ReportData, name: string) => {
+  const sendResultsEmail = async (reportData: ReportData, name: string, force = false) => {
     const toEmail = (reportData as ReportData & { email?: string }).email;
-    if (!toEmail || !toEmail.includes('@')) return;
+    if (!toEmail || !toEmail.includes('@')) {
+      setEmailStatus('error');
+      return;
+    }
 
     const sessionKey = `certEmailSent_${reportData.timestamp}`;
-    if (localStorage.getItem(sessionKey)) return;
-    if (emailSentRef.current) return;
+    if (!force && localStorage.getItem(sessionKey)) return;
+    if (!force && emailSentRef.current) return;
     emailSentRef.current = true;
 
     setEmailStatus('sending');
@@ -2736,7 +2860,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
                 {emailStatus === 'error' && (
                   <span className="flex items-center gap-2 text-rose-500 font-bold text-sm">
                     <AlertTriangle className="w-4 h-4"/> Błąd wysyłki —
-                    <button onClick={() => { emailSentRef.current = false; data && sendResultsEmail(data, userName); }} className="underline hover:no-underline">
+                    <button onClick={() => { emailSentRef.current = false; data && sendResultsEmail(data, userName, true); }} className="underline hover:no-underline">
                       spróbuj ponownie
                     </button>
                   </span>
@@ -2799,6 +2923,24 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
                   placeholder="Twój e-mail"
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
                 />
+                <button
+                  type="button"
+                  onClick={() => data && sendResultsEmail(data, userName, true)}
+                  disabled={emailStatus === 'sending' || !String(data.email || '').includes('@')}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {emailStatus === 'sending' ? (
+                    <>
+                      <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                      Wysyłanie...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="h-4 w-4" />
+                      Wyślij raport na e-mail
+                    </>
+                  )}
+                </button>
               </div>
             </div>
             <button 
@@ -2871,10 +3013,26 @@ const PersonalityTest = () => {
     );
   }
 
-  const handleEmailSave = () => {
+  const handleEmailSave = async () => {
+    if (!scores) return;
     const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
     localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
-    alert('Wyniki zostaną wysłane na podany adres e-mail.');
+    try {
+      await sendResultEmail({
+        to: email,
+        subject: 'Twój wynik testu osobowości - brainmediq',
+        title: 'Wynik testu osobowości',
+        subtitle: 'Profil Big Five / OCEAN',
+        summary: 'Poniżej znajdziesz podsumowanie wyników w pięciu głównych wymiarach osobowości.',
+        rows: Object.entries(scores).map(([key, value]) => ({
+          label: traitInfo[key as keyof typeof traitInfo].name,
+          value: `${Math.round(value as number)}%`,
+        })),
+      });
+      alert('Wyniki zostały wysłane na e-mail.');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
+    }
   };
 
   const handleAnswer = (val: number) => {
@@ -3135,10 +3293,27 @@ const MemoryTest = () => {
     );
   }
 
-  const handleEmailSave = () => {
+  const handleEmailSave = async () => {
     const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
     localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
-    alert('Wyniki zostaną wysłane na podany adres e-mail.');
+    try {
+      await sendResultEmail({
+        to: email,
+        subject: 'Twój wynik testu pamięci przestrzennej - brainmediq',
+        title: 'Wynik testu pamięci przestrzennej',
+        subtitle: 'Pamięć robocza i sekwencje przestrzenne',
+        summary: 'Poniżej znajdziesz wynik najdłuższej poprawnie odtworzonej sekwencji oraz krótką interpretację.',
+        rows: [
+          { label: 'Pojemność pamięci roboczej', value: `${capacity} elementów` },
+          { label: 'Ukończone poziomy', value: completedLevels },
+          { label: 'Kolejny cel', value: `${nextGoal} elementów` },
+          { label: 'Interpretacja', value: interpretation.title },
+        ],
+      });
+      alert('Wyniki zostały wysłane na e-mail.');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
+    }
   };
 
   const startGame = () => {
@@ -3396,10 +3571,28 @@ const ConcentrationTest = () => {
     );
   }
 
-  const handleEmailSave = () => {
+  const handleEmailSave = async () => {
     const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
     localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
-    alert('Wyniki zostaną wysłane na podany adres e-mail.');
+    try {
+      await sendResultEmail({
+        to: email,
+        subject: 'Twój wynik testu koncentracji - brainmediq',
+        title: 'Wynik testu koncentracji',
+        subtitle: 'Test Stroopa',
+        summary: 'Poniżej znajdziesz podsumowanie poprawnych odpowiedzi, błędów i skuteczności w teście koncentracji.',
+        rows: [
+          { label: 'Poprawne odpowiedzi', value: score },
+          { label: 'Błędy', value: errors },
+          { label: 'Skuteczność', value: `${accuracy}%` },
+          { label: 'Tempo', value: `${pace} odpowiedzi/min` },
+          { label: 'Interpretacja', value: interpretation.title },
+        ],
+      });
+      alert('Wyniki zostały wysłane na e-mail.');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
+    }
   };
 
   const colors = [
@@ -3669,10 +3862,28 @@ const ReactionTest = () => {
     );
   }
 
-  const handleEmailSave = () => {
+  const handleEmailSave = async () => {
     const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
     localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
-    alert('Wyniki zostaną wysłane na podany adres e-mail.');
+    try {
+      await sendResultEmail({
+        to: email,
+        subject: 'Twój wynik testu reakcji - brainmediq',
+        title: 'Wynik testu szybkości reakcji',
+        subtitle: 'Czas reakcji na bodziec wzrokowy',
+        summary: 'Poniżej znajdziesz średni czas reakcji oraz wyniki poszczególnych prób.',
+        rows: [
+          { label: 'Średni czas reakcji', value: `${averageTime} ms` },
+          { label: 'Najlepsza próba', value: `${bestTime} ms` },
+          { label: 'Najwolniejsza próba', value: `${slowestTime} ms` },
+          { label: 'Stabilność', value: consistencyLabel },
+          { label: 'Interpretacja', value: interpretation.title },
+        ],
+      });
+      alert('Wyniki zostały wysłane na e-mail.');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
+    }
   };
 
   const startAttempt = () => {
@@ -4064,6 +4275,7 @@ const AlzheimerTest = () => {
   const [answers, setAnswers] = useState<string[]>(Array(alzheimerQuestions.length).fill(''));
   const [selected, setSelected] = useState<string>('');
   const [textInput, setTextInput] = useState('');
+  const [email, setEmail] = useState(saved.email || '');
 
   const totalPoints = alzheimerQuestions.reduce((s, q) => s + q.points, 0);
 
@@ -4105,6 +4317,30 @@ const AlzheimerTest = () => {
 
   const score = phase === 'result' ? calcScore() : 0;
   const pct = Math.round((score / totalPoints) * 100);
+
+  const handleEmailSave = async () => {
+    const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
+    localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
+    const interp = getInterpretation(pct);
+    try {
+      await sendResultEmail({
+        to: email,
+        subject: 'Twój wynik testu funkcji poznawczych - brainmediq',
+        title: 'Wynik testu funkcji poznawczych',
+        subtitle: 'Orientacyjny test poznawczy',
+        summary: 'Poniżej znajdziesz podsumowanie wyniku. Test ma charakter edukacyjny i nie zastępuje konsultacji medycznej.',
+        rows: [
+          { label: 'Wynik punktowy', value: `${score}/${totalPoints}` },
+          { label: 'Procent wyniku', value: `${pct}%` },
+          { label: 'Interpretacja', value: interp.label },
+          { label: 'Charakter testu', value: 'orientacyjny' },
+        ],
+      });
+      alert('Wyniki zostały wysłane na e-mail.');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
+    }
+  };
 
   const getInterpretation = (pct: number) => {
     if (pct >= 85) return { label: 'Wynik prawidłowy', color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200', desc: 'Twoje wyniki wskazują na prawidłowe funkcjonowanie poznawcze w badanych obszarach. Nie stwierdzono niepokojących odchyleń.' };
@@ -4237,6 +4473,26 @@ const AlzheimerTest = () => {
             })}
           </div>
 
+          <div className="bg-slate-50 dark:bg-slate-800/30 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
+            <h3 className="text-lg font-bold dark:text-white mb-4">Wyślij wyniki na e-mail</h3>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                placeholder="Twój e-mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:text-white"
+              />
+              <button
+                onClick={handleEmailSave}
+                disabled={!email.includes('@')}
+                className="px-6 py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-all disabled:opacity-50"
+              >
+                Wyślij
+              </button>
+            </div>
+          </div>
+
           <Link to="/inne-testy" className="block w-full text-center bg-teal-600 text-white py-5 rounded-2xl font-bold hover:bg-teal-700 transition-all">
             Powrót do testów
           </Link>
@@ -4331,6 +4587,7 @@ const ADHDTest = () => {
   const [phase, setPhase] = useState<'intro' | 'test' | 'result'>('intro');
   const [answers, setAnswers] = useState<number[]>(Array(adhdQuestions.length).fill(-1));
   const [currentQ, setCurrentQ] = useState(0);
+  const [email, setEmail] = useState(saved.email || '');
 
   const partAScore = answers.slice(0, 6).reduce((s, v) => s + Math.max(0, v), 0);
   const totalScore = answers.reduce((s, v) => s + Math.max(0, v), 0);
@@ -4358,6 +4615,32 @@ const ADHDTest = () => {
       bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200',
       desc: 'Twoje odpowiedzi nie wskazują na silne objawy ADHD. Jeśli jednak masz obawy dotyczące koncentracji lub impulsywności, zawsze możesz skonsultować się ze specjalistą.',
     };
+  };
+
+  const handleEmailSave = async () => {
+    const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
+    localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
+    const result = getResult();
+    const maxScore = adhdQuestions.length * 4;
+    const scorePct = Math.round((totalScore / maxScore) * 100);
+    try {
+      await sendResultEmail({
+        to: email,
+        subject: 'Twój wynik testu ADHD - brainmediq',
+        title: 'Wynik testu ADHD',
+        subtitle: 'Skala ASRS v1.1',
+        summary: 'Poniżej znajdziesz podsumowanie wyniku. Test ma charakter przesiewowy i nie zastępuje diagnozy klinicznej.',
+        rows: [
+          { label: 'Wynik łączny', value: `${totalScore}/${maxScore}` },
+          { label: 'Natężenie', value: `${scorePct}%` },
+          { label: 'Część A', value: `${partAPositive}/6 kluczowych objawów` },
+          { label: 'Interpretacja', value: result.label },
+        ],
+      });
+      alert('Wyniki zostały wysłane na e-mail.');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
+    }
   };
 
   if (!hasAccess) {
@@ -4478,6 +4761,26 @@ const ADHDTest = () => {
               <p className="text-amber-700 dark:text-amber-400 text-sm leading-relaxed">
                 <strong>Przypomnienie:</strong> Wyniki tego testu nie stanowią diagnozy medycznej ani porady lekarskiej. Nie zastępują oceny przeprowadzonej przez psychiatrę lub psychologa. Jeśli masz obawy, skonsultuj się ze specjalistą.
               </p>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800/30 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
+            <h3 className="text-lg font-bold dark:text-white mb-4">Wyślij wyniki na e-mail</h3>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                placeholder="Twój e-mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:text-white"
+              />
+              <button
+                onClick={handleEmailSave}
+                disabled={!email.includes('@')}
+                className="px-6 py-3 bg-violet-600 text-white rounded-xl font-bold hover:bg-violet-700 transition-all disabled:opacity-50"
+              >
+                Wyślij
+              </button>
             </div>
           </div>
 
@@ -4754,21 +5057,33 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
         <div id="co-mierzymy" className="scroll-mt-32">
           <h2 className="text-4xl font-bold mb-8 dark:text-white">Co mierzy ten test?</h2>
           <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg max-w-prose">
-            Nasz pomiar koncentruje się na tzw. <strong>inteligencji płynnej</strong> — zdolności do rozwiązywania nowych, abstrakcyjnych problemów bez opierania się na nabytej wiedzy czy kulturze. To procesy takie jak rozpoznawanie relacji, dedukcja i synteza wzorców.
+            Test koncentruje się na <strong>inteligencji płynnej</strong>, czyli zdolności do zauważania reguł, porównywania wzorców i rozwiązywania nowych problemów bez korzystania z wyuczonej wiedzy szkolnej. Zadania są oparte głównie na matrycach, symbolach, liczbach i relacjach przestrzennych.
           </p>
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-[900px]">
+            {[
+              { t: 'Wzorce i reguły', d: 'Rozpoznawanie, co zmienia się w wierszach, kolumnach i sekwencjach.' },
+              { t: 'Myślenie bez słów', d: 'Większość zadań nie wymaga wiedzy językowej ani szkolnych definicji.' },
+              { t: 'Szybka analiza', d: 'Limit czasu sprawdza nie tylko poprawność, ale też sprawność pracy poznawczej.' },
+            ].map(item => (
+              <div key={item.t} className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <h4 className="mb-2 font-bold text-slate-900 dark:text-white">{item.t}</h4>
+                <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">{item.d}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div id="format-czas" className="scroll-mt-32">
           <h2 className="text-4xl font-bold mb-8 dark:text-white">Format i czas</h2>
-          <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-10 max-w-prose">Nasz test został zaprojektowany tak, aby zoptymalizować czas pomiaru przy zachowaniu maksymalnej precyzji psychometrycznej:</p>
+          <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-10 max-w-prose">Aktualna wersja testu jest krótsza i bardziej spójna wizualnie. Zawiera wyłącznie zadania przygotowane na podstawie przesłanych wzorców i dopasowane do stylu serwisu:</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[800px]">
             <div className="p-8 bg-white dark:bg-slate-900 border rounded-3xl border-blue-200 shadow-sm">
               <h4 className="font-bold text-lg mb-3">Struktura testu</h4>
-              <p className="text-sm text-slate-500 leading-relaxed">Test składa się z 19 zadań opartych na matrycach i wzorcach logicznych, podzielonych na 5 domen poznawczych (matryce, ciągi liczbowe, analogie, wyobraźnia przestrzenna, logika).</p>
+              <p className="text-sm text-slate-500 leading-relaxed">Test składa się z 19 zadań. Luka w matrycach znajduje się konsekwentnie w prawym dolnym rogu, a pytania obejmują matryce, układy symboli, liczby, analogie, przestrzeń i logikę.</p>
             </div>
             <div className="p-8 bg-white dark:bg-slate-900 border rounded-3xl shadow-sm">
               <h4 className="font-bold text-lg mb-3">Limit czasu (14 min)</h4>
-              <p className="text-sm text-slate-500 leading-relaxed">Masz średnio około 45 sekund na zadanie. Czas ten wymusza sprawne procesowanie informacji, co jest kluczowym elementem inteligencji płynnej.</p>
+              <p className="text-sm text-slate-500 leading-relaxed">Limit 14 minut daje średnio około 45 sekund na zadanie. To wystarczająco dużo, żeby rozpoznać regułę, ale nadal wymaga skupienia i sprawnego tempa pracy.</p>
             </div>
           </div>
         </div>
@@ -4776,18 +5091,19 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
         <div id="jak-liczymy" className="scroll-mt-32">
           <h2 className="text-4xl font-bold mb-8 dark:text-white">Jak liczymy wynik</h2>
           <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-12 max-w-prose">
-            Nie stosujemy prostego przeliczania "ilość poprawnych odpowiedzi = IQ". Nasz algorytm opiera się na zaawansowanym modelu psychometrycznym:
+            Wynik nie jest prostą informacją „ile odpowiedzi było poprawnych”. Liczymy go na podstawie poprawności, trudności zadań oraz rozkładu wyników przyjętego dla skali IQ:
           </p>
           <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-12 max-w-prose space-y-4">
-            <li><strong>Wagi trudności:</strong> Każde zadanie ma przypisaną wagę (od 1 do 5). Rozwiązanie trudnego problemu daje znacznie więcej punktów niż łatwego.</li>
-            <li><strong>Z-Score:</strong> Twój wynik surowy jest porównywany ze średnią populacyjną, aby obliczyć odchylenie standardowe (Z-Score).</li>
-            <li><strong>Skala Wechslera:</strong> Z-Score jest przeliczany na klasyczną skalę IQ, gdzie średnia populacyjna wynosi równe 100 punktów, a jedno odchylenie standardowe to 15 punktów.</li>
+            <li><strong>Poprawność odpowiedzi:</strong> każde zadanie ma jedną prawidłową odpowiedź wynikającą z reguły układu.</li>
+            <li><strong>Trudność zadania:</strong> trudniejsze pytania mają większy wpływ na wynik niż pytania łatwe.</li>
+            <li><strong>Skala IQ:</strong> wynik surowy jest przeliczany na skalę ze średnią 100 i odchyleniem standardowym 15 punktów.</li>
+            <li><strong>Przedział ufności:</strong> pokazujemy zakres, w którym najprawdopodobniej znajduje się wynik rzeczywisty, bo każdy test online ma naturalny margines błędu.</li>
           </ul>
           
           <ScoreGenerationInfographic />
           
           <p className="text-base text-slate-500 leading-relaxed italic mt-12 max-w-prose">
-            Powyższa infografika przedstawia uproszczony schemat procesowania danych psychometrycznych przez nasz autorski silnik obliczeniowy.
+            Schemat pokazuje uproszczony przepływ: odpowiedzi → punkty ważone → wynik IQ → percentyl i raport. Wynik należy traktować jako orientacyjny pomiar online, nie jako diagnozę kliniczną.
           </p>
         </div>
 
@@ -4796,7 +5112,7 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
           <div className="flex flex-col md:flex-row gap-12 items-start">
             <div className="flex-1 space-y-6">
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg max-w-prose">
-                Percentyl to jedna z najważniejszych miar w psychometrii. W przeciwieństwie do wyniku punktowego IQ, który jest miarą bezwzględną na skali, percentyl mówi Ci dokładnie, <strong>ilu ludzi osiągnęło wynik gorszy od Twojego</strong>.
+                Percentyl pomaga zrozumieć wynik w prostszy sposób niż sama liczba IQ. Pokazuje, jaki odsetek osób w przyjętej populacji odniesienia uzyskał wynik niższy od Twojego.
               </p>
               <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
                 <h4 className="font-bold mb-4 flex items-center gap-2">
@@ -4804,7 +5120,7 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
                   Przykład interpretacji:
                 </h4>
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Jeśli Twój wynik to <strong>95. percentyl</strong>, oznacza to, że Twoje zdolności poznawcze są wyższe niż u 95% populacji. Znajdujesz się w ścisłej czołówce 5% najbardziej uzdolnionych osób.
+                  Jeśli Twój wynik to <strong>95. percentyl</strong>, oznacza to, że wynik jest wyższy niż u około 95 na 100 osób w porównaniu. Nie oznacza to diagnozy ani stałej etykiety, ale pomaga ocenić poziom na tle innych.
                 </p>
               </div>
             </div>
@@ -4834,14 +5150,14 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
         <div id="analiza-pro" className="scroll-mt-32">
           <h2 className="text-4xl font-bold mb-8 dark:text-white">Analiza PRO</h2>
           <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-10 max-w-prose">
-            Wersja PRO naszego testu to nie tylko wynik punktowy, ale kompleksowa mapa Twojego potencjału intelektualnego. Analiza ta pozwala na głębsze zrozumienie procesów poznawczych, które są Twoją najsilniejszą stroną.
+            Analiza PRO rozwija sam wynik IQ o praktyczne informacje: profil domen poznawczych, paski procentowe, percentyl, certyfikat PDF i prosty plan rozwoju. Celem jest pokazanie, w jakich typach zadań radzisz sobie najlepiej i co warto ćwiczyć dalej.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             {[
-              { t: "5 Domen Poznawczych", d: "Szczegółowy podział na logikę, matematykę, orientację przestrzenną, analogie i sekwencje." },
-              { t: "Percentyl Populacyjny", d: "Dokładne określenie Twojej pozycji na tle statystycznej setki osób o podobnym profilu." },
-              { t: "Rekomendacje", d: "Spersonalizowane wskazówki dotyczące rozwoju Twoich najsilniejszych i najsłabszych stron." }
+              { t: "Profil domen", d: "Wyniki procentowe dla matryc, logiki, analogii, przestrzeni i ciągów liczbowych." },
+              { t: "Raport i certyfikat", d: "Pełny raport po płatności oraz certyfikat PDF wysyłany na adres e-mail." },
+              { t: "Plan rozwoju", d: "Krótkie, proste wskazówki bez zbędnego żargonu psychologicznego." }
             ].map(item => (
               <div key={item.t} className="p-8 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-[2.5rem]">
                 <h4 className="font-bold text-blue-600 dark:text-blue-400 mb-3">{item.t}</h4>
@@ -4853,7 +5169,7 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
           <div className="bg-slate-50 dark:bg-slate-800/50 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800">
             <h4 className="text-xl font-bold mb-6 dark:text-white">Dlaczego warto wybrać Analizę PRO?</h4>
             <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
-              Standardowy wynik IQ to tylko liczba. Analiza PRO tłumaczy tę liczbę na konkretne kompetencje. Dowiesz się, czy Twoja inteligencja ma charakter bardziej matematyczno-logiczny, czy może opiera się na wybitnej wyobraźni przestrzennej. To narzędzie, które pomaga w planowaniu ścieżki edukacyjnej i zawodowej.
+              Standardowy wynik daje liczbę i certyfikat. Analiza PRO dodaje kontekst: pokazuje mocniejsze i słabsze obszary, wyjaśnia percentyl oraz podaje konkretne ćwiczenia. Dzięki temu raport jest bardziej użyteczny niż sam wynik punktowy.
             </p>
             <div className="flex items-center space-x-4 text-blue-600 font-bold">
               <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg">
@@ -4868,7 +5184,7 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
           <div className="bg-red-50 dark:bg-red-900/10 p-12 md:p-16 rounded-[4rem] border border-red-100 dark:border-red-900/40 max-w-[1000px]">
             <h2 className="text-3xl font-bold mb-6 text-red-900 dark:text-red-400">To nie jest diagnoza kliniczna</h2>
             <p className="text-lg text-red-800 dark:text-red-400/80 leading-relaxed max-w-prose">
-              Pomiar wykonany przez serwis <BrandName className="text-lg" /> ma charakter wyłącznie edukacyjno-rozrywkowy. Nie zastępuje profesjonalnej diagnozy psychologicznej, badań klinicznych ani orzekania o stanie zdrowia. Oficjalne testy IQ (jak WAIS-IV) powinny być przeprowadzane stacjonarnie u licencjonowanego psychologa.
+              Pomiar wykonany przez serwis <BrandName className="text-lg" /> ma charakter edukacyjny i rozwojowy. Nie zastępuje profesjonalnej diagnozy psychologicznej, badania klinicznego ani oficjalnych testów prowadzonych przez psychologa. Na wynik mogą wpływać m.in. zmęczenie, stres, pośpiech, jakość ekranu i warunki wykonywania testu.
             </p>
           </div>
         </div>
@@ -4877,10 +5193,12 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
           <h2 className="text-4xl font-bold mb-12 dark:text-white">Słownik pojęć</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-[1000px]">
             {[
-              { t: "IQ Score", d: "Standardowy wskaźnik sprawności procesów poznawczych na skali populacyjnej." },
-              { t: "Przedział Ufności", d: "Zakres statystyczny (np. ±5 pkt), w którym z dużym prawdopodobieństwem znajduje się Twój wynik rzeczywisty." },
-              { t: "Inteligencja Płynna", d: "Zdolność do myślenia logicznego i szybkiego rozwiązywania problemów w nowych, abstrakcyjnych sytuacjach." },
-              { t: "Percentyl", d: "Miara położenia, określająca Twoje miejsce w szeregu na tle statystycznej setki osób." }
+              { t: "Wynik IQ", d: "Orientacyjny wynik na skali, gdzie średnia wynosi 100, a jedno odchylenie standardowe to 15 punktów." },
+              { t: "Przedział ufności", d: "Zakres, który pokazuje możliwy margines błędu pomiaru online." },
+              { t: "Inteligencja płynna", d: "Zdolność do rozwiązywania nowych problemów, zauważania reguł i pracy na abstrakcyjnych wzorcach." },
+              { t: "Percentyl", d: "Informacja, jaki odsetek osób uzyskał wynik niższy od Twojego w przyjętym porównaniu." },
+              { t: "Domena poznawcza", d: "Kategoria umiejętności badana w raporcie, np. logika, matryce albo wyobraźnia przestrzenna." },
+              { t: "Plan rozwoju", d: "Krótka lista ćwiczeń i wskazówek dopasowanych do profilu wyników." }
             ].map(i => (
               <div key={i.t} className="p-8 border border-slate-100 dark:border-slate-800 rounded-3xl">
                 <h5 className="font-bold text-blue-600 mb-2 text-lg">{i.t}</h5>
