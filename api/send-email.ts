@@ -1,5 +1,16 @@
 import { Resend } from 'resend';
 
+function formatResendError(message: string): string {
+  const onlyTest = message.match(
+    /only send testing emails to your own email address \(([^)]+)\)/i
+  );
+  if (onlyTest) {
+    const allowed = onlyTest[1];
+    return `W trybie testowym Resend możesz wysłać mail tylko na: ${allowed}. Użyj tego adresu w formularzu albo zweryfikuj domenę na resend.com/domains.`;
+  }
+  return message;
+}
+
 type EmailPayload = {
   to?: string;
   subject?: string;
@@ -50,13 +61,20 @@ export default async function handler(req: any, res: any) {
   };
 
   if (attachment?.content && attachment?.filename) {
-    payload.attachments = [{ filename: attachment.filename, content: attachment.content }];
+    const raw = attachment.content;
+    payload.attachments = [
+      {
+        filename: attachment.filename,
+        content: Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw), 'base64'),
+      },
+    ];
   }
 
   const { data, error } = await resend.emails.send(payload);
   if (error) {
-    res.statusCode = 500;
-    return res.json?.({ error: error.message }) ?? res.end(JSON.stringify({ error: error.message }));
+    res.statusCode = 403;
+    const msg = formatResendError(error.message || 'Błąd Resend');
+    return res.json?.({ error: msg, code: 'resend_restricted' }) ?? res.end(JSON.stringify({ error: msg, code: 'resend_restricted' }));
   }
 
   return res.json?.({ success: true, id: data?.id }) ?? res.end(JSON.stringify({ success: true, id: data?.id }));

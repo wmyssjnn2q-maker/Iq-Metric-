@@ -11,19 +11,21 @@ import {
   Sphere,
   Graticule
 } from "react-simple-maps";
-import { TestState, Question, QuestionType, UserStats, ReportData } from './types';
+import { TestState, Question, QuestionType, UserStats, ReportData, DetailedAnalysis } from './types';
 import { IQ_AGE_BRACKETS, getAgeBracketById } from './ageBrackets';
 import { QUESTIONS } from './questions';
 import { Icons, COLORS, Logos } from './constants';
-import { generateDetailedReport } from './services/geminiService';
+import { generateDetailedReport, getAnalysisFallback } from './services/geminiService';
 import {
   DOMAIN_ITEMS,
-  buildPlanFromDomains,
+  buildReportInsights,
   resolveDevelopmentPlan,
   getDomainLevel,
   normalizeDiffLabel,
+  rankDomainsByScore,
   type PlanStep,
 } from './reportHelpers';
+import { CertificateTemplate } from './CertificateTemplate';
 import { REGULAMIN_MARKDOWN } from './regulaminContent';
 import { PRIVACY_POLICY_MARKDOWN } from './privacyPolicyContent';
 import html2canvas from 'html2canvas';
@@ -342,7 +344,7 @@ const DevelopmentPlanPanel = ({ steps }: { steps: PlanStep[] }) => (
     <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-5 dark:border-blue-900/50 dark:bg-blue-950/30">
       <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Jak korzystać z planu</p>
       <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-        Masz 5 krótkich kroków — od obszaru, który wymaga najwięcej uwagi, do utrwalenia mocnych stron. Wykonuj po jednym kroku dziennie.
+        Kolejność kroków wynika z Twoich wyników w 5 domenach w tym teście — od najsłabszego obszaru do utrwalenia mocniejszych. Wykonuj po jednym kroku dziennie.
       </p>
     </div>
     <ol className="space-y-4">
@@ -375,38 +377,42 @@ const DevelopmentPlanPanel = ({ steps }: { steps: PlanStep[] }) => (
   </div>
 );
 
-const PercentileAxis = ({ val, animate, label, hideScale }: { val: number; animate: boolean; label?: string; hideScale?: boolean }) => (
-  <div className="relative py-14">
-    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden relative">
-      <div 
-        className="absolute inset-y-0 left-0 bg-blue-600/20 transition-transform duration-1000 ease-out origin-left no-print"
-        style={{ transform: animate ? `scaleX(${val / 100})` : 'scaleX(0)' }}
-      ></div>
-    </div>
-    
-    {!hideScale && (
-      <div className="flex justify-between mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-        <span>Dolna połowa</span>
-        <span>Średnia (50%)</span>
-        <span>Górna połowa</span>
+const PercentileAxis = ({ val, animate, label, hideScale }: { val: number; animate: boolean; label?: string; hideScale?: boolean }) => {
+  const pos = Math.max(0, Math.min(100, Number(val) || 0));
+  return (
+    <div className="relative pb-2 pt-10">
+      <div className="relative h-4 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-blue-600/30 transition-transform duration-1000 ease-out origin-left"
+          style={{ transform: `scaleX(${pos / 100})` }}
+        />
+        {/* Kropka na osi (środek = linia osi) */}
+        <div
+          className="absolute top-1/2 z-20 transition-[left] duration-1000 ease-out pointer-events-none"
+          style={{ left: `${pos}%`, transform: 'translate(-50%, -50%)' }}
+        >
+          <div
+            className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full bg-blue-600 px-3 py-1.5 text-[11px] font-black text-white shadow-lg"
+          >
+            {label || `Twój wynik: ${pos}%`}
+          </div>
+          <div
+            className="h-5 w-5 rounded-full border-[3px] border-white bg-blue-600 shadow-md ring-2 ring-blue-500/40 dark:border-slate-900"
+            aria-hidden
+          />
+        </div>
       </div>
-    )}
 
-    <div 
-      className="absolute top-0 transition-all duration-1000 ease-out flex flex-col items-center"
-      style={{ 
-        left: animate ? `${val}%` : '0%', 
-        opacity: animate ? 1 : 0, 
-        transform: 'translateX(-50%)' 
-      }}
-    >
-      <div className="bg-blue-600 text-white text-[11px] font-black px-3 py-1.5 rounded-full shadow-xl mb-2 whitespace-nowrap">
-        {label || `${val}. percentyl`}
-      </div>
-      <div className="w-1 h-14 bg-blue-600 rounded-full"></div>
+      {!hideScale && (
+        <div className="mt-4 flex justify-between text-[10px] font-bold uppercase tracking-tighter text-slate-400">
+          <span>Dolna połowa</span>
+          <span>Średnia (50%)</span>
+          <span>Górna połowa</span>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 const ConfidenceRange = ({ range, score, animate }: { range: [number, number]; score: number; animate: boolean }) => {
   const min = 70;
@@ -851,6 +857,7 @@ const HomepageReportPreview = ({ openPurchaseModal }: { openPurchaseModal: () =>
         setActiveTab={setActiveTab} 
         animate={animate} 
         openPurchaseModal={openPurchaseModal}
+        onRequestAnimate={() => setAnimate(true)}
       />
     </div>
   );
@@ -858,75 +865,190 @@ const HomepageReportPreview = ({ openPurchaseModal }: { openPurchaseModal: () =>
 
 // --- REUSABLE REPORT CONTENT ---
 
-const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseModal }: { data: ReportData; activeTab: string; setActiveTab: (t: string) => void; animate: boolean; openPurchaseModal: () => void }) => {
+const CERT_WIDTH = 1123;
+const CERT_HEIGHT = 794;
+
+const CertificatePreview = ({ data, userName }: { data: ReportData; userName: string }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.5);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.clientWidth;
+      setScale(Math.min(1, w / CERT_WIDTH));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const displayW = CERT_WIDTH * scale;
+  const displayH = CERT_HEIGHT * scale;
+
+  return (
+    <div
+      ref={containerRef}
+      className="flex w-full justify-center overflow-hidden py-4"
+    >
+      <div
+        className="rounded-2xl shadow-2xl ring-1 ring-slate-200 dark:ring-slate-700"
+        style={{ width: displayW, height: displayH }}
+      >
+        <div
+          style={{
+            width: CERT_WIDTH,
+            height: CERT_HEIGHT,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+          }}
+        >
+          <CertificateTemplate data={data} userName={userName} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const hasFullAnalysis = (a?: DetailedAnalysis) =>
+  Boolean(a?.summary && a?.careerPaths?.length && a?.strengths?.length);
+
+const mergeReportInsights = (stats: UserStats, analysis?: DetailedAnalysis): DetailedAnalysis => {
+  const base = buildReportInsights(stats);
+  if (!analysis) return base;
+  return {
+    summary: analysis.summary?.includes(String(stats.iqScore)) ? analysis.summary : base.summary,
+    strengths: analysis.strengths?.length ? analysis.strengths : base.strengths,
+    weaknesses: analysis.weaknesses?.length ? analysis.weaknesses : base.weaknesses,
+    recommendations: base.recommendations,
+    careerPaths: analysis.careerPaths?.length ? analysis.careerPaths : base.careerPaths,
+    personalityTraits: analysis.personalityTraits?.length ? analysis.personalityTraits : base.personalityTraits,
+  };
+};
+
+const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseModal, onRequestAnimate }: { data: ReportData; activeTab: string; setActiveTab: (t: string) => void; animate: boolean; openPurchaseModal: () => void; onRequestAnimate?: () => void }) => {
   const { stats, analysis } = data;
+  const insights = mergeReportInsights(stats, analysis);
+  const rankedDomains = rankDomainsByScore(stats.domainScores);
+
+  useEffect(() => {
+    if (activeTab === 'percentyl' && !animate) onRequestAnimate?.();
+  }, [activeTab, animate, onRequestAnimate]);
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case "podsumowanie":
+      case "podsumowanie": {
+        const topDomain = rankedDomains[0];
+        const weakDomain = rankedDomains[rankedDomains.length - 1];
         return (
-          <div className="space-y-8 animate-in animate-slide-in-from-bottom duration-500">
-            <div className="flex flex-col md:flex-row items-center gap-8 bg-blue-50 dark:bg-blue-900/10 p-8 rounded-3xl border border-blue-100 dark:border-blue-800">
-              <div className="bg-blue-600 text-white p-6 rounded-[2rem] shadow-xl text-center min-w-[140px]">
-                <div className="text-5xl font-black">{stats.iqScore}</div>
-                <div className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-80">Wynik IQ</div>
-              </div>
-              <div className="flex-1">
-                <h4 className="text-xl font-bold mb-2 flex items-center gap-2"><Brain size={20} className="text-blue-500" /> Interpretacja ogólna</h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic max-w-prose">
-                  "{analysis?.summary || `Twój wynik (${stats.iqScore}) jest bardzo dobry. Wykazujesz sprawne i logiczne myślenie.`}"
-                </p>
-                {stats.ageBracketLabel && (
-                  <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                    Norma odniesienia: <span className="font-semibold text-slate-700 dark:text-slate-300">{stats.ageBracketLabel}</span>
+          <div className="space-y-6 animate-in animate-slide-in-from-bottom duration-500">
+            <div className="overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-slate-50 dark:border-blue-900/40 dark:from-blue-950/40 dark:via-slate-900 dark:to-slate-900">
+              <div className="grid gap-6 p-6 md:grid-cols-[auto_1fr] md:p-8">
+                <div className="flex flex-col items-center justify-center rounded-[2rem] bg-blue-600 px-8 py-6 text-center text-white shadow-xl shadow-blue-600/25">
+                  <div className="text-5xl font-black leading-none">{stats.iqScore}</div>
+                  <div className="mt-2 text-[10px] font-bold uppercase tracking-widest opacity-90">Wynik IQ</div>
+                  <div className="mt-4 rounded-full bg-white/15 px-3 py-1 text-xs font-bold">
+                    Percentyl {stats.percentile}%
+                  </div>
+                </div>
+                <div>
+                  <h4 className="mb-2 flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white">
+                    <Brain size={20} className="text-blue-500" /> Interpretacja tego testu
+                  </h4>
+                  <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                    {insights.summary}
                   </p>
-                )}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                      Mocny obszar: {topDomain.shortLabel} {Math.round(topDomain.score)}%
+                    </span>
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                      Do ćwiczeń: {weakDomain.shortLabel} {Math.round(weakDomain.score)}%
+                    </span>
+                    {stats.ageBracketLabel && (
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        Norma: {stats.ageBracketLabel}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-px border-t border-blue-100 bg-blue-100/50 dark:border-blue-900/50 dark:bg-slate-800 md:grid-cols-5">
+                {rankedDomains.map((d) => (
+                  <div key={d.key} className="bg-white px-3 py-3 text-center dark:bg-slate-900">
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{d.shortLabel}</div>
+                    <div className="mt-1 text-lg font-black text-slate-800 dark:text-white">{Math.round(d.score)}%</div>
+                  </div>
+                ))}
               </div>
             </div>
-            {data.isPro && (
-              <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm">
-                      <h5 className="font-bold mb-3 flex items-center text-sm"><div className="w-4 h-4 mr-2 text-blue-600"><Star size={16} /></div> Mocne strony</h5>
-                      <ul className="text-xs space-y-2 text-slate-500">
-                        {analysis?.strengths.map((s, i) => <li key={i}>• {s}</li>) || (
-                          <><li>• Szybkie wyciąganie trafnych wniosków</li><li>• Łatwe dostrzeganie ukrytych powiązań</li></>
-                        )}
-                      </ul>
-                    </div>
-                    <div className="p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm">
-                      <h5 className="font-bold mb-3 flex items-center text-sm text-slate-400"><div className="w-4 h-4 mr-2"><TrendingUp size={16} /></div> Do rozwoju</h5>
-                      <ul className="text-xs space-y-2 text-slate-500">
-                        {analysis?.weaknesses.map((w, i) => <li key={i}>• {w}</li>) || (
-                          <><li>• Wyobraźnia przestrzenna (bryły 3D)</li><li>• Czas reakcji przy nagłych zmianach</li></>
-                        )}
-                      </ul>
-                    </div>
-                  </div>
-                  {analysis && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="p-6 bg-blue-50/50 dark:bg-blue-900/5 border border-blue-100 dark:border-blue-800/50 rounded-2xl">
-                        <h5 className="font-bold mb-3 text-sm flex items-center"><div className="w-4 h-4 mr-2 text-blue-600"><Briefcase size={16} /></div> Kariera</h5>
-                        <div className="flex flex-wrap gap-2">
-                          {analysis.careerPaths.map((c, i) => (
-                            <span key={i} className="text-[10px] font-bold bg-white dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-700">{c}</span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="p-6 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl">
-                        <h5 className="font-bold mb-3 text-sm flex items-center"><div className="w-4 h-4 mr-2 text-slate-400"><Fingerprint size={16} /></div> Cechy</h5>
-                        <div className="flex flex-wrap gap-2">
-                          {analysis.personalityTraits.map((t, i) => (
-                            <span key={i} className="text-[10px] font-bold bg-white dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-700">{t}</span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-              </>
-            )}
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-6 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                <h5 className="mb-4 flex items-center text-sm font-bold text-emerald-900 dark:text-emerald-200">
+                  <Star size={16} className="mr-2 text-emerald-600" /> Mocne strony (z wyniku testu)
+                </h5>
+                <ul className="space-y-3">
+                  {insights.strengths.map((s, i) => (
+                    <li key={i} className="flex gap-2 text-sm text-slate-700 dark:text-slate-300">
+                      <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-6 dark:border-amber-900/40 dark:bg-amber-950/20">
+                <h5 className="mb-4 flex items-center text-sm font-bold text-amber-900 dark:text-amber-200">
+                  <TrendingUp size={16} className="mr-2 text-amber-600" /> Do rozwoju (z wyniku testu)
+                </h5>
+                <ul className="space-y-3">
+                  {insights.weaknesses.map((w, i) => (
+                    <li key={i} className="flex gap-2 text-sm text-slate-700 dark:text-slate-300">
+                      <ArrowUpCircle size={16} className="mt-0.5 shrink-0 text-amber-500" />
+                      <span>{w}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-6 dark:border-blue-900/40 dark:bg-blue-950/20">
+                <h5 className="mb-2 flex items-center text-sm font-bold text-slate-900 dark:text-white">
+                  <Briefcase size={16} className="mr-2 text-blue-600" /> Kariera
+                </h5>
+                <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+                  Propozycje na podstawie Twoich najmocniejszych obszarów: {topDomain.shortLabel} i {rankedDomains[1]?.shortLabel}.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {insights.careerPaths.map((c, i) => (
+                    <span key={i} className="rounded-full border border-blue-200 bg-white px-3 py-1.5 text-xs font-bold text-blue-900 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200">
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-6 dark:border-slate-700 dark:bg-slate-800/40">
+                <h5 className="mb-2 flex items-center text-sm font-bold text-slate-900 dark:text-white">
+                  <Fingerprint size={16} className="mr-2 text-slate-500" /> Cechy
+                </h5>
+                <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+                  Profil dopasowany do wyników w domenach z tego testu.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {insights.personalityTraits.map((t, i) => (
+                    <span key={i} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         );
+      }
       case "domeny":
         return (
           <div className="space-y-6 animate-in animate-slide-in-from-bottom duration-500">
@@ -960,7 +1082,7 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
           </div>
         );
       case "rekomendacje": {
-        const planSteps = resolveDevelopmentPlan(stats.domainScores, analysis?.recommendations);
+        const planSteps = resolveDevelopmentPlan(stats.domainScores);
         return (
           <div className="space-y-6 animate-in animate-slide-in-from-bottom duration-500">
             <h4 className="font-bold text-center flex items-center justify-center gap-2 text-slate-800 dark:text-slate-100">
@@ -972,39 +1094,8 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
       }
       case "certyfikat":
         return (
-          <div className="animate-in animate-slide-in-from-bottom duration-500 flex justify-center">
-            <div className="w-full max-w-md bg-white dark:bg-slate-900 border-8 border-slate-50 dark:border-slate-800 p-10 rounded-[2rem] shadow-inner relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 rounded-full -mr-16 -mt-16"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-600/5 rounded-full -ml-12 -mb-12"></div>
-              
-              <div className="text-center relative z-10">
-                <div className="flex justify-center mb-6">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-                    <Logos.BrainGrid size={36} />
-                  </div>
-                </div>
-                <h3 className="text-2xl font-serif font-bold mb-2 dark:text-white">Certyfikat Inteligencji</h3>
-                <div className="w-16 h-0.5 bg-blue-600 mx-auto mb-8"></div>
-                
-                <p className="text-xs text-slate-400 uppercase tracking-widest mb-10">Niniejszym potwierdza się wynik</p>
-                
-                <div className="mb-10">
-                  <div className="text-7xl font-black text-blue-600 mb-2">{stats.iqScore}</div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Punktów IQ</div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-8 mt-8">
-                  <div className="text-left">
-                    <div className="text-[9px] text-slate-400 uppercase font-bold mb-1">Data wydania</div>
-                    <div className="text-xs font-bold dark:text-white">{new Date(data.timestamp).toLocaleDateString()}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[9px] text-slate-400 uppercase font-bold mb-1">ID Weryfikacji</div>
-                    <div className="text-[9px] font-mono dark:text-slate-500">IQM-{Math.random().toString(36).substr(2, 9).toUpperCase()}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="animate-in animate-slide-in-from-bottom duration-500 w-full">
+            <CertificatePreview data={data} userName={data.userName || 'Uczestnik Badania'} />
           </div>
         );
       default: return null;
@@ -1049,7 +1140,7 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
       </aside>
 
       {/* Content Area */}
-      <div className="flex-1 p-8 md:p-12 min-h-[450px]">
+      <div className={`flex-1 p-8 md:p-12 min-h-[450px] ${activeTab === 'certyfikat' ? 'overflow-hidden' : ''}`}>
         {renderTabContent()}
         {!data.isPaid && (
           <div className="mt-12 pt-8 border-t border-slate-100 dark:border-slate-800 text-center">
@@ -1093,12 +1184,13 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
               Sprawdź możliwości swojego mózgu i poznaj swoje mocne strony. Twój spersonalizowany raport będzie gotowy natychmiast po zakończeniu testu.
             </p>
             <div className="flex flex-col sm:flex-row gap-5">
-              <Link 
-                to="/test"
+              <button
+                type="button"
+                onClick={openPurchaseModal}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-5 rounded-2xl text-lg font-bold shadow-2xl shadow-blue-200 dark:shadow-none hover:scale-105 transition-all text-center"
               >
                 Rozpocznij Test IQ
-              </Link>
+              </button>
               <Link to="/metoda" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 px-12 py-5 rounded-2xl text-lg font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-center">
                 Metodologia
               </Link>
@@ -2268,267 +2360,7 @@ const Checkout = () => {
   );
 };
 
-const CertificateTemplate = ({ data, userName }: { data: ReportData, userName: string }) => {
-  const certId = `BMQ-${data.stats.iqScore}-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-  const dateStr = new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
-  const domainLabels: Record<string, string> = {
-    MATRIX: 'Matryce',
-    NUMBER_SERIES: 'Ciągi',
-    ANALOGY: 'Analogie',
-    SPATIAL: 'Przestrzeń',
-    LOGIC: 'Logika',
-  };
-  const displayName = userName || 'Uczestnik Badania';
-  const domains = Object.entries(data.stats.domainScores).map(([key, value]) => ({
-    key,
-    label: domainLabels[key] || key,
-    value: Math.max(0, Math.min(100, Math.round(value as number))),
-  }));
 
-  return (
-    <div style={{
-      width: '1123px',
-      height: '794px',
-      position: 'relative',
-      overflow: 'hidden',
-      boxSizing: 'border-box',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #fffaf0 45%, #f8fafc 100%)',
-      color: '#0f172a',
-      fontFamily: 'Inter, Arial, sans-serif',
-    }}>
-      <div style={{ position: 'absolute', inset: '0', background: 'radial-gradient(circle at 50% 42%, rgba(37, 99, 235, 0.10), transparent 34%)' }} />
-      <div style={{ position: 'absolute', inset: '28px', border: '2px solid #0f2d5c', borderRadius: '30px' }} />
-      <div style={{ position: 'absolute', inset: '40px', border: '1px solid rgba(180, 145, 77, 0.75)', borderRadius: '22px' }} />
-      <div style={{ position: 'absolute', top: '51px', left: '51px', right: '51px', height: '6px', borderTop: '1px solid rgba(15, 45, 92, 0.35)', borderBottom: '1px solid rgba(180, 145, 77, 0.7)' }} />
-      <div style={{ position: 'absolute', bottom: '51px', left: '51px', right: '51px', height: '6px', borderTop: '1px solid rgba(180, 145, 77, 0.7)', borderBottom: '1px solid rgba(15, 45, 92, 0.35)' }} />
-
-      {[
-        ['46px', '46px', undefined, undefined],
-        ['46px', undefined, undefined, '46px'],
-        [undefined, '46px', '46px', undefined],
-        [undefined, undefined, '46px', '46px'],
-      ].map(([top, left, bottom, right], i) => (
-        <div key={i} style={{ position: 'absolute', top, left, bottom, right, width: '34px', height: '34px' }}>
-          <div style={{ position: 'absolute', inset: 0, border: '1px solid #b4914d', transform: 'rotate(45deg)' }} />
-          <div style={{ position: 'absolute', inset: '11px', background: '#0f2d5c', borderRadius: '50%' }} />
-        </div>
-      ))}
-
-      <div style={{
-        position: 'absolute',
-        left: '50%',
-        top: '47%',
-        transform: 'translate(-50%, -50%)',
-        width: '520px',
-        height: '520px',
-        border: '1px solid rgba(15, 45, 92, 0.08)',
-        borderRadius: '50%',
-      }} />
-      <div style={{
-        position: 'absolute',
-        left: '50%',
-        top: '47%',
-        transform: 'translate(-50%, -50%)',
-        fontSize: '118px',
-        fontWeight: 900,
-        lineHeight: 1,
-        letterSpacing: '-0.08em',
-        color: '#0f2d5c',
-        opacity: 0.035,
-        whiteSpace: 'nowrap',
-      }}>
-        brainmediq
-      </div>
-
-      <div style={{ position: 'absolute', top: '78px', left: '86px', right: '86px', textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '34px' }}>
-          <div style={{ width: '230px', textAlign: 'left' }}>
-            <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.26em', textTransform: 'uppercase', color: '#64748b' }}>
-              Dokument cyfrowy
-            </div>
-            <div style={{ marginTop: '8px', fontSize: '12px', fontWeight: 700, color: '#0f2d5c' }}>{certId}</div>
-          </div>
-
-          <div style={{
-            width: '82px',
-            height: '82px',
-            borderRadius: '24px',
-            background: 'linear-gradient(135deg, #0f2d5c, #2563eb)',
-            boxShadow: '0 16px 32px rgba(37, 99, 235, 0.18)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 10.5C4 6.9 7 4 10.6 4h2.8C17 4 20 6.9 20 10.5c0 2.9-1.9 5.4-4.5 6.2" />
-              <path d="M8.5 16.7C5.9 15.9 4 13.4 4 10.5" />
-              <path d="M9 10h6" />
-              <path d="M12 7v6" />
-              <path d="M8 20h8" />
-              <path d="M12 16v4" />
-            </svg>
-          </div>
-
-          <div style={{ width: '230px', textAlign: 'right' }}>
-            <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.26em', textTransform: 'uppercase', color: '#64748b' }}>
-              Data badania
-            </div>
-            <div style={{ marginTop: '8px', fontSize: '12px', fontWeight: 700, color: '#0f2d5c' }}>{dateStr}</div>
-          </div>
-        </div>
-
-        <div style={{ fontSize: '12px', fontWeight: 900, letterSpacing: '0.36em', textTransform: 'uppercase', color: '#b4914d', marginBottom: '14px' }}>
-          Brainmediq Polska
-        </div>
-        <div style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '58px', fontWeight: 700, letterSpacing: '0.08em', color: '#0f2d5c', lineHeight: 1 }}>
-          CERTYFIKAT IQ
-        </div>
-        <div style={{ width: '170px', height: '2px', background: 'linear-gradient(90deg, transparent, #b4914d, transparent)', margin: '22px auto 28px' }} />
-
-        <div style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '18px', fontStyle: 'italic', color: '#475569', marginBottom: '12px' }}>
-          Niniejszym potwierdza się, że
-        </div>
-        <div style={{
-          display: 'inline-block',
-          minWidth: '560px',
-          padding: '0 38px 12px',
-          borderBottom: '1px solid rgba(180, 145, 77, 0.9)',
-          fontFamily: 'Georgia, Times New Roman, serif',
-          fontSize: '48px',
-          fontWeight: 700,
-          fontStyle: 'italic',
-          color: '#111827',
-          lineHeight: 1.1,
-        }}>
-          {displayName}
-        </div>
-
-        <div style={{ maxWidth: '690px', margin: '22px auto 20px', fontSize: '15px', lineHeight: 1.7, color: '#475569' }}>
-          ukończył/a test inteligencji na platformie brainmediq.com i uzyskał/a poniższy wynik w pomiarze zdolności poznawczych.
-        </div>
-
-        <div style={{
-          width: '690px',
-          margin: '0 auto 24px',
-          padding: '18px 28px',
-          borderRadius: '28px',
-          border: '1px solid rgba(180, 145, 77, 0.55)',
-          background: 'rgba(255, 255, 255, 0.82)',
-          boxShadow: '0 18px 45px rgba(15, 23, 42, 0.08)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '34px',
-        }}>
-          <div style={{ textAlign: 'center', minWidth: '220px' }}>
-            <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#64748b', marginBottom: '4px' }}>
-              Wynik ogólny
-            </div>
-            <div style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '104px', fontWeight: 700, color: '#0f2d5c', lineHeight: 0.95 }}>
-              {data.stats.iqScore}
-            </div>
-            <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#b4914d' }}>
-              IQ score
-            </div>
-          </div>
-
-          <div style={{ width: '1px', height: '132px', background: 'linear-gradient(#ffffff, #cbd5e1, #ffffff)' }} />
-
-          <div style={{ textAlign: 'left', width: '300px' }}>
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#64748b' }}>Percentyl</div>
-              <div style={{ fontSize: '34px', fontWeight: 900, color: '#111827', marginTop: '2px' }}>{data.stats.percentile}%</div>
-            </div>
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#64748b' }}>Przedział ufności 95%</div>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f2d5c', marginTop: '4px' }}>{data.stats.confidenceInterval[0]} - {data.stats.confidenceInterval[1]}</div>
-            </div>
-            {data.stats.ageBracketLabel ? (
-              <div>
-                <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#64748b' }}>Norma wieku</div>
-                <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f2d5c', marginTop: '4px' }}>{data.stats.ageBracketLabel}</div>
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        <div style={{ width: '760px', margin: '0 auto', display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, domains.length)}, 1fr)`, gap: '10px' }}>
-          {domains.map((domain) => (
-            <div key={domain.key} style={{
-              padding: '12px 10px',
-              borderRadius: '16px',
-              background: 'rgba(255, 255, 255, 0.68)',
-              border: '1px solid rgba(226, 232, 240, 0.95)',
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: '18px', fontWeight: 900, color: '#0f2d5c' }}>{domain.value}%</div>
-              <div style={{ height: '4px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden', margin: '7px 0 8px' }}>
-                <div style={{ height: '100%', width: `${domain.value}%`, background: 'linear-gradient(90deg, #2563eb, #b4914d)', borderRadius: '999px' }} />
-              </div>
-              <div style={{ fontSize: '8px', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#64748b' }}>{domain.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ position: 'absolute', bottom: '78px', left: '92px', right: '92px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-        <div style={{ width: '245px', textAlign: 'center' }}>
-          <div style={{ borderBottom: '1px solid #94a3b8', paddingBottom: '8px', fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
-            brainmediq.com
-          </div>
-          <div style={{ marginTop: '9px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#64748b' }}>
-            Platforma badania
-          </div>
-        </div>
-
-        <div style={{
-          width: '104px',
-          height: '104px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, #d8b45c 0%, #b4914d 58%, #8a6a2f 100%)',
-          boxShadow: '0 0 0 4px rgba(180, 145, 77, 0.26), 0 16px 28px rgba(15, 23, 42, 0.12)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          color: '#ffffff',
-        }}>
-          <div style={{ position: 'absolute', inset: '9px', border: '1px solid rgba(255, 255, 255, 0.55)', borderRadius: '50%' }} />
-          <div style={{ position: 'absolute', top: '19px', left: 0, right: 0, textAlign: 'center', fontSize: '7px', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            verified
-          </div>
-          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 3l2.35 4.76l5.25.76l-3.8 3.7l.9 5.23L12 15l-4.7 2.47l.9-5.23l-3.8-3.7l5.25-.76L12 3z" />
-          </svg>
-          <div style={{ position: 'absolute', bottom: '19px', left: 0, right: 0, textAlign: 'center', fontSize: '7px', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            result
-          </div>
-        </div>
-
-        <div style={{ width: '245px', textAlign: 'center' }}>
-          <div style={{
-            borderBottom: '1px solid #94a3b8',
-            paddingBottom: '8px',
-            fontFamily: 'Georgia, Times New Roman, serif',
-            fontSize: '30px',
-            fontStyle: 'italic',
-            fontWeight: 700,
-            color: '#0f2d5c',
-          }}>
-            Brainmediq
-          </div>
-          <div style={{ marginTop: '9px', fontSize: '9px', fontWeight: 900, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#64748b' }}>
-            Autoryzacja systemowa
-          </div>
-        </div>
-      </div>
-
-      <div style={{ position: 'absolute', bottom: '42px', left: '90px', right: '90px', textAlign: 'center', fontSize: '9px', color: '#94a3b8', lineHeight: 1.5 }}>
-        Certyfikat ma charakter informacyjno-rozwojowy i potwierdza wynik uzyskany w teście online. Nie stanowi diagnozy klinicznej ani dokumentu urzędowego.
-      </div>
-    </div>
-  );
-};
 
 const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
   const [activeTab, setActiveTab] = useState("podsumowanie");
@@ -2538,6 +2370,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
   const [animate, setAnimate] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [emailErrorDetail, setEmailErrorDetail] = useState<string | null>(null);
   const navigate = useNavigate();
   const reportRef = useRef<HTMLDivElement>(null);
   const certificateRef = useRef<HTMLDivElement>(null);
@@ -2552,30 +2385,24 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
       if (parsed.userName) setUserName(parsed.userName);
 
       const fetchReport = async () => {
-        if (!parsed.isPro) {
-          setData(parsed);
-          setLoading(false);
-          setTimeout(() => setAnimate(true), 300);
-          return;
-        }
-
         try {
           const analysis = await generateDetailedReport(parsed.stats);
-          const updatedData = { ...parsed, analysis: analysis || undefined };
+          const updatedData = { ...parsed, analysis: analysis || getAnalysisFallback(parsed.stats) };
           setData(updatedData);
           localStorage.setItem('iq_results', JSON.stringify(updatedData));
           setTimeout(() => setAnimate(true), 300);
         } catch (e) { 
           console.error(e);
-          setData(parsed);
+          const withFallback = { ...parsed, analysis: getAnalysisFallback(parsed.stats) };
+          setData(withFallback);
+          localStorage.setItem('iq_results', JSON.stringify(withFallback));
+          setTimeout(() => setAnimate(true), 300);
         } finally { 
           setLoading(false); 
         }
       };
       
-      const needsProInsights = false; // Pro insights removed
-      
-      if (parsed.analysis && !needsProInsights) {
+      if (hasFullAnalysis(parsed.analysis)) {
         setData(parsed);
         setLoading(false);
         setTimeout(() => setAnimate(true), 300);
@@ -2635,6 +2462,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
     const toEmail = (reportData as ReportData & { email?: string }).email;
     if (!toEmail || !toEmail.includes('@')) {
       setEmailStatus('error');
+      setEmailErrorDetail('Podaj poprawny adres e-mail.');
       return;
     }
 
@@ -2644,6 +2472,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
     emailSentRef.current = true;
 
     setEmailStatus('sending');
+    setEmailErrorDetail(null);
     const year = new Date().getFullYear();
     const dateStr = new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
     const displayName = name || 'Uczestnik Badania';
@@ -2771,13 +2600,19 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
       });
       if (res.ok) {
         setEmailStatus('sent');
+        setEmailErrorDetail(null);
         localStorage.setItem(sessionKey, '1');
       } else {
+        const body = await res.json().catch(() => null);
         setEmailStatus('error');
+        setEmailErrorDetail(body?.error || `Błąd serwera (${res.status})`);
         emailSentRef.current = false;
       }
-    } catch {
+    } catch (err) {
       setEmailStatus('error');
+      setEmailErrorDetail(
+        err instanceof Error ? err.message : 'Brak połączenia z API. Uruchom: ./scripts/start-dev.sh'
+      );
       emailSentRef.current = false;
     }
   };
@@ -2858,11 +2693,16 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
                   </span>
                 )}
                 {emailStatus === 'error' && (
-                  <span className="flex items-center gap-2 text-rose-500 font-bold text-sm">
-                    <AlertTriangle className="w-4 h-4"/> Błąd wysyłki —
-                    <button onClick={() => { emailSentRef.current = false; data && sendResultsEmail(data, userName, true); }} className="underline hover:no-underline">
-                      spróbuj ponownie
-                    </button>
+                  <span className="flex flex-col items-start gap-1 text-rose-500 font-bold text-sm max-w-xl">
+                    <span className="flex items-center gap-2 flex-wrap">
+                      <AlertTriangle className="w-4 h-4 shrink-0"/> Błąd wysyłki —
+                      <button onClick={() => { emailSentRef.current = false; data && sendResultsEmail(data, userName, true); }} className="underline hover:no-underline">
+                        spróbuj ponownie
+                      </button>
+                    </span>
+                    {emailErrorDetail && (
+                      <span className="text-xs font-medium text-rose-400/90 normal-case">{emailErrorDetail}</span>
+                    )}
                   </span>
                 )}
                 {emailStatus === 'idle' && (
@@ -2893,6 +2733,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
             setActiveTab={setActiveTab} 
             animate={animate} 
             openPurchaseModal={openPurchaseModal}
+            onRequestAnimate={() => setAnimate(true)}
           />
           
           <div className="no-print pt-12 flex flex-col items-center space-y-6" data-html2canvas-ignore="true">

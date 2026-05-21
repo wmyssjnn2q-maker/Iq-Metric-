@@ -17,6 +17,18 @@ if (!resendApiKey) {
 
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
+/** Resend (bez zweryfikowanej domeny) pozwala wysyłać tylko na e-mail konta w panelu. */
+function formatResendError(message: string): string {
+  const onlyTest = message.match(
+    /only send testing emails to your own email address \(([^)]+)\)/i
+  );
+  if (onlyTest) {
+    const allowed = onlyTest[1];
+    return `W trybie testowym Resend możesz wysłać mail tylko na: ${allowed}. Użyj tego adresu w formularzu albo zweryfikuj domenę na resend.com/domains (potem ustaw RESEND_FROM_EMAIL).`;
+  }
+  return message;
+}
+
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
@@ -41,10 +53,13 @@ app.post('/api/send-email', async (req, res) => {
     };
 
     if (attachment?.content && attachment?.filename) {
+      const raw = attachment.content;
       payload.attachments = [
         {
           filename: attachment.filename,
-          content: attachment.content,
+          content: Buffer.isBuffer(raw)
+            ? raw
+            : Buffer.from(String(raw), 'base64'),
         },
       ];
     }
@@ -53,7 +68,8 @@ app.post('/api/send-email', async (req, res) => {
 
     if (error) {
       console.error('Resend error:', error);
-      return res.status(500).json({ error: error.message });
+      const msg = formatResendError(error.message || 'Błąd Resend');
+      return res.status(403).json({ error: msg, code: 'resend_restricted' });
     }
 
     console.log(`[Resend] Email sent to ${to} | ID: ${data?.id}`);

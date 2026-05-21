@@ -7,8 +7,9 @@
     "api": "tsx server.ts",
     "dev": "node scripts/dev.mjs",
     "build": "vite build",
-    "preview": "vite build && vite preview --host localhost --port 4173",
-    "lint": "tsc --noEmit"
+    "preview": "vite build && vite preview --host 127.0.0.1 --port 4173",
+    "lint": "tsc --noEmit",
+    "setup:resend": "node scripts/set-resend-key.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.37.0",

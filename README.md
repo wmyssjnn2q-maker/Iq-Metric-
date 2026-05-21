@@ -15,10 +15,12 @@ View your app in AI Studio: https://ai.studio/apps/ae4d776b-e8ec-4e5d-a01d-51fe7
 
 1. Install dependencies:
    `npm install`
-2. Set the required keys in `.env.local`:
-   `GEMINI_API_KEY=...`
-   `RESEND_API_KEY=...`
-   Optional: `RESEND_FROM_EMAIL=noreply@your-verified-domain.com`
+2. Copy env template and set keys in `.env.local`:
+   ```bash
+   cp .env.example .env.local
+   ```
+   Required for email: `RESEND_API_KEY` from [resend.com](https://resend.com/api-keys)  
+   Optional: `RESEND_FROM_EMAIL` (verified domain in Resend), `GEMINI_API_KEY`
 3. Run the app:
    `npm run dev`
 
