@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, Grid3X3, Target, Zap, ArrowRight, Search, Cpu, Dna, Lightbulb, Atom, LayoutDashboard, TrendingUp, ShieldCheck, Briefcase, Layout, BarChart3, Globe, Rocket, Award, BadgeCheck, Fingerprint, Star, ArrowUpCircle, CheckCircle2, Brain, Percent, Info, PieChart, BrainCircuit, Activity, Trophy, AreaChart, ClipboardList, Check, Clock, Sun, Moon, AlertTriangle, Lock, Mail, Layers, LayoutGrid, Eye, Gauge, ClipboardCheck, SlidersHorizontal } from 'lucide-react';
-import { HashRouter, Routes, Route, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import { 
   ComposableMap, 
   Geographies, 
@@ -798,7 +798,11 @@ const Footer = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => (
         <ul className="space-y-2 text-sm">
           <li><Link to="/prywatnosc" className="hover:text-white">Polityka Prywatności</Link></li>
           <li><Link to="/regulamin" className="hover:text-white">Regulamin</Link></li>
-          <li><Link to="/kontakt" className="hover:text-white">Kontakt</Link></li>
+          <li>
+            <a href="mailto:kontakt@brainmediq.com" className="hover:text-white">
+              Kontakt
+            </a>
+          </li>
         </ul>
       </div>
     </div>
@@ -1712,7 +1716,7 @@ const TestSession = () => {
               Przed rozpoczęciem
             </h2>
             <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[var(--iq-muted)]">
-              Test zawiera wyłącznie zadania przygotowane na podstawie przesłanych screenów. Wybierz przycisk poniżej, gdy jesteś gotowy.
+              Za chwilę rozpoczniesz właściwy test: 19 zadań logicznych z limitem 14 minut. Upewnij się, że masz spokojne miejsce i skupienie.
             </p>
           </div>
           <div className="iq-assessment-sheet overflow-hidden">
@@ -4898,13 +4902,16 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
         <div id="co-mierzymy" className="scroll-mt-32">
           <h2 className="text-4xl font-bold mb-8 dark:text-white">Co mierzy ten test?</h2>
           <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg max-w-prose">
-            Test koncentruje się na <strong>inteligencji płynnej</strong>, czyli zdolności do zauważania reguł, porównywania wzorców i rozwiązywania nowych problemów bez korzystania z wyuczonej wiedzy szkolnej. Zadania są oparte głównie na matrycach, symbolach, liczbach i relacjach przestrzennych.
+            Badanie koncentruje się na <strong>inteligencji płynnej (Gf)</strong> — zdolności do rozwiązywania nowych problemów, wykrywania reguł i pracy na abstrakcyjnych wzorach. Nie sprawdzamy wiedzy szkolnej, języka obcego ani zapamiętanych definicji; liczy się spostrzegawczość, logika i tempo analizy.
+          </p>
+          <p className="mt-4 text-slate-600 dark:text-slate-400 leading-relaxed text-lg max-w-prose">
+            Wynik w raporcie rozkładamy na <strong>pięć domen poznawczych</strong>: matryce logiczne, ciągi liczbowe, analogie, wyobraźnię przestrzenną oraz rozumowanie logiczne. Dzięki temu widać nie tylko wynik ogólny IQ, ale też obszary relatywnie mocniejsze i słabsze w tym konkretnym teście.
           </p>
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-[900px]">
             {[
-              { t: 'Wzorce i reguły', d: 'Rozpoznawanie, co zmienia się w wierszach, kolumnach i sekwencjach.' },
-              { t: 'Myślenie bez słów', d: 'Większość zadań nie wymaga wiedzy językowej ani szkolnych definicji.' },
-              { t: 'Szybka analiza', d: 'Limit czasu sprawdza nie tylko poprawność, ale też sprawność pracy poznawczej.' },
+              { t: 'Wzorce i reguły', d: 'Matryce i układy symboli — wykrywanie zmian w wierszach, kolumnach i sekwencjach.' },
+              { t: 'Myślenie bez słów', d: 'Zadania wizualne i liczbowe, bez wiedzy ogólnej ani języka obcego.' },
+              { t: 'Sprawność pod czasem', d: 'Limit czasu pozwala ocenić nie tylko poprawność, ale też tempo pracy.' },
             ].map(item => (
               <div key={item.t} className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <h4 className="mb-2 font-bold text-slate-900 dark:text-white">{item.t}</h4>
@@ -4916,17 +4923,26 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
 
         <div id="format-czas" className="scroll-mt-32">
           <h2 className="text-4xl font-bold mb-8 dark:text-white">Format i czas</h2>
-          <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-10 max-w-prose">Aktualna wersja testu jest krótsza i bardziej spójna wizualnie. Zawiera wyłącznie zadania przygotowane na podstawie przesłanych wzorców i dopasowane do stylu serwisu:</p>
+          <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-10 max-w-prose">
+            Badanie obejmuje krótką część instruktażową oraz właściwą serię 19 zadań wykonywanych pod limitem czasowym. W każdym zadaniu obowiązuje jedna poprawna odpowiedź wynikająca ze wzorca w układzie.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[800px]">
             <div className="p-8 bg-white dark:bg-slate-900 border rounded-3xl border-blue-200 shadow-sm">
               <h4 className="font-bold text-lg mb-3">Struktura testu</h4>
-              <p className="text-sm text-slate-500 leading-relaxed">Test składa się z 19 zadań. Luka w matrycach znajduje się konsekwentnie w prawym dolnym rogu, a pytania obejmują matryce, układy symboli, liczby, analogie, przestrzeń i logikę.</p>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Seria liczy <strong>19 zadań</strong> z pięciu typów: matryce, ciągi liczbowe, analogie, układy przestrzenne i rozumowanie logiczne. Zadania różnią się poziomem trudności; w matrycach pole do uzupełnienia wskazane jest w prawym dolnym rogu.
+              </p>
             </div>
             <div className="p-8 bg-white dark:bg-slate-900 border rounded-3xl shadow-sm">
               <h4 className="font-bold text-lg mb-3">Limit czasu (14 min)</h4>
-              <p className="text-sm text-slate-500 leading-relaxed">Limit 14 minut daje średnio około 45 sekund na zadanie. To wystarczająco dużo, żeby rozpoznać regułę, ale nadal wymaga skupienia i sprawnego tempa pracy.</p>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Czas przeznaczony na całość serii to <strong>14 minut</strong> (średnio ok. 45 s na zadanie). Odliczanie rozpoczyna się po części instruktażowej; wynik wyliczany jest z odpowiedzi udzielonych do zakończenia badania.
+              </p>
             </div>
           </div>
+          <p className="mt-8 text-sm text-slate-500 dark:text-slate-400 max-w-prose leading-relaxed">
+            Przed testem prosimy o wybór <strong>przedziału wiekowego</strong>. Służy on do odniesienia wyniku IQ i percentyla do uproszczonej normy dla danej grupy — tak jak w standaryzowanych badaniach z podziałem wiekowym.
+          </p>
         </div>
 
         <div id="jak-liczymy" className="scroll-mt-32">
@@ -4935,16 +4951,18 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
             Wynik nie jest prostą informacją „ile odpowiedzi było poprawnych”. Liczymy go na podstawie poprawności, trudności zadań oraz rozkładu wyników przyjętego dla skali IQ:
           </p>
           <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-12 max-w-prose space-y-4">
-            <li><strong>Poprawność odpowiedzi:</strong> każde zadanie ma jedną prawidłową odpowiedź wynikającą z reguły układu.</li>
-            <li><strong>Trudność zadania:</strong> trudniejsze pytania mają większy wpływ na wynik niż pytania łatwe.</li>
-            <li><strong>Skala IQ:</strong> wynik surowy jest przeliczany na skalę ze średnią 100 i odchyleniem standardowym 15 punktów.</li>
-            <li><strong>Przedział ufności:</strong> pokazujemy zakres, w którym najprawdopodobniej znajduje się wynik rzeczywisty, bo każdy test online ma naturalny margines błędu.</li>
+            <li><strong>Wynik surowy:</strong> suma punktów za poprawne odpowiedzi, ważona trudnością zadania (trudniejsze pytania mają większą wagę).</li>
+            <li><strong>Norma wiekowa:</strong> przed testem wybierasz przedział wiekowy; na jego podstawie wynik jest porównywany z modelem referencyjnym dla tej grupy.</li>
+            <li><strong>Skala IQ:</strong> wynik surowy przeliczamy na skalę ze średnią 100 i odchyleniem standardowym 15 (model zbliżony do testów psychometrycznych).</li>
+            <li><strong>Percentyl:</strong> pokazuje, jaki odsetek osób w przyjętej normie uzyskał wynik niższy od Twojego.</li>
+            <li><strong>Profil domen:</strong> osobno liczymy wynik procentowy w pięciu kategoriach zadań — to podstawa raportu i planu rozwoju.</li>
+            <li><strong>Przedział ufności 95%:</strong> wąski zakres wokół wyniku IQ (w raporcie ±4 punkty) — przy powtórzeniu badania w podobnych warunkach wynik zwykle mieści się w tym przedziale, co jest typowe dla pomiarów skalowych.</li>
           </ul>
           
           <ScoreGenerationInfographic />
           
           <p className="text-base text-slate-500 leading-relaxed italic mt-12 max-w-prose">
-            Schemat pokazuje uproszczony przepływ: odpowiedzi → punkty ważone → wynik IQ → percentyl i raport. Wynik należy traktować jako orientacyjny pomiar online, nie jako diagnozę kliniczną.
+            Schemat przedstawia uproszczony przepływ: odpowiedzi → punkty ważone trudnością → wynik IQ → percentyl i raport. Wynik opiera się na modelu psychometrycznym i odzwierciedla poziom w tym badaniu; nie zastępuje oceny przeprowadzonej przez psychologa w warunkach klinicznych.
           </p>
         </div>
 
@@ -4953,7 +4971,7 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
           <div className="flex flex-col md:flex-row gap-12 items-start">
             <div className="flex-1 space-y-6">
               <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg max-w-prose">
-                Percentyl pomaga zrozumieć wynik w prostszy sposób niż sama liczba IQ. Pokazuje, jaki odsetek osób w przyjętej populacji odniesienia uzyskał wynik niższy od Twojego.
+                Percentyl tłumaczy wynik IQ na prostszy język: pokazuje, ile osób w <strong>wybranej normie wiekowej</strong> uzyskało wynik niższy od Twojego. Ta sama liczba IQ może oznaczać inny percentyl u innej grupy wiekowej — dlatego w raporcie podajemy obie informacje.
               </p>
               <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
                 <h4 className="font-bold mb-4 flex items-center gap-2">
@@ -4961,7 +4979,7 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
                   Przykład interpretacji:
                 </h4>
                 <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Jeśli Twój wynik to <strong>95. percentyl</strong>, oznacza to, że wynik jest wyższy niż u około 95 na 100 osób w porównaniu. Nie oznacza to diagnozy ani stałej etykiety, ale pomaga ocenić poziom na tle innych.
+                  Przy wyniku IQ 115 i percentylu <strong>84%</strong> w grupie „25–34 lata” oznacza to, że w tej normie około 84% osób uzyskało wynik niższy. To porównanie w obrębie zadeklarowanej grupy, nie diagnoza kliniczna ani ranking „na zawsze”.
                 </p>
               </div>
             </div>
@@ -4990,15 +5008,18 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
 
         <div id="analiza-pro" className="scroll-mt-32">
           <h2 className="text-4xl font-bold mb-8 dark:text-white">Analiza PRO</h2>
+          <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-6 max-w-prose">
+            W brainmediq dostępne są dwa poziomy raportu po teście IQ. <strong>Pakiet Standard</strong> obejmuje wynik IQ, percentyl, spersonalizowane podsumowanie (mocne strony, obszary do rozwoju, kariera, cechy) oraz certyfikat PDF na e-mail.
+          </p>
           <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-10 max-w-prose">
-            Analiza PRO rozwija sam wynik IQ o praktyczne informacje: profil domen poznawczych, paski procentowe, percentyl, certyfikat PDF i prosty plan rozwoju. Celem jest pokazanie, w jakich typach zadań radzisz sobie najlepiej i co warto ćwiczyć dalej.
+            <strong>Analiza PRO</strong> dodaje rozszerzone zakładki raportu: szczegółowy profil pięciu domen z wykresami, dedykowaną interpretację percentyla oraz <strong>plan rozwoju w 5 krokach</strong> ułożony od najsłabszej do najmocniejszej domeny w Twoim teście.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             {[
-              { t: "Profil domen", d: "Wyniki procentowe dla matryc, logiki, analogii, przestrzeni i ciągów liczbowych." },
-              { t: "Raport i certyfikat", d: "Pełny raport po płatności oraz certyfikat PDF wysyłany na adres e-mail." },
-              { t: "Plan rozwoju", d: "Krótkie, proste wskazówki bez zbędnego żargonu psychologicznego." }
+              { t: "Profil 5 domen", d: "Wyniki procentowe w matrycach, logice, analogiach, przestrzeni i ciągach — z poziomami: do ćwiczeń, średni, wysoki." },
+              { t: "Percentyl i norma", d: "Wizualizacja pozycji w populacji z uwzględnieniem zadeklarowanej grupy wiekowej." },
+              { t: "Plan rozwoju", d: "Pięć kroków dopasowanych do Twoich wyników domenowych — kolejność i treść zmieniają się po każdym teście." }
             ].map(item => (
               <div key={item.t} className="p-8 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-[2.5rem]">
                 <h4 className="font-bold text-blue-600 dark:text-blue-400 mb-3">{item.t}</h4>
@@ -5008,9 +5029,9 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/50 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800">
-            <h4 className="text-xl font-bold mb-6 dark:text-white">Dlaczego warto wybrać Analizę PRO?</h4>
+            <h4 className="text-xl font-bold mb-6 dark:text-white">Standard vs Analiza PRO</h4>
             <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
-              Standardowy wynik daje liczbę i certyfikat. Analiza PRO dodaje kontekst: pokazuje mocniejsze i słabsze obszary, wyjaśnia percentyl oraz podaje konkretne ćwiczenia. Dzięki temu raport jest bardziej użyteczny niż sam wynik punktowy.
+              Oba pakiety zawierają wynik IQ, certyfikat PDF i podsumowanie dopasowane do wyniku testu. PRO rozszerza raport o wizualny profil domen, osobną zakładkę percentyla oraz szczegółowy plan ćwiczeń — przydatne, gdy chcesz wiedzieć nie tylko „ile”, ale <em>w czym</em> wypadasz najlepiej i co ćwiczyć w pierwszej kolejności.
             </p>
             <div className="flex items-center space-x-4 text-blue-600 font-bold">
               <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg">
@@ -5034,12 +5055,13 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
           <h2 className="text-4xl font-bold mb-12 dark:text-white">Słownik pojęć</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-[1000px]">
             {[
-              { t: "Wynik IQ", d: "Orientacyjny wynik na skali, gdzie średnia wynosi 100, a jedno odchylenie standardowe to 15 punktów." },
-              { t: "Przedział ufności", d: "Zakres, który pokazuje możliwy margines błędu pomiaru online." },
-              { t: "Inteligencja płynna", d: "Zdolność do rozwiązywania nowych problemów, zauważania reguł i pracy na abstrakcyjnych wzorcach." },
-              { t: "Percentyl", d: "Informacja, jaki odsetek osób uzyskał wynik niższy od Twojego w przyjętym porównaniu." },
-              { t: "Domena poznawcza", d: "Kategoria umiejętności badana w raporcie, np. logika, matryce albo wyobraźnia przestrzenna." },
-              { t: "Plan rozwoju", d: "Krótka lista ćwiczeń i wskazówek dopasowanych do profilu wyników." }
+              { t: "Wynik IQ", d: "Wynik na skali ze średnią 100 i odchyleniem standardowym 15; liczony z poprawnych odpowiedzi ważonych trudnością zadania." },
+              { t: "Norma wiekowa", d: "Uproszczony model referencyjny dla wybranej grupy wiekowej (np. 16–24, 25–34) — podstawa percentyla i IQ w raporcie." },
+              { t: "Przedział ufności", d: "Zakres ±4 pkt. IQ wokół wyniku — orientacyjna informacja o możliwym rozrzucie przy powtórzeniu testu." },
+              { t: "Inteligencja płynna (Gf)", d: "Zdolność do nowych zadań logicznych i wzorcowych, bez polegania na wiedzy szkolnej." },
+              { t: "Percentyl", d: "Odsetek osób w normie wiekowej z wynikiem niższym od Twojego (np. 75% = lepszy niż ok. 3 na 4 osoby w normie)." },
+              { t: "Domena poznawcza", d: "Jedna z pięciu kategorii zadań: matryce, ciągi, analogie, przestrzeń lub logika — wynik w % z tego testu." },
+              { t: "Plan rozwoju", d: "Pięć kroków ćwiczeń ułożonych od najsłabszej do najmocniejszej domeny w Twoim wyniku (zakładka PRO)." }
             ].map(i => (
               <div key={i.t} className="p-8 border border-slate-100 dark:border-slate-800 rounded-3xl">
                 <h5 className="font-bold text-blue-600 mb-2 text-lg">{i.t}</h5>
@@ -5246,7 +5268,7 @@ const App = () => {
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
   return (
-    <HashRouter>
+    <BrowserRouter>
       <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300 relative">
         <BackgroundMotif />
         <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} openPurchaseModal={() => setIsPurchaseModalOpen(true)} />
@@ -5275,7 +5297,7 @@ const App = () => {
         <PurchaseModal isOpen={isPurchaseModalOpen} onClose={() => setIsPurchaseModalOpen(false)} />
         <CookieBanner />
       </div>
-    </HashRouter>
+    </BrowserRouter>
   );
 };
 

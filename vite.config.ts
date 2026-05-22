@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
+      appType: 'spa',
       server: {
         port: 3000,
         /** IPv4 — unika problemów, gdy „localhost” idzie w ::1, a serwer tylko na IPv4 */
