@@ -1,5 +1,5 @@
 import { QuestionType } from './types';
-import type { DetailedAnalysis, UserStats } from './types';
+import type { DetailedAnalysis, ReportData, UserStats } from './types';
 
 export type DomainKey = keyof UserStats['domainScores'];
 
@@ -219,3 +219,27 @@ export const buildReportInsights = (stats: UserStats): DetailedAnalysis => {
     personalityTraits: buildPersonalityTraits(ranked),
   };
 };
+
+/** Stały przykład na stronie głównej — te same domeny i logika co raport po teście. */
+export const EXAMPLE_REPORT_STATS: UserStats = {
+  iqScore: 112,
+  percentile: 78,
+  domainScores: {
+    [QuestionType.MATRIX]: 68,
+    [QuestionType.LOGIC]: 85,
+    [QuestionType.SPATIAL]: 44,
+    [QuestionType.NUMBER_SERIES]: 52,
+    [QuestionType.ANALOGY]: 71,
+  },
+  confidenceInterval: [107, 117],
+  ageBracketId: '25-34',
+  ageBracketLabel: '25–34 lata',
+};
+
+export const getExampleReportData = (): ReportData => ({
+  isPaid: true,
+  isPro: true,
+  timestamp: Date.now(),
+  stats: EXAMPLE_REPORT_STATS,
+  analysis: buildReportInsights(EXAMPLE_REPORT_STATS),
+});

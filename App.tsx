@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Grid3X3, Target, Zap, ArrowRight, Search, Cpu, Dna, Lightbulb, Atom, LayoutDashboard, TrendingUp, ShieldCheck, Briefcase, Layout, BarChart3, Globe, Rocket, Award, BadgeCheck, Fingerprint, Star, ArrowUpCircle, CheckCircle2, Brain, Percent, Info, PieChart, BrainCircuit, Activity, Trophy, AreaChart, ClipboardList, Check, Clock, Sun, Moon, AlertTriangle, Lock, Mail, Layers, LayoutGrid, Eye, Gauge, ClipboardCheck, SlidersHorizontal } from 'lucide-react';
+import { Users, Grid3X3, Target, Zap, ArrowRight, Search, Cpu, Dna, Lightbulb, Atom, LayoutDashboard, TrendingUp, ShieldCheck, Briefcase, Layout, BarChart3, Globe, Rocket, Award, BadgeCheck, Fingerprint, Star, ArrowUpCircle, CheckCircle2, Brain, Percent, Info, PieChart, BrainCircuit, Activity, Trophy, AreaChart, ClipboardList, Check, Clock, Sun, Moon, AlertTriangle, Lock, Mail, Layers, LayoutGrid, Eye, Gauge, ClipboardCheck, SlidersHorizontal, Heart } from 'lucide-react';
 import { BrowserRouter, Routes, Route, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import { 
   ComposableMap, 
@@ -19,6 +19,7 @@ import { generateDetailedReport, getAnalysisFallback } from './services/geminiSe
 import {
   DOMAIN_ITEMS,
   buildReportInsights,
+  getExampleReportData,
   resolveDevelopmentPlan,
   getDomainLevel,
   normalizeDiffLabel,
@@ -825,33 +826,7 @@ const HomepageReportPreview = ({ openPurchaseModal }: { openPurchaseModal: () =>
     return () => observer.disconnect();
   }, []);
 
-  const mockData: ReportData = {
-    isPaid: true,
-    isPro: true,
-    timestamp: Date.now(),
-    stats: {
-      iqScore: 112,
-      percentile: 78,
-      domainScores: {
-        [QuestionType.MATRIX]: 88,
-        [QuestionType.LOGIC]: 92,
-        [QuestionType.SPATIAL]: 58,
-        [QuestionType.NUMBER_SERIES]: 65,
-        [QuestionType.ANALOGY]: 82
-      },
-      confidenceInterval: [108, 116],
-      ageBracketId: '25-34',
-      ageBracketLabel: '25–34 lata',
-    },
-    analysis: {
-      summary: "Twój wynik (112) jest bardzo wysoki. Świetnie radzisz sobie z logicznym myśleniem i szybkim kojarzeniem faktów w codziennych sytuacjach.",
-      strengths: ["Bardzo szybkie łączenie faktów", "Łatwe wyłapywanie reguł i wzorców", "Skuteczne oddzielanie ważnych informacji od szumu"],
-      weaknesses: ["Wyobraźnia przestrzenna — warto poćwiczyć", "Skupienie przy wielu zadaniach naraz"],
-      careerPaths: ["Analityk Danych", "Architekt Systemów", "Strateg Biznesowy"],
-      personalityTraits: ["Analityczność", "Skrupulatność", "Kreatywne rozwiązywanie problemów"],
-      recommendations: []
-    }
-  };
+  const mockData = getExampleReportData();
 
   return (
     <div ref={containerRef}>
@@ -979,14 +954,14 @@ const ReportContent = ({ data, activeTab, setActiveTab, animate, openPurchaseMod
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-px border-t border-blue-100 bg-blue-100/50 dark:border-blue-900/50 dark:bg-slate-800 md:grid-cols-5">
-                {rankedDomains.map((d) => (
-                  <div key={d.key} className="bg-white px-3 py-3 text-center dark:bg-slate-900">
-                    <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{d.shortLabel}</div>
-                    <div className="mt-1 text-lg font-black text-slate-800 dark:text-white">{Math.round(d.score)}%</div>
-                  </div>
-                ))}
-              </div>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900/50">
+              <h5 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+                <BrainCircuit size={18} className="text-blue-500" />
+                Profil 5 domen w tym teście
+              </h5>
+              <DomainProfilePanel domainScores={stats.domainScores} animate={animate} />
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -1649,7 +1624,7 @@ const TestSession = () => {
       iqScore,
       percentile,
       domainScores,
-      confidenceInterval: [iqScore - 4, iqScore + 4],
+      confidenceInterval: [iqScore - 5, iqScore + 5],
       ageBracketId: bracket.id,
       ageBracketLabel: bracket.label,
     };
@@ -2823,11 +2798,157 @@ const personalityQuestions = [
 ];
 
 const traitInfo = {
-  O: { name: "Otwartość na doświadczenia", low: "Praktyczny, tradycyjny, preferuje rutynę.", high: "Kreatywny, ciekawy świata, otwarty na nowości." },
-  C: { name: "Sumienność", low: "Spontaniczny, elastyczny, czasem zdezorganizowany.", high: "Zorganizowany, zdyscyplinowany, zorientowany na cel." },
-  E: { name: "Ekstrawersja", low: "Spokojny, niezależny, ceniący samotność (Introwertyk).", high: "Towarzyski, energiczny, asertywny." },
-  A: { name: "Ugodowość", low: "Rywalizujący, krytyczny, sceptyczny.", high: "Współczujący, ufny, chętny do współpracy." },
-  N: { name: "Neurotyczność", low: "Spokojny, odporny na stres, stabilny emocjonalnie.", high: "Wrażliwy, podatny na stres, często odczuwający niepokój." }
+  O: {
+    name: 'Otwartość na doświadczenia',
+    low: 'Praktyczny styl, rutyna, sprawdzone rozwiązania.',
+    high: 'Ciekawość, kreatywność, otwartość na nowe idee.',
+    mid: 'Umiarkowana ciekawość — łączysz nowość z praktyką.',
+    lifeLow:
+      'W codziennym życiu wolisz jasne procedury i sprawdzone metody. Dobrze odnajdujesz się tam, gdzie liczy się konsekwencja, a nie ciągłe eksperymenty — np. w roli operacyjnej, w utrzymaniu standardów jakości lub w pracy wymagającej precyzji.',
+    lifeHigh:
+      'Naturalnie szukasz nowych pomysłów, uczysz się przez odkrywanie i łatwo łączysz różne dziedziny. W pracy sprawdzisz się przy zmianach, projektach kreatywnych, nauce nowych narzędzi; w życiu prywatnym — przy podróżach, hobby wymagających wyobraźni i rozmowach o ideach.',
+    lifeMid:
+      'Potrafisz korzystać z nowości, gdy ma sens, ale nie gonisz za modą. W pracy dobrze łączysz innowację z realizmem — np. ulepszasz proces, zamiast od zera wymyślać wszystko na nowo.',
+  },
+  C: {
+    name: 'Sumienność',
+    low: 'Spontaniczność, elastyczność, działanie „tu i teraz”.',
+    high: 'Planowanie, porządek, konsekwencja w realizacji celów.',
+    mid: 'Równowaga między planem a elastycznością.',
+    lifeLow:
+      'Lepiej funkcjonujesz, gdy masz przestrzeń na improwizację i krótkie terminy nie dominują całego dnia. W relacjach cenisz swobodę; w pracy — role z dynamicznym tempem (np. obsługa bieżących spraw), o ile masz jasne minimum organizacji od zespołu.',
+    lifeHigh:
+      'Ludzie mogą na Tobie polegać przy terminach, budżetach i długich projektach. W karierze to atut w zarządzaniu, analizie, medycynie, prawie czy każdej roli wymagającej systematyczności. Uważaj tylko na perfekcjonizm — zaplanuj czas na odpoczynek.',
+    lifeMid:
+      'Potrafisz być zorganizowany/a, gdy sytuacja tego wymaga, ale nie musisz kontrolować każdego szczegółu. Dobrze sprawdzasz się w zespołach, gdzie część osób planuje, a Ty domykasz bieżące zadania.',
+  },
+  E: {
+    name: 'Ekstrawersja',
+    low: 'Spokojna energia, potrzeba czasu dla siebie, głębsze relacje 1:1.',
+    high: 'Towarzyskość, inicjatywa w grupie, łatwość w kontaktach.',
+    mid: 'Zależnie od sytuacji — raz towarzysko, raz potrzebujesz ciszy.',
+    lifeLow:
+      'Po intensywnym spotkaniu potrzebujesz regeneracji w samotności lub w małym gronie. W pracy lepiej wypadasz w pisemnej komunikacji, analizie lub rozmowach 1:1 niż przy ciągłych prezentacjach dla tłumu. To nie „brak kontaktu” — raczej wybór jakości nad ilością.',
+    lifeHigh:
+      'Łatwo budujesz sieć kontaktów, przejmujesz głos w grupie i szybko się rozkręcasz przy ludziach. Sprawdzisz się w sprzedaży, prowadzeniu spotkań, wydarzeniach, nauczaniu czy networkingu — pamiętaj jednak o granicach, żeby nie wypalać się od ciągłej stymulacji.',
+    lifeMid:
+      'Możesz być energiczny/a na spotkaniu, a wieczorem potrzebować spokoju. W pracy warto negocjować mix: część zadań zespołowych, część w skupieniu — unikasz zarówno izolacji, jak i przestymulowania.',
+  },
+  A: {
+    name: 'Ugodowość',
+    low: 'Asertywność, krytyczna ocena, gotowość do sporu o zasady.',
+    high: 'Empatia, współpraca, dbanie o harmonię w relacjach.',
+    mid: 'Potrafisz współpracować, ale też bronić swojego stanowiska.',
+    lifeLow:
+      'W negocjacjach i sporach łatwiej mówisz wprost, co myślisz — to pomaga w rolach wymagających twardych decyzji (np. prawo, audyt, sport). W relacjach uważaj, by krytyka nie przytłaczała bliskich; warto świadomie ćwiczyć aktywne słuchanie.',
+    lifeHigh:
+      'Naturalnie budujesz zaufanie i łagodzisz konflikty. W zespole jesteś „klejem” relacji; w opiece, HR, edukacji czy pracy z klientem to realna przewaga. Pamiętaj, że czasem trzeba postawić granicę — ugodowość nie musi oznaczać rezygnacji z własnych potrzeb.',
+    lifeMid:
+      'Potrafisz być wspierający/a, ale nie unikasz trudnej rozmowy, gdy jest konieczna. To zdrowy profil do większości zawodów zespołowych — łączysz relacje z jasnością oczekiwań.',
+  },
+  N: {
+    name: 'Neurotyczność',
+    low: 'Spokój pod presją, stabilny nastrój, szybsze „odklejenie” od porażek.',
+    high: 'Wrażliwość emocjonalna, silniejsze reakcje na stres i niepewność.',
+    mid: 'Normalna wrażliwość — czasem stres, czasem spokój.',
+    lifeLow:
+      'W kryzysie często zostajesz „tą spokojną osobą” — zespół może na Tobie polegać przy presji czasu. W sporcie, medycynie ratunkowej czy zarządzaniu kryzysem to atut. Upewnij się tylko, że nie bagatelizujesz sygnałów, gdy inni naprawdę potrzebują wsparcia.',
+    lifeHigh:
+      'Głębiej przeżywasz niepowodzenia i niepewność — to może zwiększać motywację do przygotowania, ale też podnosi koszt stresu. W pracy pomagają przewidywalny rytm, jasne oczekiwania szefa i techniki regulacji (sen, ruch, rozmowa). W relacjach — partnerzy/zy znajomi, którzy nie bagatelizują Twoich emocji.',
+    lifeMid:
+      'Reagujesz na stres jak większość ludzi: czasem napięcie rośnie, czasem szybko wracasz do równowagi. Warto mieć 2–3 sprawdzone sposoby na reset (spacer, oddech, krótka przerwa od ekranu).',
+  },
+};
+
+type TraitKey = keyof typeof traitInfo;
+
+const getTraitLevel = (value: number): 'low' | 'mid' | 'high' => {
+  if (value < 33) return 'low';
+  if (value > 66) return 'high';
+  return 'mid';
+};
+
+const buildPersonalityInsights = (scores: Record<string, number>) => {
+  const sorted = Object.entries(scores).sort(([, a], [, b]) => b - a) as [TraitKey, number][];
+  const [topKey, topVal] = sorted[0];
+  const [lowKey, lowVal] = sorted[sorted.length - 1];
+  const spread = topVal - lowVal;
+  const moderateCount = sorted.filter(([, v]) => v >= 40 && v <= 60).length;
+  const top = traitInfo[topKey];
+  const low = traitInfo[lowKey];
+  const topLevel = getTraitLevel(topVal);
+  const lowLevel = getTraitLevel(lowVal);
+
+  const profileClarity =
+    spread >= 35
+      ? 'Wyraźny profil — kilka cech mocno się wyróżnia, więc łatwiej opisać Twój typowy styl.'
+      : spread >= 20
+        ? 'Umiarkowanie wyraźny profil — widać preferencje, ale bez skrajnych kontrastów.'
+        : 'Równomierny profil — cechy są podobnie nasilone; w wielu sytuacjach możesz się elastycznie dostosować.';
+
+  const moderateExplain =
+    moderateCount === 0
+      ? 'Żaden wymiar nie wpada w „środek” skali — masz raczej wyraźne wzloty i spadki między cechami.'
+      : moderateCount === 5
+        ? 'Wszystkie wymiary są blisko środka — styl zależy bardzo od kontekstu i nastroju.'
+        : `${moderateCount} z 5 wymiarów jest w środkowym zakresie (40–60%) — w tych obszarach łatwiej zmieniasz zachowanie w zależności od sytuacji, zamiast trzymać się jednego schematu.`;
+
+  const topLife =
+    topLevel === 'high' ? top.lifeHigh : topLevel === 'low' ? top.lifeLow : top.lifeMid;
+  const lowLife =
+    lowLevel === 'high' ? low.lifeHigh : lowLevel === 'low' ? low.lifeLow : low.lifeMid;
+
+  const workTips: string[] = [];
+  const relationTips: string[] = [];
+  const growthTips: string[] = [];
+
+  sorted.forEach(([key, val]) => {
+    const level = getTraitLevel(val);
+    const t = traitInfo[key];
+    if (key === 'C' && level === 'high') workTips.push('Planuj zadania w blokach czasowych — Twój mózg lubi domykać listy.');
+    if (key === 'C' && level === 'low') workTips.push('Ustal 2–3 priorytety na dzień zamiast długiej listy — mniej chaosu, więcej domknięć.');
+    if (key === 'E' && level === 'high') workTips.push('Wykorzystuj spotkania na żywo; trudne tematy omawiaj wcześniej, nie tylko mailowo.');
+    if (key === 'E' && level === 'low') workTips.push('Proś o agendę przed spotkaniami i czas na przemyślenie po — to zwiększa Twoją jakość wypowiedzi.');
+    if (key === 'A' && level === 'high') relationTips.push('W konflikcie zacznij od parafrazy („rozumiem, że…”) — budujesz most, zanim przedstawisz swoje „ale”.');
+    if (key === 'A' && level === 'low') relationTips.push('Ćwicz jedno zdanie empatii przed krytyką — relacje nie muszą iść kosztem jasności.');
+    if (key === 'N' && level === 'high') growthTips.push('Przy dużym stresie: 10 min ruchu lub oddechu zanim podejmiesz ważną decyzję.');
+    if (key === 'N' && level === 'low') growthTips.push('Zwracaj uwagę, czy nie bagatelizujesz cudzego stresu — inni mogą potrzebować więcej słów niż Ty.');
+    if (key === 'O' && level === 'high') growthTips.push('Raz w miesiącu spróbuj czegoś nowego poza strefą komfortu — karmisz naturalną ciekawość.');
+    if (key === 'O' && level === 'low') growthTips.push('Małe eksperymenty (nowa aplikacja, inna trasa) budują elastyczność bez rewolucji.');
+  });
+
+  const uniqueWork = [...new Set(workTips)].slice(0, 3);
+  const uniqueRel = [...new Set(relationTips)].slice(0, 3);
+  const uniqueGrowth = [...new Set(growthTips)].slice(0, 3);
+
+  const traitCards = sorted.map(([key, val]) => {
+    const level = getTraitLevel(val);
+    const t = traitInfo[key];
+    const label = level === 'high' ? t.high : level === 'low' ? t.low : t.mid;
+    const life =
+      level === 'high' ? t.lifeHigh : level === 'low' ? t.lifeLow : t.lifeMid;
+    return { key, name: t.name, val, level, label, life };
+  });
+
+  return {
+    sorted,
+    topKey,
+    top,
+    low,
+    topVal,
+    lowVal,
+    spread,
+    moderateCount,
+    profileClarity,
+    moderateExplain,
+    topLife,
+    lowLife,
+    uniqueWork,
+    uniqueRel,
+    uniqueGrowth,
+    traitCards,
+    summary: `Twój wynik wskazuje, że najbardziej wyróżnia się u Ciebie ${top.name} (${topVal}%), a najsłabiej — w sensie rzadszego dominowania w codziennych reakcjach — ${low.name} (${lowVal}%). ${profileClarity} ${moderateExplain} Poniżej znajdziesz, co to oznacza w pracy, relacjach i pod presją — bez oceniania „dobrych” czy „złych” cech.`,
+  };
 };
 
 const PersonalityTest = () => {
@@ -2919,14 +3040,7 @@ const PersonalityTest = () => {
     }, 2000);
   };
 
-  const sortedTraits = scores
-    ? Object.entries(scores).sort(([, a], [, b]) => (b as number) - (a as number))
-    : [];
-  const strongestTrait = sortedTraits[0];
-  const calmestTrait = sortedTraits[sortedTraits.length - 1];
-  const balancedTraits = sortedTraits.filter(([, value]) => (value as number) >= 40 && (value as number) <= 60).length;
-  const strongestTraitInfo = strongestTrait ? traitInfo[strongestTrait[0] as keyof typeof traitInfo] : null;
-  const calmestTraitInfo = calmestTrait ? traitInfo[calmestTrait[0] as keyof typeof traitInfo] : null;
+  const insights = scores ? buildPersonalityInsights(scores) : null;
 
   return (
     <div className="max-w-4xl mx-auto py-24 px-6 relative z-10 min-h-[70vh] flex flex-col justify-center">
@@ -2969,27 +3083,68 @@ const PersonalityTest = () => {
 
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-2">
             {[
-              { val: 1, label: "Zdecydowanie nie zgadzam się", color: "bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:hover:bg-rose-900/50" },
-              { val: 2, label: "Raczej nie zgadzam się", color: "bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50" },
-              { val: 3, label: "Neutralnie", color: "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700" },
-              { val: 4, label: "Raczej zgadzam się", color: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50" },
-              { val: 5, label: "Zdecydowanie zgadzam się", color: "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50" }
+              {
+                val: 1,
+                label: 'Zdecydowanie nie zgadzam się',
+                color:
+                  'border-2 border-rose-700 bg-rose-700 text-white shadow-md shadow-rose-700/25 hover:bg-rose-800 dark:border-rose-500 dark:bg-rose-600 dark:hover:bg-rose-500',
+              },
+              {
+                val: 2,
+                label: 'Raczej nie zgadzam się',
+                color:
+                  'border-2 border-orange-200 bg-orange-100 text-orange-800 hover:bg-orange-200 dark:border-orange-800 dark:bg-orange-950/50 dark:text-orange-300 dark:hover:bg-orange-900/60',
+              },
+              {
+                val: 3,
+                label: 'Neutralnie',
+                color:
+                  'border-2 border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700',
+              },
+              {
+                val: 4,
+                label: 'Raczej zgadzam się',
+                color:
+                  'border-2 border-emerald-200 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-900/60',
+              },
+              {
+                val: 5,
+                label: 'Zdecydowanie zgadzam się',
+                color:
+                  'border-2 border-emerald-800 bg-emerald-800 text-white shadow-md shadow-emerald-800/25 hover:bg-emerald-900 dark:border-emerald-500 dark:bg-emerald-700 dark:hover:bg-emerald-600',
+              },
             ].map((btn) => {
               const isSelected = selectedAnswer === btn.val;
               const isDimmed = selectedAnswer !== null && !isSelected;
+              const isExtreme = btn.val === 1 || btn.val === 5;
               
               return (
                 <button
                   key={btn.val}
                   onClick={() => handleAnswer(btn.val)}
                   disabled={selectedAnswer !== null}
-                  className={`flex-1 w-full md:w-auto py-4 px-2 rounded-2xl text-sm font-bold transition-all duration-300 ${btn.color} flex flex-col items-center justify-center gap-2
-                    ${isSelected ? 'scale-105 ring-4 ring-current shadow-lg' : ''}
-                    ${isDimmed ? 'opacity-40 scale-95 grayscale' : 'hover:scale-105'}
+                  className={`flex flex-1 w-full flex-col items-center justify-center gap-2 rounded-2xl px-2 py-4 text-sm font-bold transition-all duration-300 md:w-auto ${btn.color}
+                    ${isExtreme ? 'md:min-h-[7.5rem]' : 'md:min-h-[6.5rem]'}
+                    ${isSelected ? 'scale-105 ring-4 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 shadow-lg ' + (btn.val === 5 ? 'ring-emerald-900 dark:ring-emerald-400' : btn.val === 1 ? 'ring-rose-900 dark:ring-rose-400' : 'ring-current') : ''}
+                    ${isDimmed ? 'scale-95 opacity-45' : 'hover:scale-105'}
                   `}
                 >
-                  <div className={`w-6 h-6 rounded-full border-2 transition-all duration-300 flex items-center justify-center ${isSelected ? 'border-current bg-current' : 'border-current opacity-50'}`}>
-                    {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  <div
+                    className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                      isSelected
+                        ? isExtreme
+                          ? 'border-white bg-white'
+                          : 'border-current bg-current'
+                        : isExtreme
+                          ? 'border-white/70 opacity-90'
+                          : 'border-current opacity-50'
+                    }`}
+                  >
+                    {isSelected && (
+                      <div
+                        className={`h-2 w-2 rounded-full ${isExtreme ? (btn.val === 5 ? 'bg-emerald-800' : 'bg-rose-700') : 'bg-white'}`}
+                      />
+                    )}
                   </div>
                   <span className="text-center">{btn.label}</span>
                 </button>
@@ -3020,62 +3175,129 @@ const PersonalityTest = () => {
             </p>
           </div>
 
-          <div className="space-y-8 mb-16">
-            {Object.entries(scores).map(([key, value]) => {
-              const val = value as number;
-              const info = traitInfo[key as keyof typeof traitInfo];
-              return (
-                <div key={key} className="bg-slate-50 dark:bg-slate-800/30 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
-                  <div className="flex justify-between items-end mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold dark:text-white">{info.name}</h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        {val > 66 ? info.high : val < 33 ? info.low : "Umiarkowane natężenie cechy, elastyczność w zachowaniu."}
-                      </p>
-                    </div>
-                    <span className="text-3xl font-black text-indigo-600 dark:text-indigo-400">{val}%</span>
+          {insights && (
+            <>
+              <div className="mb-10 rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 p-8 dark:border-indigo-900/40 dark:from-indigo-950/30 dark:via-slate-900 dark:to-slate-900">
+                <h3 className="mb-4 text-xl font-bold dark:text-white">Twój profil w skrócie</h3>
+                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300 md:text-base">
+                  {insights.summary}
+                </p>
+              </div>
+
+              <div className="mb-10 grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="rounded-3xl border border-indigo-100 bg-indigo-50/70 p-6 dark:border-indigo-900/40 dark:bg-indigo-950/20">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-300">
+                    Najsilniejsza cecha
                   </div>
-                  <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-indigo-600 rounded-full transition-all duration-1000 ease-out"
-                      style={{ width: `${val}%` }}
-                    ></div>
-                  </div>
+                  <div className="mt-3 text-xl font-black text-indigo-700 dark:text-indigo-300">{insights.top.name}</div>
+                  <div className="mt-1 text-sm font-bold text-indigo-500">{insights.topVal}%</div>
+                  <p className="mt-4 text-xs leading-relaxed text-slate-600 dark:text-slate-400">{insights.topLife}</p>
                 </div>
-              );
-            })}
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-800/40">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                    Wyraźność profilu
+                  </div>
+                  <div className="mt-3 text-3xl font-black text-slate-900 dark:text-white">{insights.spread} p.p.</div>
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Różnica między najwyższą a najniższą cechą (punkty procentowe).
+                  </p>
+                  <p className="mt-4 text-xs leading-relaxed text-slate-600 dark:text-slate-400">{insights.profileClarity}</p>
+                </div>
+                <div className="rounded-3xl border border-blue-100 bg-blue-50/70 p-6 dark:border-blue-900/40 dark:bg-blue-950/20">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">
+                    Najniższy wymiar
+                  </div>
+                  <div className="mt-3 text-xl font-black text-blue-700 dark:text-blue-300">{insights.low.name}</div>
+                  <div className="mt-1 text-sm font-bold text-blue-500">{insights.lowVal}%</div>
+                  <p className="mt-4 text-xs leading-relaxed text-slate-600 dark:text-slate-400">{insights.lowLife}</p>
+                </div>
+              </div>
+
+              <div className="mb-10 rounded-3xl border border-slate-100 bg-white p-7 dark:border-slate-800 dark:bg-slate-900">
+                <h3 className="mb-2 text-lg font-bold dark:text-white">Wymiary w środkowym zakresie</h3>
+                <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">{insights.moderateExplain}</p>
+              </div>
+
+              <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                  <h3 className="mb-4 flex items-center gap-2 text-lg font-bold dark:text-white">
+                    <Briefcase size={18} className="text-indigo-500" /> W pracy
+                  </h3>
+                  <ul className="space-y-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                    {(insights.uniqueWork.length ? insights.uniqueWork : [
+                      'Dopasuj tempo pracy do najwyższej cechy — np. więcej spotkań przy wysokiej ekstrawersji, więcej skupienia przy niskiej.',
+                    ]).map((tip) => (
+                      <li key={tip} className="flex gap-2">
+                        <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-indigo-500" />
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                  <h3 className="mb-4 flex items-center gap-2 text-lg font-bold dark:text-white">
+                    <Heart size={18} className="text-rose-500" /> W relacjach
+                  </h3>
+                  <ul className="space-y-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                    {(insights.uniqueRel.length ? insights.uniqueRel : [
+                      'Komunikuj potrzeby wprost, ale z szacunkiem — Twój profil nie definiuje „charakteru”, tylko typowe tendencje.',
+                    ]).map((tip) => (
+                      <li key={tip} className="flex gap-2">
+                        <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-rose-500" />
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                  <h3 className="mb-4 flex items-center gap-2 text-lg font-bold dark:text-white">
+                    <TrendingUp size={18} className="text-emerald-500" /> Rozwój i stres
+                  </h3>
+                  <ul className="space-y-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                    {(insights.uniqueGrowth.length ? insights.uniqueGrowth : [
+                      'Obserwuj, w jakich sytuacjach czujesz największy spokój — to często obszar, w którym masz naturalne zasoby.',
+                    ]).map((tip) => (
+                      <li key={tip} className="flex gap-2">
+                        <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="mb-12 space-y-8">
+            <h3 className="text-xl font-bold dark:text-white">Szczegółowa interpretacja wymiarów</h3>
+            {insights?.traitCards.map(({ key, name, val, label, life }) => (
+              <div key={key} className="rounded-3xl border border-slate-100 bg-slate-50 p-6 dark:border-slate-800 dark:bg-slate-800/30">
+                <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-xl font-bold dark:text-white">{name}</h4>
+                    <p className="mt-1 text-sm font-medium text-indigo-600 dark:text-indigo-400">{label}</p>
+                  </div>
+                  <span className="text-3xl font-black text-indigo-600 dark:text-indigo-400">{val}%</span>
+                </div>
+                <div className="mb-4 h-3 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                  <div
+                    className="h-full rounded-full bg-indigo-600 transition-all duration-1000 ease-out"
+                    style={{ width: `${val}%` }}
+                  />
+                </div>
+                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{life}</p>
+              </div>
+            ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div className="rounded-3xl border border-indigo-100 bg-indigo-50/70 p-6 text-center dark:border-indigo-900/40 dark:bg-indigo-950/20">
-              <div className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-300">Najsilniejsza cecha</div>
-              <div className="mt-3 text-xl font-black text-indigo-700 dark:text-indigo-300">{strongestTraitInfo?.name}</div>
-              <div className="mt-1 text-sm font-bold text-indigo-500">{strongestTrait?.[1]}%</div>
-            </div>
-            <div className="rounded-3xl border border-slate-100 bg-slate-50 p-6 text-center dark:border-slate-800 dark:bg-slate-800/30">
-              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Profil zbalansowany</div>
-              <div className="mt-3 text-3xl font-black text-slate-900 dark:text-white">{balancedTraits}/5</div>
-            </div>
-            <div className="rounded-3xl border border-blue-100 bg-blue-50/70 p-6 text-center dark:border-blue-900/40 dark:bg-blue-950/20">
-              <div className="text-[10px] font-black uppercase tracking-widest text-blue-700 dark:text-blue-300">Najniższy wymiar</div>
-              <div className="mt-3 text-xl font-black text-blue-700 dark:text-blue-300">{calmestTraitInfo?.name}</div>
-              <div className="mt-1 text-sm font-bold text-blue-500">{calmestTrait?.[1]}%</div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <h3 className="mb-3 text-lg font-bold dark:text-white">Jak czytać profil?</h3>
-              <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                Wynik nie ocenia osobowości jako dobrej lub złej. Pokazuje raczej preferowany styl działania: sposób reagowania na ludzi, stres, obowiązki, nowość i współpracę.
-              </p>
-            </div>
-            <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <h3 className="mb-3 text-lg font-bold dark:text-white">Najważniejszy wniosek</h3>
-              <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                Najmocniej wyróżnia się u Ciebie obszar: <strong className="text-slate-800 dark:text-slate-100">{strongestTraitInfo?.name}</strong>. Najniższy wynik w obszarze <strong className="text-slate-800 dark:text-slate-100">{calmestTraitInfo?.name}</strong> oznacza, że ta cecha rzadziej dominuje w Twoich typowych reakcjach.
-              </p>
-            </div>
+          <div className="mb-12 rounded-3xl border border-amber-100 bg-amber-50/50 p-7 dark:border-amber-900/40 dark:bg-amber-950/20">
+            <h3 className="mb-3 text-lg font-bold text-amber-950 dark:text-amber-100">Jak czytać ten wynik?</h3>
+            <p className="text-sm leading-relaxed text-amber-900/90 dark:text-amber-200/90">
+              To nie diagnoza kliniczna ani etykieta na całe życie. Model Big Five opisuje <strong>statystyczne tendencje</strong> —
+              jak zwykle reagujesz w pracy, relacjach i pod presją. Wynik z 15 pytań to orientacyjny profil: warto go porównać z
+              własnymi obserwacjami i — jeśli coś Cię niepokoi — skonsultować z psychologiem. Największą wartość mają konkretne
+              wnioski poniżej: co wzmacniać, czego unikać i jak tłumaczyć różnice z innymi ludźmi.
+            </p>
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/30 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 text-center mb-12">
@@ -4738,7 +4960,7 @@ const OtherTests = () => {
       id: 'alzheimer',
       title: 'Test Funkcji Poznawczych',
       price: '4,99 PLN',
-      desc: 'Zbadaj orientację, pamięć, uwagę i język. Test inspirowany metodologią MMSE/SAGE. Wyłącznie cel edukacyjny — nie jest diagnozą medyczną.',
+      desc: 'Zbadaj orientację, pamięć, uwagę i język. Test inspirowany metodologią MMSE/SAGE. Wyłącznie cel edukacyjny.',
       icon: <ClipboardCheck className="w-full h-full" />,
       color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400',
       status: 'Dostępny',
@@ -4750,7 +4972,7 @@ const OtherTests = () => {
       id: 'adhd',
       title: 'Test ADHD (ASRS)',
       price: '4,99 PLN',
-      desc: 'Kwestionariusz przesiewowy oparty na skali WHO ASRS v1.1. Wyłącznie cel edukacyjny — nie jest diagnozą medyczną.',
+      desc: 'Kwestionariusz przesiewowy oparty na skali WHO ASRS v1.1. Wyłącznie cel edukacyjny.',
       icon: <SlidersHorizontal className="w-full h-full" />,
       color: 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
       status: 'Dostępny',
@@ -4956,7 +5178,7 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
             <li><strong>Skala IQ:</strong> wynik surowy przeliczamy na skalę ze średnią 100 i odchyleniem standardowym 15 (model zbliżony do testów psychometrycznych).</li>
             <li><strong>Percentyl:</strong> pokazuje, jaki odsetek osób w przyjętej normie uzyskał wynik niższy od Twojego.</li>
             <li><strong>Profil domen:</strong> osobno liczymy wynik procentowy w pięciu kategoriach zadań — to podstawa raportu i planu rozwoju.</li>
-            <li><strong>Przedział ufności 95%:</strong> wąski zakres wokół wyniku IQ (w raporcie ±4 punkty) — przy powtórzeniu badania w podobnych warunkach wynik zwykle mieści się w tym przedziale, co jest typowe dla pomiarów skalowych.</li>
+            <li><strong>Przedział ufności 95%:</strong> wąski zakres wokół wyniku IQ (w raporcie ±5 punktów) — przy powtórzeniu badania w podobnych warunkach wynik zwykle mieści się w tym przedziale, co jest typowe dla pomiarów skalowych.</li>
           </ul>
           
           <ScoreGenerationInfographic />
@@ -4987,19 +5209,50 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
                <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg">
                   <Percent size={32} />
                </div>
-               <h4 className="font-bold text-xl mb-4">Skala Percentylowa</h4>
-               <div className="w-full space-y-3">
-                  <div className="flex justify-between text-xs px-2"><span className="text-slate-400">Wybitny</span><span className="font-bold">98+</span></div>
-                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                     <div className="h-full bg-blue-600 w-[98%]"></div>
+               <h4 className="font-bold text-xl mb-2">Skala percentylowa</h4>
+               <p className="mb-5 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 px-1">
+                 Percentyl to nie wynik IQ — pokazuje, jaki <strong className="text-slate-600 dark:text-slate-300">odsetek osób w normie</strong> uzyskał wynik niższy od Twojego.
+               </p>
+               <div className="w-full space-y-4">
+                  <div>
+                    <div className="flex justify-between text-xs px-2 mb-1.5">
+                      <span className="text-slate-500">Wybitny</span>
+                      <span className="font-bold text-blue-700 dark:text-blue-300">≥ 98. percentyl</span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-600 w-[98%]" title="Górne 2% normy" />
+                    </div>
+                    <p className="mt-1 px-2 text-left text-[10px] text-slate-400">Lepszy wynik niż ok. 98 na 100 osób w grupie</p>
                   </div>
-                  <div className="flex justify-between text-xs px-2"><span className="text-slate-400">Wysoki</span><span className="font-bold">75-97</span></div>
-                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                     <div className="h-full bg-blue-400 w-[85%]"></div>
+                  <div>
+                    <div className="flex justify-between text-xs px-2 mb-1.5">
+                      <span className="text-slate-500">Wysoki</span>
+                      <span className="font-bold text-blue-600 dark:text-blue-400">75–97. percentyl</span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-400 w-[86%]" />
+                    </div>
+                    <p className="mt-1 px-2 text-left text-[10px] text-slate-400">Wyżej niż większość osób w normie</p>
                   </div>
-                  <div className="flex justify-between text-xs px-2"><span className="text-slate-400">Przeciętny</span><span className="font-bold">25-74</span></div>
-                  <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                     <div className="h-full bg-slate-300 w-[50%]"></div>
+                  <div>
+                    <div className="flex justify-between text-xs px-2 mb-1.5">
+                      <span className="text-slate-500">Typowy zakres</span>
+                      <span className="font-bold text-slate-600 dark:text-slate-300">25–74. percentyl</span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-slate-300 dark:bg-slate-600 w-[50%]" />
+                    </div>
+                    <p className="mt-1 px-2 text-left text-[10px] text-slate-400">W środkowej części rozkładu w grupie</p>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs px-2 mb-1.5">
+                      <span className="text-slate-500">Niższy</span>
+                      <span className="font-bold text-slate-500">&lt; 25. percentyl</span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-slate-200 dark:bg-slate-700 w-[24%]" />
+                    </div>
+                    <p className="mt-1 px-2 text-left text-[10px] text-slate-400">Poniżej dolnej ćwiartki normy</p>
                   </div>
                </div>
             </div>
@@ -5033,12 +5286,23 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
             <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
               Oba pakiety zawierają wynik IQ, certyfikat PDF i podsumowanie dopasowane do wyniku testu. PRO rozszerza raport o wizualny profil domen, osobną zakładkę percentyla oraz szczegółowy plan ćwiczeń — przydatne, gdy chcesz wiedzieć nie tylko „ile”, ale <em>w czym</em> wypadasz najlepiej i co ćwiczyć w pierwszej kolejności.
             </p>
-            <div className="flex items-center space-x-4 text-blue-600 font-bold">
-              <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg">
-                <Icons.Check className="w-6 h-6" />
-              </div>
-              <span>Pełna analiza wszystkich 5 domen poznawczych</span>
-            </div>
+            <ul className="space-y-4">
+              {[
+                'Wizualny profil 5 domen z paskami wyniku (%)',
+                'Osobna zakładka percentyla z normą dla Twojej grupy wiekowej',
+                'Szczegółowy plan rozwoju — 5 kroków dopasowanych do wyniku testu',
+                'Mocne strony i obszary do ćwiczeń w podsumowaniu',
+                'Propozycje kariery i cech dopasowanych do wyników domen',
+                'Pełna analiza wszystkich 5 domen poznawczych',
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-4 text-blue-600 font-bold">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg">
+                    <Icons.Check className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm md:text-base">{item}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
@@ -5057,7 +5321,7 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
             {[
               { t: "Wynik IQ", d: "Wynik na skali ze średnią 100 i odchyleniem standardowym 15; liczony z poprawnych odpowiedzi ważonych trudnością zadania." },
               { t: "Norma wiekowa", d: "Uproszczony model referencyjny dla wybranej grupy wiekowej (np. 16–24, 25–34) — podstawa percentyla i IQ w raporcie." },
-              { t: "Przedział ufności", d: "Zakres ±4 pkt. IQ wokół wyniku — orientacyjna informacja o możliwym rozrzucie przy powtórzeniu testu." },
+              { t: "Przedział ufności", d: "Zakres ±5 pkt. IQ wokół wyniku — orientacyjna informacja o możliwym rozrzucie przy powtórzeniu testu." },
               { t: "Inteligencja płynna (Gf)", d: "Zdolność do nowych zadań logicznych i wzorcowych, bez polegania na wiedzy szkolnej." },
               { t: "Percentyl", d: "Odsetek osób w normie wiekowej z wynikiem niższym od Twojego (np. 75% = lepszy niż ok. 3 na 4 osoby w normie)." },
               { t: "Domena poznawcza", d: "Jedna z pięciu kategorii zadań: matryce, ciągi, analogie, przestrzeń lub logika — wynik w % z tego testu." },
