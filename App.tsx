@@ -241,7 +241,30 @@ const buildResultEmailHtml = ({
 </html>`;
 };
 
-const EMAIL_API_ENDPOINTS = ['/api/send-email', 'http://127.0.0.1:3002/api/send-email'] as const;
+const getEmailApiEndpoints = (): string[] => {
+  const endpoints = ['/api/send-email'];
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      endpoints.push('http://127.0.0.1:3002/api/send-email');
+    }
+  }
+  return endpoints;
+};
+
+const formatEmailSendError = (error: unknown): string => {
+  const raw = error instanceof Error ? error.message : '';
+  if (/load failed|failed to fetch|networkerror|network error/i.test(raw)) {
+    return 'Brak połączenia z API wysyłki maili. Uruchom npm run dev (frontend + API).';
+  }
+  if (error instanceof Error && error.message) return error.message;
+  return 'Nie udało się wysłać wiadomości.';
+};
+
+const normalizeEmailRowValue = (value: string | number): string | number => {
+  if (typeof value === 'number' && !Number.isFinite(value)) return '—';
+  return value;
+};
 
 const postEmailPayload = async (payload: {
   to: string;
@@ -251,7 +274,7 @@ const postEmailPayload = async (payload: {
 }) => {
   let lastError: string | null = null;
 
-  for (const endpoint of EMAIL_API_ENDPOINTS) {
+  for (const endpoint of getEmailApiEndpoints()) {
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -269,12 +292,103 @@ const postEmailPayload = async (payload: {
       if (res.status === 404) continue;
       throw new Error(message);
     } catch (error) {
-      lastError = error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.';
+      lastError = formatEmailSendError(error);
     }
   }
 
   throw new Error(lastError || 'Nie udało się wysłać wiadomości.');
 };
+
+const sendAuxiliaryTestEmail = async ({
+  email,
+  setEmailStatus,
+  setEmailMessage,
+  subject,
+  title,
+  subtitle,
+  summary,
+  rows,
+}: {
+  email: string;
+  setEmailStatus: (status: 'idle' | 'sending' | 'sent' | 'error') => void;
+  setEmailMessage: (message: string) => void;
+  subject: string;
+  title: string;
+  subtitle: string;
+  summary: string;
+  rows: Array<{ label: string; value: string | number }>;
+}) => {
+  if (!email.includes('@')) {
+    setEmailStatus('error');
+    setEmailMessage('Podaj poprawny adres e-mail.');
+    return;
+  }
+
+  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
+  localStorage.setItem('iq_results', JSON.stringify({ ...saved, email }));
+  setEmailStatus('sending');
+  setEmailMessage('');
+
+  try {
+    await sendResultEmail({
+      to: email,
+      subject,
+      title,
+      subtitle,
+      summary,
+      rows: rows.map((row) => ({
+        label: row.label,
+        value: normalizeEmailRowValue(row.value),
+      })),
+    });
+    setEmailStatus('sent');
+    setEmailMessage('Wyniki zostały wysłane na e-mail.');
+  } catch (error) {
+    setEmailStatus('error');
+    setEmailMessage(formatEmailSendError(error));
+  }
+};
+
+/** Dostęp do „innych testów” tylko w bieżącej sesji (znika po odświeżeniu strony). */
+const AUXILIARY_ACCESS_STORAGE_KEY = 'iq_auxiliary_access';
+
+type AuxiliaryTestId = 'osobowosc' | 'pamiec' | 'koncentracja' | 'reakcja' | 'alzheimer' | 'adhd';
+
+const readAuxiliaryAccess = (): Partial<Record<AuxiliaryTestId, boolean>> => {
+  try {
+    return JSON.parse(sessionStorage.getItem(AUXILIARY_ACCESS_STORAGE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+};
+
+const hasAuxiliaryAccess = (testId: AuxiliaryTestId): boolean => readAuxiliaryAccess()[testId] === true;
+
+const grantAuxiliaryAccess = (testId: AuxiliaryTestId) => {
+  sessionStorage.setItem(
+    AUXILIARY_ACCESS_STORAGE_KEY,
+    JSON.stringify({ ...readAuxiliaryAccess(), [testId]: true }),
+  );
+};
+
+const stripLegacyAuxiliaryAccessFlags = <T extends Record<string, unknown>>(data: T): T => {
+  const next = { ...data };
+  delete next.hasOsobowosc;
+  delete next.hasPamiec;
+  delete next.hasKoncentracja;
+  delete next.hasReakcja;
+  delete next.hasAlzheimer;
+  delete next.hasADHD;
+  return next;
+};
+
+const isAuxiliaryTestType = (type: string | null): type is AuxiliaryTestId =>
+  type === 'osobowosc' ||
+  type === 'pamiec' ||
+  type === 'koncentracja' ||
+  type === 'reakcja' ||
+  type === 'alzheimer' ||
+  type === 'adhd';
 
 const sendResultEmail = async ({
   to,
@@ -2276,19 +2390,15 @@ const Checkout = () => {
         delete updatedSaved.ageBracketLabel;
       }
 
-      if (typeParam === 'osobowosc') updatedSaved.hasOsobowosc = true;
-      else if (typeParam === 'pamiec') updatedSaved.hasPamiec = true;
-      else if (typeParam === 'koncentracja') updatedSaved.hasKoncentracja = true;
-      else if (typeParam === 'reakcja') updatedSaved.hasReakcja = true;
-      else if (typeParam === 'alzheimer') updatedSaved.hasAlzheimer = true;
-      else if (typeParam === 'adhd') updatedSaved.hasADHD = true;
-      else {
+      if (isAuxiliaryTestType(typeParam)) {
+        grantAuxiliaryAccess(typeParam);
+      } else {
         updatedSaved.isPaid = true;
         updatedSaved.isPro = typeParam === 'pro';
         updatedSaved.isMax = typeParam === 'max';
       }
-      
-      localStorage.setItem('iq_results', JSON.stringify(updatedSaved));
+
+      localStorage.setItem('iq_results', JSON.stringify(stripLegacyAuxiliaryAccessFlags(updatedSaved)));
 
       if (email && email.includes('@') && !bypass) {
         await sendConfirmationEmail(email, productName, price);
@@ -2965,7 +3075,7 @@ const buildPersonalityInsights = (scores: Record<string, number>) => {
 
 const PersonalityTest = () => {
   const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
-  const hasAccess = saved.hasOsobowosc === true;
+  const hasAccess = hasAuxiliaryAccess('osobowosc');
 
   const [step, setStep] = useState<'intro' | 'test' | 'calculating' | 'results'>('intro');
   const [currentQ, setCurrentQ] = useState(0);
@@ -2997,34 +3107,24 @@ const PersonalityTest = () => {
   }
 
   const handleEmailSave = async () => {
-    if (!scores) return;
-    if (!email.includes('@')) {
+    if (!scores) {
       setEmailStatus('error');
-      setEmailMessage('Podaj poprawny adres e-mail.');
+      setEmailMessage('Najpierw ukończ test, aby wysłać wyniki.');
       return;
     }
-    const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
-    localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
-    setEmailStatus('sending');
-    setEmailMessage('');
-    try {
-      await sendResultEmail({
-        to: email,
-        subject: 'Twój wynik testu osobowości - brainmediq',
-        title: 'Wynik testu osobowości',
-        subtitle: 'Profil Big Five / OCEAN',
-        summary: 'Poniżej znajdziesz podsumowanie wyników w pięciu głównych wymiarach osobowości.',
-        rows: Object.entries(scores).map(([key, value]) => ({
-          label: traitInfo[key as keyof typeof traitInfo].name,
-          value: `${Math.round(value as number)}%`,
-        })),
-      });
-      setEmailStatus('sent');
-      setEmailMessage('Wyniki zostały wysłane na e-mail.');
-    } catch (error) {
-      setEmailStatus('error');
-      setEmailMessage(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
-    }
+    await sendAuxiliaryTestEmail({
+      email,
+      setEmailStatus,
+      setEmailMessage,
+      subject: 'Twój wynik testu osobowości - brainmediq',
+      title: 'Wynik testu osobowości',
+      subtitle: 'Profil Big Five / OCEAN',
+      summary: 'Poniżej znajdziesz podsumowanie wyników w pięciu głównych wymiarach osobowości.',
+      rows: Object.entries(scores).map(([key, value]) => ({
+        label: traitInfo[key as keyof typeof traitInfo].name,
+        value: `${Math.round(value as number)}%`,
+      })),
+    });
   };
 
   const handleAnswer = (val: number) => {
@@ -3365,7 +3465,7 @@ const PersonalityTest = () => {
 
 const MemoryTest = () => {
   const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
-  const hasAccess = saved.hasPamiec === true;
+  const hasAccess = hasAuxiliaryAccess('pamiec');
 
   const [step, setStep] = useState<'intro' | 'showing' | 'playing' | 'results'>('intro');
   const [sequence, setSequence] = useState<number[]>([]);
@@ -3397,36 +3497,40 @@ const MemoryTest = () => {
     );
   }
 
+  const getResultInterpretation = (capacity: number) => {
+    if (capacity < 5) return { title: "Poniżej przeciętnej", desc: "Twój wynik wskazuje na nieco mniejszą pojemność pamięci roboczej niż średnia populacyjna. Może to wynikać ze zmęczenia lub rozkojarzenia." };
+    if (capacity <= 6) return { title: "Przeciętnie (Norma)", desc: "Twój wynik mieści się w normie. Przeciętny dorosły potrafi zapamiętać sekwencję 5-7 elementów (tzw. Magiczna Liczba Millera)." };
+    if (capacity <= 8) return { title: "Powyżej przeciętnej", desc: "Świetny wynik! Posiadasz bardzo dobrą pamięć przestrzenną i potrafisz utrzymać w uwadze więcej elementów niż większość ludzi." };
+    return { title: "Wybitnie", desc: "Fenomenalny wynik! Twoja pamięć robocza działa na poziomie eksperckim. Prawdopodobnie świetnie radzisz sobie z zadaniami wymagającymi wielozadaniowości." };
+  };
+
+  const getMemoryEmailRows = () => {
+    const capacity = Math.max(0, sequence.length - 1);
+    const interp = getResultInterpretation(capacity);
+    return [
+      { label: 'Pojemność pamięci roboczej', value: `${capacity} elementów` },
+      { label: 'Ukończone poziomy', value: Math.max(0, level - 1) },
+      { label: 'Kolejny cel', value: `${capacity + 1} elementów` },
+      { label: 'Interpretacja', value: interp.title },
+    ];
+  };
+
   const handleEmailSave = async () => {
-    if (!email.includes('@')) {
+    if (step !== 'results') {
       setEmailStatus('error');
-      setEmailMessage('Podaj poprawny adres e-mail.');
+      setEmailMessage('Najpierw ukończ test, aby wysłać wyniki.');
       return;
     }
-    const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
-    localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
-    setEmailStatus('sending');
-    setEmailMessage('');
-    try {
-      await sendResultEmail({
-        to: email,
-        subject: 'Twój wynik testu pamięci przestrzennej - brainmediq',
-        title: 'Wynik testu pamięci przestrzennej',
-        subtitle: 'Pamięć robocza i sekwencje przestrzenne',
-        summary: 'Poniżej znajdziesz wynik najdłuższej poprawnie odtworzonej sekwencji oraz krótką interpretację.',
-        rows: [
-          { label: 'Pojemność pamięci roboczej', value: `${capacity} elementów` },
-          { label: 'Ukończone poziomy', value: completedLevels },
-          { label: 'Kolejny cel', value: `${nextGoal} elementów` },
-          { label: 'Interpretacja', value: interpretation.title },
-        ],
-      });
-      setEmailStatus('sent');
-      setEmailMessage('Wyniki zostały wysłane na e-mail.');
-    } catch (error) {
-      setEmailStatus('error');
-      setEmailMessage(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
-    }
+    await sendAuxiliaryTestEmail({
+      email,
+      setEmailStatus,
+      setEmailMessage,
+      subject: 'Twój wynik testu pamięci przestrzennej - brainmediq',
+      title: 'Wynik testu pamięci przestrzennej',
+      subtitle: 'Pamięć robocza i sekwencje przestrzenne',
+      summary: 'Poniżej znajdziesz wynik najdłuższej poprawnie odtworzonej sekwencji oraz krótką interpretację.',
+      rows: getMemoryEmailRows(),
+    });
   };
 
   const startGame = () => {
@@ -3484,13 +3588,6 @@ const MemoryTest = () => {
         setStep('results');
       }, 1500);
     }
-  };
-
-  const getResultInterpretation = (capacity: number) => {
-    if (capacity < 5) return { title: "Poniżej przeciętnej", desc: "Twój wynik wskazuje na nieco mniejszą pojemność pamięci roboczej niż średnia populacyjna. Może to wynikać ze zmęczenia lub rozkojarzenia." };
-    if (capacity <= 6) return { title: "Przeciętnie (Norma)", desc: "Twój wynik mieści się w normie. Przeciętny dorosły potrafi zapamiętać sekwencję 5-7 elementów (tzw. Magiczna Liczba Millera)." };
-    if (capacity <= 8) return { title: "Powyżej przeciętnej", desc: "Świetny wynik! Posiadasz bardzo dobrą pamięć przestrzenną i potrafisz utrzymać w uwadze więcej elementów niż większość ludzi." };
-    return { title: "Wybitnie", desc: "Fenomenalny wynik! Twoja pamięć robocza działa na poziomie eksperckim. Prawdopodobnie świetnie radzisz sobie z zadaniami wymagającymi wielozadaniowości." };
   };
 
   const capacity = sequence.length - 1; // The length they successfully completed
@@ -3664,7 +3761,7 @@ const MemoryTest = () => {
 
 const ConcentrationTest = () => {
   const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
-  const hasAccess = saved.hasKoncentracja === true;
+  const hasAccess = hasAuxiliaryAccess('koncentracja');
 
   const [step, setStep] = useState<'intro' | 'playing' | 'results'>('intro');
   const [score, setScore] = useState(0);
@@ -3695,37 +3792,46 @@ const ConcentrationTest = () => {
     );
   }
 
+  const getResultInterpretation = (correct: number, mistakes: number) => {
+    const total = correct + mistakes;
+    const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+    
+    if (correct < 15) return { title: "Poniżej przeciętnej", desc: `Twój wynik wskazuje na trudności z utrzymaniem uwagi selektywnej. Skuteczność: ${accuracy}%. Może to być efekt zmęczenia lub silnego stresu.` };
+    if (correct <= 25) return { title: "Przeciętnie (Norma)", desc: `Dobry wynik, mieszczący się w normie. Twój mózg radzi sobie z konfliktem poznawczym na standardowym poziomie. Skuteczność: ${accuracy}%.` };
+    if (correct <= 35) return { title: "Powyżej przeciętnej", desc: `Świetna koncentracja! Posiadasz wysoką zdolność do ignorowania dystraktorów i skupiania się na właściwym zadaniu. Skuteczność: ${accuracy}%.` };
+    return { title: "Wybitnie", desc: `Fenomenalny wynik! Twoja uwaga selektywna i szybkość przetwarzania informacji są na poziomie eksperckim. Skuteczność: ${accuracy}%.` };
+  };
+
+  const getConcentrationEmailRows = () => {
+    const totalAnswers = score + errors;
+    const accuracy = totalAnswers > 0 ? Math.round((score / totalAnswers) * 100) : 0;
+    const pace = Math.round(totalAnswers / 0.5);
+    const interp = getResultInterpretation(score, errors);
+    return [
+      { label: 'Poprawne odpowiedzi', value: score },
+      { label: 'Błędy', value: errors },
+      { label: 'Skuteczność', value: `${accuracy}%` },
+      { label: 'Tempo', value: `${pace} odpowiedzi/min` },
+      { label: 'Interpretacja', value: interp.title },
+    ];
+  };
+
   const handleEmailSave = async () => {
-    if (!email.includes('@')) {
+    if (step !== 'results') {
       setEmailStatus('error');
-      setEmailMessage('Podaj poprawny adres e-mail.');
+      setEmailMessage('Najpierw ukończ test, aby wysłać wyniki.');
       return;
     }
-    const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
-    localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
-    setEmailStatus('sending');
-    setEmailMessage('');
-    try {
-      await sendResultEmail({
-        to: email,
-        subject: 'Twój wynik testu koncentracji - brainmediq',
-        title: 'Wynik testu koncentracji',
-        subtitle: 'Test Stroopa',
-        summary: 'Poniżej znajdziesz podsumowanie poprawnych odpowiedzi, błędów i skuteczności w teście koncentracji.',
-        rows: [
-          { label: 'Poprawne odpowiedzi', value: score },
-          { label: 'Błędy', value: errors },
-          { label: 'Skuteczność', value: `${accuracy}%` },
-          { label: 'Tempo', value: `${pace} odpowiedzi/min` },
-          { label: 'Interpretacja', value: interpretation.title },
-        ],
-      });
-      setEmailStatus('sent');
-      setEmailMessage('Wyniki zostały wysłane na e-mail.');
-    } catch (error) {
-      setEmailStatus('error');
-      setEmailMessage(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
-    }
+    await sendAuxiliaryTestEmail({
+      email,
+      setEmailStatus,
+      setEmailMessage,
+      subject: 'Twój wynik testu koncentracji - brainmediq',
+      title: 'Wynik testu koncentracji',
+      subtitle: 'Test Stroopa',
+      summary: 'Poniżej znajdziesz podsumowanie poprawnych odpowiedzi, błędów i skuteczności w teście koncentracji.',
+      rows: getConcentrationEmailRows(),
+    });
   };
 
   const colors = [
@@ -3775,16 +3881,6 @@ const ConcentrationTest = () => {
       setErrors(e => e + 1);
     }
     generateTask();
-  };
-
-  const getResultInterpretation = (correct: number, mistakes: number) => {
-    const total = correct + mistakes;
-    const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
-    
-    if (correct < 15) return { title: "Poniżej przeciętnej", desc: `Twój wynik wskazuje na trudności z utrzymaniem uwagi selektywnej. Skuteczność: ${accuracy}%. Może to być efekt zmęczenia lub silnego stresu.` };
-    if (correct <= 25) return { title: "Przeciętnie (Norma)", desc: `Dobry wynik, mieszczący się w normie. Twój mózg radzi sobie z konfliktem poznawczym na standardowym poziomie. Skuteczność: ${accuracy}%.` };
-    if (correct <= 35) return { title: "Powyżej przeciętnej", desc: `Świetna koncentracja! Posiadasz wysoką zdolność do ignorowania dystraktorów i skupiania się na właściwym zadaniu. Skuteczność: ${accuracy}%.` };
-    return { title: "Wybitnie", desc: `Fenomenalny wynik! Twoja uwaga selektywna i szybkość przetwarzania informacji są na poziomie eksperckim. Skuteczność: ${accuracy}%.` };
   };
 
   const interpretation = getResultInterpretation(score, errors);
@@ -3972,7 +4068,7 @@ const ConcentrationTest = () => {
 
 const ReactionTest = () => {
   const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
-  const hasAccess = saved.hasReakcja === true;
+  const hasAccess = hasAuxiliaryAccess('reakcja');
 
   const [step, setStep] = useState<'intro' | 'waiting' | 'ready' | 'early' | 'result' | 'finished'>('intro');
   const [attempts, setAttempts] = useState(0);
@@ -4006,37 +4102,50 @@ const ReactionTest = () => {
     );
   }
 
+  const getResultInterpretation = (avgTime: number) => {
+    // Średnia w testach przeglądarkowych to ok. 300-400ms (uwzględniając opóźnienia sprzętowe)
+    if (avgTime < 250) return { title: "Wybitnie (Poziom e-sportowy)", desc: "Twój czas reakcji jest fenomenalny! Biorąc pod uwagę opóźnienia sprzętowe, masz refleks na poziomie profesjonalnych graczy." };
+    if (avgTime <= 320) return { title: "Powyżej przeciętnej", desc: "Świetny wynik! Reagujesz szybciej niż większość populacji. Średni wynik w tym teście to około 350 ms." };
+    if (avgTime <= 450) return { title: "Przeciętnie (Norma)", desc: "Twój wynik mieści się w normie. Średni czas reakcji na bodziec wzrokowy w testach internetowych (uwzględniając opóźnienie myszki i monitora) to około 350-400 ms." };
+    return { title: "Poniżej przeciętnej", desc: "Twój czas reakcji jest nieco wolniejszy niż średnia (ok. 350 ms). Może to wynikać ze zmęczenia, braku skupienia lub używania sprzętu z dużym opóźnieniem (np. stary monitor lub myszka bezprzewodowa)." };
+  };
+
+  const getReactionEmailRows = () => {
+    if (times.length === 0) {
+      return [{ label: 'Status', value: 'Brak ukończonych prób' }];
+    }
+    const avg = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+    const best = Math.min(...times);
+    const slowest = Math.max(...times);
+    const stabilityRange = slowest - best;
+    const consistency =
+      stabilityRange <= 80 ? 'Bardzo stabilnie' : stabilityRange <= 160 ? 'Stabilnie' : 'Duża zmienność';
+    const interp = getResultInterpretation(avg);
+    return [
+      { label: 'Średni czas reakcji', value: `${avg} ms` },
+      { label: 'Najlepsza próba', value: `${best} ms` },
+      { label: 'Najwolniejsza próba', value: `${slowest} ms` },
+      { label: 'Stabilność', value: consistency },
+      { label: 'Interpretacja', value: interp.title },
+    ];
+  };
+
   const handleEmailSave = async () => {
-    if (!email.includes('@')) {
+    if (step !== 'finished') {
       setEmailStatus('error');
-      setEmailMessage('Podaj poprawny adres e-mail.');
+      setEmailMessage('Najpierw ukończ test, aby wysłać wyniki.');
       return;
     }
-    const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
-    localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
-    setEmailStatus('sending');
-    setEmailMessage('');
-    try {
-      await sendResultEmail({
-        to: email,
-        subject: 'Twój wynik testu reakcji - brainmediq',
-        title: 'Wynik testu szybkości reakcji',
-        subtitle: 'Czas reakcji na bodziec wzrokowy',
-        summary: 'Poniżej znajdziesz średni czas reakcji oraz wyniki poszczególnych prób.',
-        rows: [
-          { label: 'Średni czas reakcji', value: `${averageTime} ms` },
-          { label: 'Najlepsza próba', value: `${bestTime} ms` },
-          { label: 'Najwolniejsza próba', value: `${slowestTime} ms` },
-          { label: 'Stabilność', value: consistencyLabel },
-          { label: 'Interpretacja', value: interpretation.title },
-        ],
-      });
-      setEmailStatus('sent');
-      setEmailMessage('Wyniki zostały wysłane na e-mail.');
-    } catch (error) {
-      setEmailStatus('error');
-      setEmailMessage(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
-    }
+    await sendAuxiliaryTestEmail({
+      email,
+      setEmailStatus,
+      setEmailMessage,
+      subject: 'Twój wynik testu reakcji - brainmediq',
+      title: 'Wynik testu szybkości reakcji',
+      subtitle: 'Czas reakcji na bodziec wzrokowy',
+      summary: 'Poniżej znajdziesz średni czas reakcji oraz wyniki poszczególnych prób.',
+      rows: getReactionEmailRows(),
+    });
   };
 
   const startAttempt = () => {
@@ -4074,14 +4183,6 @@ const ReactionTest = () => {
     } else if (step === 'early' || step === 'result') {
       startAttempt();
     }
-  };
-
-  const getResultInterpretation = (avgTime: number) => {
-    // Średnia w testach przeglądarkowych to ok. 300-400ms (uwzględniając opóźnienia sprzętowe)
-    if (avgTime < 250) return { title: "Wybitnie (Poziom e-sportowy)", desc: "Twój czas reakcji jest fenomenalny! Biorąc pod uwagę opóźnienia sprzętowe, masz refleks na poziomie profesjonalnych graczy." };
-    if (avgTime <= 320) return { title: "Powyżej przeciętnej", desc: "Świetny wynik! Reagujesz szybciej niż większość populacji. Średni wynik w tym teście to około 350 ms." };
-    if (avgTime <= 450) return { title: "Przeciętnie (Norma)", desc: "Twój wynik mieści się w normie. Średni czas reakcji na bodziec wzrokowy w testach internetowych (uwzględniając opóźnienie myszki i monitora) to około 350-400 ms." };
-    return { title: "Poniżej przeciętnej", desc: "Twój czas reakcji jest nieco wolniejszy niż średnia (ok. 350 ms). Może to wynikać ze zmęczenia, braku skupienia lub używania sprzętu z dużym opóźnieniem (np. stary monitor lub myszka bezprzewodowa)." };
   };
 
   const averageTime = times.length > 0 ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : 0;
@@ -4427,7 +4528,7 @@ const alzheimerQuestions = [
 const AlzheimerTest = () => {
   const navigate = useNavigate();
   const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
-  const hasAccess = saved.hasAlzheimer === true;
+  const hasAccess = hasAuxiliaryAccess('alzheimer');
 
   const [phase, setPhase] = useState<'intro' | 'test' | 'result'>('intro');
   const [currentQ, setCurrentQ] = useState(0);
@@ -4479,44 +4580,37 @@ const AlzheimerTest = () => {
   const score = phase === 'result' ? calcScore() : 0;
   const pct = Math.round((score / totalPoints) * 100);
 
-  const handleEmailSave = async () => {
-    if (!email.includes('@')) {
-      setEmailStatus('error');
-      setEmailMessage('Podaj poprawny adres e-mail.');
-      return;
-    }
-    const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
-    localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
-    const interp = getInterpretation(pct);
-    setEmailStatus('sending');
-    setEmailMessage('');
-    try {
-      await sendResultEmail({
-        to: email,
-        subject: 'Twój wynik testu funkcji poznawczych - brainmediq',
-        title: 'Wynik testu funkcji poznawczych',
-        subtitle: 'Orientacyjny test poznawczy',
-        summary: 'Poniżej znajdziesz podsumowanie wyniku. Test ma charakter edukacyjny i nie zastępuje konsultacji medycznej.',
-        rows: [
-          { label: 'Wynik punktowy', value: `${score}/${totalPoints}` },
-          { label: 'Procent wyniku', value: `${pct}%` },
-          { label: 'Interpretacja', value: interp.label },
-          { label: 'Charakter testu', value: 'orientacyjny' },
-        ],
-      });
-      setEmailStatus('sent');
-      setEmailMessage('Wyniki zostały wysłane na e-mail.');
-    } catch (error) {
-      setEmailStatus('error');
-      setEmailMessage(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
-    }
+  const getInterpretation = (resultPct: number) => {
+    if (resultPct >= 85) return { label: 'Wynik prawidłowy', color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200', desc: 'Twoje wyniki wskazują na prawidłowe funkcjonowanie poznawcze w badanych obszarach. Nie stwierdzono niepokojących odchyleń.' };
+    if (resultPct >= 65) return { label: 'Wynik w normie z drobnymi odchyleniami', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200', desc: 'Większość wyników jest w normie, jednak niektóre obszary mogą wymagać uwagi. Zalecamy regularną aktywność umysłową.' };
+    if (resultPct >= 45) return { label: 'Wynik poniżej normy', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200', desc: 'Wyniki sugerują możliwe trudności w kilku obszarach poznawczych. Warto skonsultować się z lekarzem pierwszego kontaktu.' };
+    return { label: 'Wynik wskazujący na trudności', color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20 border-rose-200', desc: 'Wyniki mogą wskazywać na istotne trudności poznawcze. Zalecamy pilną konsultację z lekarzem lub neurologiem.' };
   };
 
-  const getInterpretation = (pct: number) => {
-    if (pct >= 85) return { label: 'Wynik prawidłowy', color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200', desc: 'Twoje wyniki wskazują na prawidłowe funkcjonowanie poznawcze w badanych obszarach. Nie stwierdzono niepokojących odchyleń.' };
-    if (pct >= 65) return { label: 'Wynik w normie z drobnymi odchyleniami', color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200', desc: 'Większość wyników jest w normie, jednak niektóre obszary mogą wymagać uwagi. Zalecamy regularną aktywność umysłową.' };
-    if (pct >= 45) return { label: 'Wynik poniżej normy', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200', desc: 'Wyniki sugerują możliwe trudności w kilku obszarach poznawczych. Warto skonsultować się z lekarzem pierwszego kontaktu.' };
-    return { label: 'Wynik wskazujący na trudności', color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20 border-rose-200', desc: 'Wyniki mogą wskazywać na istotne trudności poznawcze. Zalecamy pilną konsultację z lekarzem lub neurologiem.' };
+  const handleEmailSave = async () => {
+    if (phase !== 'result') {
+      setEmailStatus('error');
+      setEmailMessage('Najpierw ukończ test, aby wysłać wyniki.');
+      return;
+    }
+    const currentScore = calcScore();
+    const currentPct = Math.round((currentScore / totalPoints) * 100);
+    const interp = getInterpretation(currentPct);
+    await sendAuxiliaryTestEmail({
+      email,
+      setEmailStatus,
+      setEmailMessage,
+      subject: 'Twój wynik testu funkcji poznawczych - brainmediq',
+      title: 'Wynik testu funkcji poznawczych',
+      subtitle: 'Orientacyjny test poznawczy',
+      summary: 'Poniżej znajdziesz podsumowanie wyniku. Test ma charakter edukacyjny i nie zastępuje konsultacji medycznej.',
+      rows: [
+        { label: 'Wynik punktowy', value: `${currentScore}/${totalPoints}` },
+        { label: 'Procent wyniku', value: `${currentPct}%` },
+        { label: 'Interpretacja', value: interp.label },
+        { label: 'Charakter testu', value: 'orientacyjny' },
+      ],
+    });
   };
 
   if (!hasAccess) {
@@ -4761,7 +4855,7 @@ const adhdFrequencies = ['Nigdy', 'Rzadko', 'Czasami', 'Często', 'Bardzo częst
 const ADHDTest = () => {
   const navigate = useNavigate();
   const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
-  const hasAccess = saved.hasADHD === true;
+  const hasAccess = hasAuxiliaryAccess('adhd');
 
   const [phase, setPhase] = useState<'intro' | 'test' | 'result'>('intro');
   const [answers, setAnswers] = useState<number[]>(Array(adhdQuestions.length).fill(-1));
@@ -4799,38 +4893,29 @@ const ADHDTest = () => {
   };
 
   const handleEmailSave = async () => {
-    if (!email.includes('@')) {
+    if (phase !== 'result') {
       setEmailStatus('error');
-      setEmailMessage('Podaj poprawny adres e-mail.');
+      setEmailMessage('Najpierw ukończ test, aby wysłać wyniki.');
       return;
     }
-    const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
-    localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
     const result = getResult();
     const maxScore = adhdQuestions.length * 4;
     const scorePct = Math.round((totalScore / maxScore) * 100);
-    setEmailStatus('sending');
-    setEmailMessage('');
-    try {
-      await sendResultEmail({
-        to: email,
-        subject: 'Twój wynik testu ADHD - brainmediq',
-        title: 'Wynik testu ADHD',
-        subtitle: 'Skala ASRS v1.1',
-        summary: 'Poniżej znajdziesz podsumowanie wyniku. Test ma charakter przesiewowy i nie zastępuje diagnozy klinicznej.',
-        rows: [
-          { label: 'Wynik łączny', value: `${totalScore}/${maxScore}` },
-          { label: 'Natężenie', value: `${scorePct}%` },
-          { label: 'Część A', value: `${partAPositive}/6 kluczowych objawów` },
-          { label: 'Interpretacja', value: result.label },
-        ],
-      });
-      setEmailStatus('sent');
-      setEmailMessage('Wyniki zostały wysłane na e-mail.');
-    } catch (error) {
-      setEmailStatus('error');
-      setEmailMessage(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
-    }
+    await sendAuxiliaryTestEmail({
+      email,
+      setEmailStatus,
+      setEmailMessage,
+      subject: 'Twój wynik testu ADHD - brainmediq',
+      title: 'Wynik testu ADHD',
+      subtitle: 'Skala ASRS v1.1',
+      summary: 'Poniżej znajdziesz podsumowanie wyniku. Test ma charakter przesiewowy i nie zastępuje diagnozy klinicznej.',
+      rows: [
+        { label: 'Wynik łączny', value: `${totalScore}/${maxScore}` },
+        { label: 'Natężenie', value: `${scorePct}%` },
+        { label: 'Część A', value: `${partAPositive}/6 kluczowych objawów` },
+        { label: 'Interpretacja', value: result.label },
+      ],
+    });
   };
 
   if (!hasAccess) {
@@ -5041,8 +5126,6 @@ const ADHDTest = () => {
 };
 
 const OtherTests = () => {
-  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
-
   const tests = [
     {
       id: 'osobowosc',
@@ -5053,7 +5136,7 @@ const OtherTests = () => {
       color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400',
       status: 'Dostępny',
       link: '/test-osobowosci',
-      hasAccess: saved.hasOsobowosc === true
+      hasAccess: hasAuxiliaryAccess('osobowosc')
     },
     {
       id: 'pamiec',
@@ -5064,7 +5147,7 @@ const OtherTests = () => {
       color: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
       status: 'Dostępny',
       link: '/test-pamieci',
-      hasAccess: saved.hasPamiec === true
+      hasAccess: hasAuxiliaryAccess('pamiec')
     },
     {
       id: 'koncentracja',
@@ -5075,7 +5158,7 @@ const OtherTests = () => {
       color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
       status: 'Dostępny',
       link: '/test-koncentracji',
-      hasAccess: saved.hasKoncentracja === true
+      hasAccess: hasAuxiliaryAccess('koncentracja')
     },
     {
       id: 'reakcja',
@@ -5086,7 +5169,7 @@ const OtherTests = () => {
       color: 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400',
       status: 'Dostępny',
       link: '/test-reakcji',
-      hasAccess: saved.hasReakcja === true
+      hasAccess: hasAuxiliaryAccess('reakcja')
     },
     {
       id: 'alzheimer',
@@ -5097,7 +5180,7 @@ const OtherTests = () => {
       color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400',
       status: 'Dostępny',
       link: '/test-funkcji-poznawczych',
-      hasAccess: saved.hasAlzheimer === true,
+      hasAccess: hasAuxiliaryAccess('alzheimer'),
       disclaimer: true,
     },
     {
@@ -5109,7 +5192,7 @@ const OtherTests = () => {
       color: 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
       status: 'Dostępny',
       link: '/test-adhd',
-      hasAccess: saved.hasADHD === true,
+      hasAccess: hasAuxiliaryAccess('adhd'),
       disclaimer: true,
     },
   ];
@@ -5660,6 +5743,17 @@ const App = () => {
     else document.documentElement.classList.remove('dark');
     localStorage.setItem('dark_mode', JSON.stringify(darkMode));
   }, [darkMode]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem('iq_results');
+    if (!raw) return;
+    try {
+      const parsed = stripLegacyAuxiliaryAccessFlags(JSON.parse(raw));
+      localStorage.setItem('iq_results', JSON.stringify(parsed));
+    } catch {
+      /* ignore invalid cache */
+    }
+  }, []);
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
