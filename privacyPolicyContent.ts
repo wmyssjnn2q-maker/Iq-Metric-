@@ -1,8 +1,8 @@
 export const PRIVACY_POLICY_MARKDOWN = `# POLITYKA PRYWATNOŚCI SERWISU BRAINMEDIQ.COM
 
 **Wersja:** 1.0  
-**Data wejścia w życie:** [DATA]  
-**Ostatnia aktualizacja:** [DATA]
+**Data wejścia w życie:** 2 czerwca 2026  
+**Ostatnia aktualizacja:** 2 czerwca 2026
 
 ---
 
@@ -12,7 +12,7 @@ export const PRIVACY_POLICY_MARKDOWN = `# POLITYKA PRYWATNOŚCI SERWISU BRAINMED
 
 2. Administratorem danych osobowych jest **Pomocnik Maturalny spółka z ograniczoną odpowiedzialnością** z siedzibą w Warszawie, Aleje Jerozolimskie 93, 02-001 Warszawa, wpisana do rejestru przedsiębiorców KRS pod numerem **KRS: 0001217891**, **NIP: 7011295238**, **REGON: 543759434** (dalej: „Administrator”).
 
-3. Kontakt z Administratorem jest możliwy pod adresem e-mail: **[EMAIL]**.
+3. Kontakt z Administratorem jest możliwy pod adresem e-mail: **kontaktbrainmediq@gmail.com**.
 
 4. Administrator przetwarza dane zgodnie z przepisami RODO, ustawą o świadczeniu usług drogą elektroniczną oraz innymi obowiązującymi przepisami prawa.
 
@@ -141,7 +141,7 @@ Użytkownik ma prawo do:
 - cofnięcia zgody w dowolnym momencie, jeśli przetwarzanie odbywa się na podstawie zgody;
 - wniesienia skargi do Prezesa Urzędu Ochrony Danych Osobowych.
 
-Aby skorzystać z praw, należy skontaktować się z Administratorem pod adresem: **[EMAIL]**.
+Aby skorzystać z praw, należy skontaktować się z Administratorem pod adresem: **kontaktbrainmediq@gmail.com**.
 
 ---
 
@@ -207,10 +207,10 @@ Aby skorzystać z praw, należy skontaktować się z Administratorem pod adresem
 
 W sprawach związanych z ochroną danych osobowych można skontaktować się z Administratorem:
 
-- e-mail: **[EMAIL]**
+- e-mail: **kontaktbrainmediq@gmail.com**
 - adres: **Pomocnik Maturalny sp. z o.o., Aleje Jerozolimskie 93, 02-001 Warszawa**
 
 ---
 
-*© 2025 Pomocnik Maturalny sp. z o.o. Wszelkie prawa zastrzeżone.*
+*© 2026 Pomocnik Maturalny sp. z o.o. Wszelkie prawa zastrzeżone.*
 `;

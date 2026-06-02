@@ -1,8 +1,8 @@
 export const REGULAMIN_MARKDOWN = `# REGULAMIN SERWISU BRAINMEDIQ.COM
 
 **Wersja:** 1.0  
-**Data wejścia w życie:** [DATA]  
-**Ostatnia aktualizacja:** [DATA]
+**Data wejścia w życie:** 2 czerwca 2026  
+**Ostatnia aktualizacja:** 2 czerwca 2026
 
 ---
 
@@ -12,7 +12,7 @@ export const REGULAMIN_MARKDOWN = `# REGULAMIN SERWISU BRAINMEDIQ.COM
 
 2. Właścicielem i operatorem Serwisu jest **Pomocnik Maturalny spółka z ograniczoną odpowiedzialnością** z siedzibą w Warszawie, Aleje Jerozolimskie 93, 02-001 Warszawa, wpisana do rejestru przedsiębiorców Krajowego Rejestru Sądowego prowadzonego przez Sąd Rejonowy dla m.st. Warszawy w Warszawie, XIII Wydział Gospodarczy Krajowego Rejestru Sądowego, pod numerem **KRS: 0001217891**, **NIP: 7011295238**, **REGON: 543759434** (dalej: „Operator").
 
-3. Kontakt z Operatorem możliwy jest pod adresem e-mail: [EMAIL] lub telefonicznie pod numerem: [TELEFON].
+3. Kontakt z Operatorem możliwy jest pod adresem e-mail: kontaktbrainmediq@gmail.com lub telefonicznie pod numerem: [TELEFON].
 
 4. Serwis oferuje usługi w zakresie **testów i oceny funkcji poznawczych online**, umożliwiając Użytkownikom sprawdzenie wybranych zdolności takich jak pamięć, koncentracja, szybkość przetwarzania informacji czy uwaga (dalej: „Usługi").
 
@@ -63,7 +63,7 @@ Na potrzeby niniejszego Regulaminu przyjmuje się następujące definicje:
 
 5. Użytkownik jest zobowiązany do zachowania poufności danych dostępowych (loginu i hasła) i niedostępniania ich osobom trzecim. Za wszelkie działania podjęte przy użyciu danych dostępowych Użytkownika odpowiedzialność ponosi Użytkownik.
 
-6. W przypadku podejrzenia nieuprawnionego dostępu do Konta Użytkownik powinien niezwłocznie powiadomić Operatora pod adresem [EMAIL].
+6. W przypadku podejrzenia nieuprawnionego dostępu do Konta Użytkownik powinien niezwłocznie powiadomić Operatora pod adresem kontaktbrainmediq@gmail.com.
 
 7. Operator zastrzega sobie prawo do weryfikacji danych podanych przy rejestracji i zawieszenia lub usunięcia Konta, jeżeli zachodzi uzasadnione podejrzenie ich nieprawdziwości.
 
@@ -108,7 +108,7 @@ Na potrzeby niniejszego Regulaminu przyjmuje się następujące definicje:
 
 2. Prawo odstąpienia **nie przysługuje** w przypadku usług w pełni wykonanych za wyraźną zgodą Użytkownika przed upływem terminu do odstąpienia, jeżeli Użytkownik został poinformowany przed rozpoczęciem świadczenia, że utraci prawo odstąpienia po jego wykonaniu. Dotyczy to w szczególności sytuacji, gdy Użytkownik wykonał Test i zapoznał się z Wynikami przed upływem 14 dni od zakupu.
 
-3. Aby skorzystać z prawa odstąpienia, Użytkownik powinien poinformować Operatora drogą e-mail na adres [EMAIL], składając jednoznaczne oświadczenie o odstąpieniu. Można skorzystać z wzoru formularza stanowiącego Załącznik nr 1 do niniejszego Regulaminu.
+3. Aby skorzystać z prawa odstąpienia, Użytkownik powinien poinformować Operatora drogą e-mail na adres kontaktbrainmediq@gmail.com, składając jednoznaczne oświadczenie o odstąpieniu. Można skorzystać z wzoru formularza stanowiącego Załącznik nr 1 do niniejszego Regulaminu.
 
 4. W przypadku skutecznego odstąpienia Operator zwraca Użytkownikowi dokonane płatności niezwłocznie, nie później niż w terminie 14 dni od dnia otrzymania oświadczenia o odstąpieniu, przy użyciu takiego samego sposobu zapłaty, jakiego użył Użytkownik.
 
@@ -118,7 +118,7 @@ Na potrzeby niniejszego Regulaminu przyjmuje się następujące definicje:
 
 1. Użytkownik ma prawo do złożenia reklamacji dotyczącej Usług świadczonych przez Operatora.
 
-2. Reklamacje należy kierować na adres e-mail: [EMAIL] lub pisemnie na adres: Pomocnik Maturalny sp. z o.o., Aleje Jerozolimskie 93, 02-001 Warszawa, wskazując:
+2. Reklamacje należy kierować na adres e-mail: kontaktbrainmediq@gmail.com lub pisemnie na adres: Pomocnik Maturalny sp. z o.o., Aleje Jerozolimskie 93, 02-001 Warszawa, wskazując:
    - imię i nazwisko oraz adres e-mail powiązany z Kontem,
    - opis problemu lub zastrzeżenia,
    - żądanie Użytkownika.
@@ -188,7 +188,7 @@ Na potrzeby niniejszego Regulaminu przyjmuje się następujące definicje:
 
 ## §13. USUNIĘCIE KONTA
 
-1. Użytkownik może w każdej chwili usunąć swoje Konto za pośrednictwem Panelu Użytkownika lub wysyłając stosowne żądanie na adres e-mail: [EMAIL].
+1. Użytkownik może w każdej chwili usunąć swoje Konto za pośrednictwem Panelu Użytkownika lub wysyłając stosowne żądanie na adres e-mail: kontaktbrainmediq@gmail.com.
 
 2. Usunięcie Konta jest nieodwracalne i skutkuje trwałym usunięciem danych Użytkownika z Serwisu, z zastrzeżeniem obowiązków archiwizacyjnych Operatora wynikających z przepisów prawa.
 
@@ -212,7 +212,7 @@ Na potrzeby niniejszego Regulaminu przyjmuje się następujące definicje:
 
 ## §15. POSTANOWIENIA KOŃCOWE
 
-1. Regulamin wchodzi w życie z dniem [DATA] i obowiązuje przez czas nieoznaczony.
+1. Regulamin wchodzi w życie z dniem 2 czerwca 2026 i obowiązuje przez czas nieoznaczony.
 
 2. W sprawach nieuregulowanych niniejszym Regulaminem zastosowanie mają przepisy prawa polskiego, w szczególności Kodeksu cywilnego, ustawy o świadczeniu usług drogą elektroniczną oraz ustawy o prawach konsumenta.
 
@@ -230,7 +230,7 @@ Na potrzeby niniejszego Regulaminu przyjmuje się następujące definicje:
 
 ---
 
-Adresat: **Pomocnik Maturalny sp. z o.o.**, Aleje Jerozolimskie 93, 02-001 Warszawa, e-mail: [EMAIL]
+Adresat: **Pomocnik Maturalny sp. z o.o.**, Aleje Jerozolimskie 93, 02-001 Warszawa, e-mail: kontaktbrainmediq@gmail.com
 
 Niniejszym informuję o moim odstąpieniu od umowy o świadczenie następującej usługi:
 
@@ -245,5 +245,5 @@ Niniejszym informuję o moim odstąpieniu od umowy o świadczenie następującej
 
 ---
 
-*© 2025 Pomocnik Maturalny sp. z o.o. Wszelkie prawa zastrzeżone.*
+*© 2026 Pomocnik Maturalny sp. z o.o. Wszelkie prawa zastrzeżone.*
 `;

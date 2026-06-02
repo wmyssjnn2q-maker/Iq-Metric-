@@ -241,6 +241,41 @@ const buildResultEmailHtml = ({
 </html>`;
 };
 
+const EMAIL_API_ENDPOINTS = ['/api/send-email', 'http://127.0.0.1:3002/api/send-email'] as const;
+
+const postEmailPayload = async (payload: {
+  to: string;
+  subject: string;
+  html: string;
+  attachment?: { filename: string; content: string };
+}) => {
+  let lastError: string | null = null;
+
+  for (const endpoint of EMAIL_API_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) return;
+
+      const body = await res.json().catch(() => null);
+      const message = body?.error || `Błąd serwera (${res.status})`;
+      lastError = message;
+
+      // Jeśli endpoint nie istnieje pod tym hostem, próbujemy kolejny.
+      if (res.status === 404) continue;
+      throw new Error(message);
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.';
+    }
+  }
+
+  throw new Error(lastError || 'Nie udało się wysłać wiadomości.');
+};
+
 const sendResultEmail = async ({
   to,
   subject,
@@ -256,22 +291,14 @@ const sendResultEmail = async ({
   summary: string;
   rows: Array<{ label: string; value: string | number }>;
 }) => {
-  if (!to.includes('@')) throw new Error('Podaj poprawny adres e-mail.');
+  const normalizedEmail = to.trim().toLowerCase();
+  if (!normalizedEmail.includes('@')) throw new Error('Podaj poprawny adres e-mail.');
 
-  const res = await fetch('/api/send-email', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      to,
-      subject,
-      html: buildResultEmailHtml({ title, subtitle, summary, rows }),
-    }),
+  await postEmailPayload({
+    to: normalizedEmail,
+    subject,
+    html: buildResultEmailHtml({ title, subtitle, summary, rows }),
   });
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    throw new Error(body?.error || 'Nie udało się wysłać wiadomości.');
-  }
 };
 
 // --- VISUAL COMPONENTS FOR REPORT ---
@@ -781,7 +808,7 @@ const Footer = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => (
             Niezależna platforma psychometryczna oferująca nowoczesne narzędzia do ewaluacji predyspozycji poznawczych. Profesjonalna analiza struktury inteligencji.
           </p>
         </div>
-        <p className="text-xs mt-8">© 2024 brainmediq Polska. Wszelkie prawa zastrzeżone.</p>
+        <p className="text-xs mt-8">© 2026 brainmediq Polska. Wszelkie prawa zastrzeżone.</p>
       </div>
       <div>
         <h4 className="text-white font-semibold mb-4">Produkt</h4>
@@ -2154,13 +2181,10 @@ const Checkout = () => {
     const year = new Date().getFullYear();
     const dateStr = new Date().toLocaleDateString('pl-PL', { year: 'numeric', month: 'long', day: 'numeric' });
     try {
-      await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: toEmail,
-          subject: `✅ Potwierdzenie zakupu – brainmediq`,
-          html: `
+      await postEmailPayload({
+        to: toEmail.trim().toLowerCase(),
+        subject: `✅ Potwierdzenie zakupu – brainmediq`,
+        html: `
 <!DOCTYPE html>
 <html lang="pl">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -2232,7 +2256,6 @@ const Checkout = () => {
   </table>
 </body>
 </html>`,
-        }),
       });
     } catch (e) {
       console.warn('Email sending failed (non-critical):', e);
@@ -2567,30 +2590,19 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
 </html>`;
 
     try {
-      const res = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: toEmail,
-          subject: `🏆 Twój Certyfikat IQ ${reportData.stats.iqScore} – brainmediq`,
-          html,
-          ...(pdfBase64 ? { attachment: { filename: `Certyfikat_IQ_${displayName.replace(/\s+/g, '_')}.pdf`, content: pdfBase64 } } : {}),
-        }),
+      await postEmailPayload({
+        to: toEmail.trim().toLowerCase(),
+        subject: `🏆 Twój Certyfikat IQ ${reportData.stats.iqScore} – brainmediq`,
+        html,
+        ...(pdfBase64 ? { attachment: { filename: `Certyfikat_IQ_${displayName.replace(/\s+/g, '_')}.pdf`, content: pdfBase64 } } : {}),
       });
-      if (res.ok) {
-        setEmailStatus('sent');
-        setEmailErrorDetail(null);
-        localStorage.setItem(sessionKey, '1');
-      } else {
-        const body = await res.json().catch(() => null);
-        setEmailStatus('error');
-        setEmailErrorDetail(body?.error || `Błąd serwera (${res.status})`);
-        emailSentRef.current = false;
-      }
+      setEmailStatus('sent');
+      setEmailErrorDetail(null);
+      localStorage.setItem(sessionKey, '1');
     } catch (err) {
       setEmailStatus('error');
       setEmailErrorDetail(
-        err instanceof Error ? err.message : 'Brak połączenia z API. Uruchom: ./scripts/start-dev.sh'
+        err instanceof Error ? err.message : 'Brak połączenia z API. Uruchom npm run dev.'
       );
       emailSentRef.current = false;
     }
@@ -2961,6 +2973,8 @@ const PersonalityTest = () => {
   const [scores, setScores] = useState<Record<string, number> | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [email, setEmail] = useState(saved.email || '');
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [emailMessage, setEmailMessage] = useState('');
 
   if (!hasAccess) {
     return (
@@ -2975,14 +2989,24 @@ const PersonalityTest = () => {
             Kup Test Osobowości za 4,99 PLN
           </Link>
         </div>
+        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+          Dostęp do tego testu jest jednorazowy.
+        </p>
       </div>
     );
   }
 
   const handleEmailSave = async () => {
     if (!scores) return;
+    if (!email.includes('@')) {
+      setEmailStatus('error');
+      setEmailMessage('Podaj poprawny adres e-mail.');
+      return;
+    }
     const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
     localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
+    setEmailStatus('sending');
+    setEmailMessage('');
     try {
       await sendResultEmail({
         to: email,
@@ -2995,9 +3019,11 @@ const PersonalityTest = () => {
           value: `${Math.round(value as number)}%`,
         })),
       });
-      alert('Wyniki zostały wysłane na e-mail.');
+      setEmailStatus('sent');
+      setEmailMessage('Wyniki zostały wysłane na e-mail.');
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
+      setEmailStatus('error');
+      setEmailMessage(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
     }
   };
 
@@ -3311,13 +3337,19 @@ const PersonalityTest = () => {
                 className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white"
               />
               <button 
+                type="button"
                 onClick={handleEmailSave}
-                disabled={!email.includes('@')}
+                disabled={!email.includes('@') || emailStatus === 'sending'}
                 className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all disabled:opacity-50"
               >
-                Wyślij
+                {emailStatus === 'sending' ? 'Wysyłanie...' : 'Wyślij'}
               </button>
             </div>
+            {emailStatus !== 'idle' && (
+              <p className={`mt-3 text-sm ${emailStatus === 'sent' ? 'text-emerald-600' : emailStatus === 'error' ? 'text-rose-600' : 'text-slate-500'}`}>
+                {emailMessage || 'Trwa wysyłanie wiadomości...'}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -3342,6 +3374,8 @@ const MemoryTest = () => {
   const [level, setLevel] = useState(1);
   const [wrongBlock, setWrongBlock] = useState<number | null>(null);
   const [email, setEmail] = useState(saved.email || '');
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [emailMessage, setEmailMessage] = useState('');
 
   if (!hasAccess) {
     return (
@@ -3356,13 +3390,23 @@ const MemoryTest = () => {
             Kup Test Pamięci za 4,99 PLN
           </Link>
         </div>
+        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+          Dostęp do tego testu jest jednorazowy.
+        </p>
       </div>
     );
   }
 
   const handleEmailSave = async () => {
+    if (!email.includes('@')) {
+      setEmailStatus('error');
+      setEmailMessage('Podaj poprawny adres e-mail.');
+      return;
+    }
     const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
     localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
+    setEmailStatus('sending');
+    setEmailMessage('');
     try {
       await sendResultEmail({
         to: email,
@@ -3377,9 +3421,11 @@ const MemoryTest = () => {
           { label: 'Interpretacja', value: interpretation.title },
         ],
       });
-      alert('Wyniki zostały wysłane na e-mail.');
+      setEmailStatus('sent');
+      setEmailMessage('Wyniki zostały wysłane na e-mail.');
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
+      setEmailStatus('error');
+      setEmailMessage(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
     }
   };
 
@@ -3590,13 +3636,19 @@ const MemoryTest = () => {
                 className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white"
               />
               <button 
+                type="button"
                 onClick={handleEmailSave}
-                disabled={!email.includes('@')}
+                disabled={!email.includes('@') || emailStatus === 'sending'}
                 className="px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all disabled:opacity-50"
               >
-                Wyślij
+                {emailStatus === 'sending' ? 'Wysyłanie...' : 'Wyślij'}
               </button>
             </div>
+            {emailStatus !== 'idle' && (
+              <p className={`mt-3 text-sm ${emailStatus === 'sent' ? 'text-emerald-600' : emailStatus === 'error' ? 'text-rose-600' : 'text-slate-500'}`}>
+                {emailMessage || 'Trwa wysyłanie wiadomości...'}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -3620,6 +3672,8 @@ const ConcentrationTest = () => {
   const [timeLeft, setTimeLeft] = useState(30);
   const [currentTask, setCurrentTask] = useState({ word: '', colorValue: '', colorHex: '' });
   const [email, setEmail] = useState(saved.email || '');
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [emailMessage, setEmailMessage] = useState('');
 
   if (!hasAccess) {
     return (
@@ -3634,13 +3688,23 @@ const ConcentrationTest = () => {
             Kup Test Koncentracji za 4,99 PLN
           </Link>
         </div>
+        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+          Dostęp do tego testu jest jednorazowy.
+        </p>
       </div>
     );
   }
 
   const handleEmailSave = async () => {
+    if (!email.includes('@')) {
+      setEmailStatus('error');
+      setEmailMessage('Podaj poprawny adres e-mail.');
+      return;
+    }
     const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
     localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
+    setEmailStatus('sending');
+    setEmailMessage('');
     try {
       await sendResultEmail({
         to: email,
@@ -3656,9 +3720,11 @@ const ConcentrationTest = () => {
           { label: 'Interpretacja', value: interpretation.title },
         ],
       });
-      alert('Wyniki zostały wysłane na e-mail.');
+      setEmailStatus('sent');
+      setEmailMessage('Wyniki zostały wysłane na e-mail.');
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
+      setEmailStatus('error');
+      setEmailMessage(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
     }
   };
 
@@ -3878,13 +3944,19 @@ const ConcentrationTest = () => {
                 className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:text-white"
               />
               <button 
+                type="button"
                 onClick={handleEmailSave}
-                disabled={!email.includes('@')}
+                disabled={!email.includes('@') || emailStatus === 'sending'}
                 className="px-6 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-700 transition-all disabled:opacity-50"
               >
-                Wyślij
+                {emailStatus === 'sending' ? 'Wysyłanie...' : 'Wyślij'}
               </button>
             </div>
+            {emailStatus !== 'idle' && (
+              <p className={`mt-3 text-sm ${emailStatus === 'sent' ? 'text-emerald-600' : emailStatus === 'error' ? 'text-rose-600' : 'text-slate-500'}`}>
+                {emailMessage || 'Trwa wysyłanie wiadomości...'}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -3909,6 +3981,8 @@ const ReactionTest = () => {
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [lastTime, setLastTime] = useState<number>(0);
   const [email, setEmail] = useState(saved.email || '');
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [emailMessage, setEmailMessage] = useState('');
 
   const MAX_ATTEMPTS = 5;
 
@@ -3925,13 +3999,23 @@ const ReactionTest = () => {
             Kup Test Reakcji za 4,99 PLN
           </Link>
         </div>
+        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+          Dostęp do tego testu jest jednorazowy.
+        </p>
       </div>
     );
   }
 
   const handleEmailSave = async () => {
+    if (!email.includes('@')) {
+      setEmailStatus('error');
+      setEmailMessage('Podaj poprawny adres e-mail.');
+      return;
+    }
     const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
     localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
+    setEmailStatus('sending');
+    setEmailMessage('');
     try {
       await sendResultEmail({
         to: email,
@@ -3947,9 +4031,11 @@ const ReactionTest = () => {
           { label: 'Interpretacja', value: interpretation.title },
         ],
       });
-      alert('Wyniki zostały wysłane na e-mail.');
+      setEmailStatus('sent');
+      setEmailMessage('Wyniki zostały wysłane na e-mail.');
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
+      setEmailStatus('error');
+      setEmailMessage(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
     }
   };
 
@@ -4157,13 +4243,19 @@ const ReactionTest = () => {
                 className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500 dark:text-white"
               />
               <button 
+                type="button"
                 onClick={handleEmailSave}
-                disabled={!email.includes('@')}
+                disabled={!email.includes('@') || emailStatus === 'sending'}
                 className="px-6 py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-all disabled:opacity-50"
               >
-                Wyślij
+                {emailStatus === 'sending' ? 'Wysyłanie...' : 'Wyślij'}
               </button>
             </div>
+            {emailStatus !== 'idle' && (
+              <p className={`mt-3 text-sm ${emailStatus === 'sent' ? 'text-emerald-600' : emailStatus === 'error' ? 'text-rose-600' : 'text-slate-500'}`}>
+                {emailMessage || 'Trwa wysyłanie wiadomości...'}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
@@ -4343,6 +4435,8 @@ const AlzheimerTest = () => {
   const [selected, setSelected] = useState<string>('');
   const [textInput, setTextInput] = useState('');
   const [email, setEmail] = useState(saved.email || '');
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [emailMessage, setEmailMessage] = useState('');
 
   const totalPoints = alzheimerQuestions.reduce((s, q) => s + q.points, 0);
 
@@ -4386,9 +4480,16 @@ const AlzheimerTest = () => {
   const pct = Math.round((score / totalPoints) * 100);
 
   const handleEmailSave = async () => {
+    if (!email.includes('@')) {
+      setEmailStatus('error');
+      setEmailMessage('Podaj poprawny adres e-mail.');
+      return;
+    }
     const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
     localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
     const interp = getInterpretation(pct);
+    setEmailStatus('sending');
+    setEmailMessage('');
     try {
       await sendResultEmail({
         to: email,
@@ -4403,9 +4504,11 @@ const AlzheimerTest = () => {
           { label: 'Charakter testu', value: 'orientacyjny' },
         ],
       });
-      alert('Wyniki zostały wysłane na e-mail.');
+      setEmailStatus('sent');
+      setEmailMessage('Wyniki zostały wysłane na e-mail.');
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
+      setEmailStatus('error');
+      setEmailMessage(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
     }
   };
 
@@ -4428,6 +4531,9 @@ const AlzheimerTest = () => {
           <Link to="/platnosc?type=alzheimer" className="inline-flex items-center px-8 py-4 bg-teal-600 text-white rounded-2xl font-bold hover:bg-teal-700 transition-all shadow-lg">
             Kup za 4,99 PLN
           </Link>
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+            Dostęp do tego testu jest jednorazowy.
+          </p>
         </div>
       </div>
     );
@@ -4551,13 +4657,19 @@ const AlzheimerTest = () => {
                 className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:text-white"
               />
               <button
+                type="button"
                 onClick={handleEmailSave}
-                disabled={!email.includes('@')}
+                disabled={!email.includes('@') || emailStatus === 'sending'}
                 className="px-6 py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-all disabled:opacity-50"
               >
-                Wyślij
+                {emailStatus === 'sending' ? 'Wysyłanie...' : 'Wyślij'}
               </button>
             </div>
+            {emailStatus !== 'idle' && (
+              <p className={`mt-3 text-sm ${emailStatus === 'sent' ? 'text-emerald-600' : emailStatus === 'error' ? 'text-rose-600' : 'text-slate-500'}`}>
+                {emailMessage || 'Trwa wysyłanie wiadomości...'}
+              </p>
+            )}
           </div>
 
           <Link to="/inne-testy" className="block w-full text-center bg-teal-600 text-white py-5 rounded-2xl font-bold hover:bg-teal-700 transition-all">
@@ -4655,6 +4767,8 @@ const ADHDTest = () => {
   const [answers, setAnswers] = useState<number[]>(Array(adhdQuestions.length).fill(-1));
   const [currentQ, setCurrentQ] = useState(0);
   const [email, setEmail] = useState(saved.email || '');
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [emailMessage, setEmailMessage] = useState('');
 
   const partAScore = answers.slice(0, 6).reduce((s, v) => s + Math.max(0, v), 0);
   const totalScore = answers.reduce((s, v) => s + Math.max(0, v), 0);
@@ -4685,11 +4799,18 @@ const ADHDTest = () => {
   };
 
   const handleEmailSave = async () => {
+    if (!email.includes('@')) {
+      setEmailStatus('error');
+      setEmailMessage('Podaj poprawny adres e-mail.');
+      return;
+    }
     const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
     localStorage.setItem('iq_results', JSON.stringify({ ...s, email }));
     const result = getResult();
     const maxScore = adhdQuestions.length * 4;
     const scorePct = Math.round((totalScore / maxScore) * 100);
+    setEmailStatus('sending');
+    setEmailMessage('');
     try {
       await sendResultEmail({
         to: email,
@@ -4704,9 +4825,11 @@ const ADHDTest = () => {
           { label: 'Interpretacja', value: result.label },
         ],
       });
-      alert('Wyniki zostały wysłane na e-mail.');
+      setEmailStatus('sent');
+      setEmailMessage('Wyniki zostały wysłane na e-mail.');
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
+      setEmailStatus('error');
+      setEmailMessage(error instanceof Error ? error.message : 'Nie udało się wysłać wiadomości.');
     }
   };
 
@@ -4722,6 +4845,9 @@ const ADHDTest = () => {
           <Link to="/platnosc?type=adhd" className="inline-flex items-center px-8 py-4 bg-violet-600 text-white rounded-2xl font-bold hover:bg-violet-700 transition-all shadow-lg">
             Kup za 4,99 PLN
           </Link>
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+            Dostęp do tego testu jest jednorazowy.
+          </p>
         </div>
       </div>
     );
@@ -4842,13 +4968,19 @@ const ADHDTest = () => {
                 className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:text-white"
               />
               <button
+                type="button"
                 onClick={handleEmailSave}
-                disabled={!email.includes('@')}
+                disabled={!email.includes('@') || emailStatus === 'sending'}
                 className="px-6 py-3 bg-violet-600 text-white rounded-xl font-bold hover:bg-violet-700 transition-all disabled:opacity-50"
               >
-                Wyślij
+                {emailStatus === 'sending' ? 'Wysyłanie...' : 'Wyślij'}
               </button>
             </div>
+            {emailStatus !== 'idle' && (
+              <p className={`mt-3 text-sm ${emailStatus === 'sent' ? 'text-emerald-600' : emailStatus === 'error' ? 'text-rose-600' : 'text-slate-500'}`}>
+                {emailMessage || 'Trwa wysyłanie wiadomości...'}
+              </p>
+            )}
           </div>
 
           <Link to="/inne-testy" className="block w-full text-center bg-violet-600 text-white py-5 rounded-2xl font-bold hover:bg-violet-700 transition-all">
