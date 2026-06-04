@@ -1,8 +1,15 @@
 import { Resend } from 'resend';
+import {
+  ensureResendEnv,
+  getResendApiKey,
+  getResendFromEmail,
+  getResendFromName,
+} from '../lib/resendServer';
+import { sendJson, readJsonBody } from '../lib/apiHttp';
 
 function formatResendError(message: string): string {
   const onlyTest = message.match(
-    /only send testing emails to your own email address \(([^)]+)\)/i
+    /only send testing emails to your own email address \(([^)]+)\)/i,
   );
   if (onlyTest) {
     const allowed = onlyTest[1];
@@ -21,61 +28,54 @@ type EmailPayload = {
   };
 };
 
-const readBody = async (req: any): Promise<EmailPayload> => {
-  if (req.body) {
-    return typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-  }
-
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  const raw = Buffer.concat(chunks).toString('utf8');
-  return raw ? JSON.parse(raw) : {};
-};
-
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
-    res.statusCode = 405;
-    return res.json?.({ error: 'Method not allowed' }) ?? res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return sendJson(res, 405, { error: 'Method not allowed' });
   }
 
-  const resendApiKey = process.env.RESEND_API_KEY;
+  ensureResendEnv();
+  const resendApiKey = getResendApiKey();
   if (!resendApiKey) {
-    res.statusCode = 500;
-    return res.json?.({ error: 'Brak konfiguracji RESEND_API_KEY na serwerze.' }) ?? res.end(JSON.stringify({ error: 'Brak konfiguracji RESEND_API_KEY na serwerze.' }));
+    return sendJson(res, 500, {
+      error:
+        'Brak konfiguracji RESEND_API_KEY na serwerze. Dodaj klucz w Vercel → Settings → Environment Variables (Production) lub w pliku .env.local przy npm run dev.',
+      code: 'resend_not_configured',
+    });
   }
 
-  const { to, subject, html, attachment } = await readBody(req);
-  if (!to || !subject || !html) {
-    res.statusCode = 400;
-    return res.json?.({ error: 'Brak wymaganych pól: to, subject, html' }) ?? res.end(JSON.stringify({ error: 'Brak wymaganych pól: to, subject, html' }));
+  try {
+    const { to, subject, html, attachment } = await readJsonBody<EmailPayload>(req);
+    if (!to || !subject || !html) {
+      return sendJson(res, 400, { error: 'Brak wymaganych pól: to, subject, html' });
+    }
+
+    const resend = new Resend(resendApiKey);
+    const payload: Parameters<typeof resend.emails.send>[0] = {
+      from: `${getResendFromName()} <${getResendFromEmail()}>`,
+      to: [to],
+      subject,
+      html,
+    };
+
+    if (attachment?.content && attachment?.filename) {
+      const raw = attachment.content;
+      payload.attachments = [
+        {
+          filename: attachment.filename,
+          content: Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw), 'base64'),
+        },
+      ];
+    }
+
+    const { data, error } = await resend.emails.send(payload);
+    if (error) {
+      const msg = formatResendError(error.message || 'Błąd Resend');
+      return sendJson(res, 403, { error: msg, code: 'resend_restricted' });
+    }
+
+    return sendJson(res, 200, { success: true, id: data?.id });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Błąd serwera';
+    return sendJson(res, 500, { error: message });
   }
-
-  const resend = new Resend(resendApiKey);
-  const payload: Parameters<typeof resend.emails.send>[0] = {
-    from: `${process.env.RESEND_FROM_NAME || 'brainmediq'} <${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}>`,
-    to: [to],
-    subject,
-    html,
-  };
-
-  if (attachment?.content && attachment?.filename) {
-    const raw = attachment.content;
-    payload.attachments = [
-      {
-        filename: attachment.filename,
-        content: Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw), 'base64'),
-      },
-    ];
-  }
-
-  const { data, error } = await resend.emails.send(payload);
-  if (error) {
-    res.statusCode = 403;
-    const msg = formatResendError(error.message || 'Błąd Resend');
-    return res.json?.({ error: msg, code: 'resend_restricted' }) ?? res.end(JSON.stringify({ error: msg, code: 'resend_restricted' }));
-  }
-
-  return res.json?.({ success: true, id: data?.id }) ?? res.end(JSON.stringify({ success: true, id: data?.id }));
 }

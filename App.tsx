@@ -316,6 +316,14 @@ const verifyStoredIqResult = async (parsed: ReportData): Promise<boolean> => {
 
 const formatEmailSendError = (error: unknown): string => {
   const raw = error instanceof Error ? error.message : '';
+  if (/RESEND_API_KEY|resend_not_configured/i.test(raw)) {
+    const host = typeof window !== 'undefined' ? window.location.hostname : '';
+    const isLocal = host === 'localhost' || host === '127.0.0.1';
+    if (isLocal) {
+      return 'Brak RESEND_API_KEY. Utwórz .env.local (cp .env.example .env.local), wklej klucz z resend.com/api-keys i uruchom npm run dev.';
+    }
+    return 'Wysyłka e-mail nie jest skonfigurowana na serwerze. Administrator musi dodać RESEND_API_KEY w Vercel → Settings → Environment Variables (Production) i zrobić redeploy.';
+  }
   if (/load failed|failed to fetch|networkerror|network error/i.test(raw)) {
     return 'Brak połączenia z API wysyłki maili. Uruchom npm run dev (frontend + API).';
   }

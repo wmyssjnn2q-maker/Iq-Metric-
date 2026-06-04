@@ -1,16 +1,23 @@
-import * as dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
 import express from 'express';
 import { Resend } from 'resend';
 import { handleIqQuestionsGet, handleScoreIqPost, handleVerifyIqResultPost } from './lib/iqApiHandlers';
+import {
+  ensureResendEnv,
+  getResendApiKey,
+  getResendFromEmail,
+  getResendFromName,
+  isResendConfigured,
+} from './lib/resendServer';
+
+ensureResendEnv();
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-const resendApiKey = process.env.RESEND_API_KEY;
-const resendFromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-const resendFromName = process.env.RESEND_FROM_NAME || 'brainmediq';
+const resendApiKey = getResendApiKey();
+const resendFromEmail = getResendFromEmail();
+const resendFromName = getResendFromName();
 
 if (!resendApiKey) {
   console.warn('[Resend] Missing RESEND_API_KEY. Email requests will return 500 until it is configured.');
@@ -31,7 +38,7 @@ function formatResendError(message: string): string {
 }
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, emailConfigured: isResendConfigured() });
 });
 
 app.get('/api/iq-questions', (_req, res) => {
