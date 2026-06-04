@@ -21,12 +21,15 @@ export interface Question {
   explanation: string;
 }
 
+/** Pytanie w sesji testowej — bez klucza odpowiedzi (dostarczane z API). */
+export type ClientQuestion = Omit<Question, 'correctAnswer' | 'explanation'>;
+
 export interface TestState {
   currentQuestionIndex: number;
   answers: (number | null)[];
   startTime: number | null;
   endTime: number | null;
-  questions: Question[];
+  questions: ClientQuestion[];
   isFinished: boolean;
   /** null = użytkownik jeszcze nie wybrał przedziału wiekowego */
   ageBracketId: string | null;
@@ -54,13 +57,19 @@ export interface DetailedAnalysis {
 }
 
 export interface ReportData {
-  stats: UserStats;
+  stats?: UserStats;
   isPaid: boolean;
   timestamp: number;
+  /** Po wysłaniu raportu e-mailem — szczegóły usunięte z localStorage. */
+  reportDeliveredAt?: number;
   userName?: string;
   analysis?: DetailedAnalysis;
   isPro?: boolean;
   isMax?: boolean;
+  /** HMAC wyniku z serwera — weryfikacja przed raportem / płatnością */
+  resultToken?: string;
+  /** ID pytań z danej sesji (do weryfikacji podpisu) */
+  testQuestionIds?: string[];
   /** Duplikat dla starszych zapisów w localStorage — preferuj stats.ageBracket* */
   ageBracketId?: string;
   ageBracketLabel?: string;

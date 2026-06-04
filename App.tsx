@@ -11,9 +11,22 @@ import {
   Sphere,
   Graticule
 } from "react-simple-maps";
-import { TestState, Question, QuestionType, UserStats, ReportData, DetailedAnalysis } from './types';
+import { TestState, QuestionType, UserStats, ReportData, DetailedAnalysis, ClientQuestion } from './types';
 import { IQ_AGE_BRACKETS, getAgeBracketById } from './ageBrackets';
-import { QUESTIONS } from './questions';
+import {
+  readIqResults,
+  readIqResultsOrEmpty,
+  writeIqResults,
+  mergeIqResults,
+  touchSessionEmail,
+  purgeSensitiveIqResultsAfterReportDelivery,
+  purgeEmailFromIqResults,
+  markCertEmailSent,
+  wasCertEmailSent,
+  migrateIqResultsOnStartup,
+  hasFullReportPayload,
+  stripLegacyAuxiliaryAccessFlags,
+} from './lib/iqResultsStorage';
 import { Icons, COLORS, Logos } from './constants';
 import { generateDetailedReport, getAnalysisFallback } from './services/geminiService';
 import {
@@ -230,7 +243,7 @@ const buildResultEmailHtml = ({
         </td></tr>
         <tr><td style="background:#f8fafc;padding:22px 44px;border-top:1px solid #e2e8f0;text-align:center">
           <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6">
-            © ${year} brainmediq Polska · kontakt@brainmediq.com<br>
+            © ${year} Pomocnik Maturalny sp. z o.o. · kontaktbrainmediq@gmail.com<br>
             Ta wiadomość została wygenerowana automatycznie po zakończeniu testu.
           </p>
         </td></tr>
@@ -241,15 +254,64 @@ const buildResultEmailHtml = ({
 </html>`;
 };
 
+const getLocalApiBase = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  const host = window.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return 'http://127.0.0.1:3002';
+  }
+  return null;
+};
+
 const getEmailApiEndpoints = (): string[] => {
   const endpoints = ['/api/send-email'];
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1') {
-      endpoints.push('http://127.0.0.1:3002/api/send-email');
+  const local = getLocalApiBase();
+  if (local) endpoints.push(`${local}/api/send-email`);
+  return endpoints;
+};
+
+const getIqApiEndpoints = (path: string): string[] => {
+  const endpoints = [path];
+  const local = getLocalApiBase();
+  if (local) endpoints.push(`${local}${path}`);
+  return endpoints;
+};
+
+const fetchIqApi = async <T,>(path: string, init?: RequestInit): Promise<T> => {
+  let lastError = 'Brak połączenia z serwerem testu.';
+  for (const endpoint of getIqApiEndpoints(path)) {
+    try {
+      const res = await fetch(endpoint, init);
+      const body = await res.json().catch(() => null);
+      if (res.ok) return body as T;
+      lastError = body?.error || `Błąd serwera (${res.status})`;
+      if (res.status === 404) continue;
+      throw new Error(lastError);
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : lastError;
     }
   }
-  return endpoints;
+  throw new Error(lastError);
+};
+
+const verifyStoredIqResult = async (parsed: ReportData): Promise<boolean> => {
+  if (!parsed.resultToken || !parsed.stats || !parsed.testQuestionIds?.length) {
+    return false;
+  }
+  try {
+    const { valid } = await fetchIqApi<{ valid: boolean }>('/api/verify-iq-result', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        stats: parsed.stats,
+        resultToken: parsed.resultToken,
+        questionIds: parsed.testQuestionIds,
+      }),
+    });
+    return valid;
+  } catch {
+    return false;
+  }
 };
 
 const formatEmailSendError = (error: unknown): string => {
@@ -324,8 +386,7 @@ const sendAuxiliaryTestEmail = async ({
     return;
   }
 
-  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
-  localStorage.setItem('iq_results', JSON.stringify({ ...saved, email }));
+  touchSessionEmail(email);
   setEmailStatus('sending');
   setEmailMessage('');
 
@@ -343,6 +404,7 @@ const sendAuxiliaryTestEmail = async ({
     });
     setEmailStatus('sent');
     setEmailMessage('Wyniki zostały wysłane na e-mail.');
+    purgeEmailFromIqResults();
   } catch (error) {
     setEmailStatus('error');
     setEmailMessage(formatEmailSendError(error));
@@ -369,17 +431,6 @@ const grantAuxiliaryAccess = (testId: AuxiliaryTestId) => {
     AUXILIARY_ACCESS_STORAGE_KEY,
     JSON.stringify({ ...readAuxiliaryAccess(), [testId]: true }),
   );
-};
-
-const stripLegacyAuxiliaryAccessFlags = <T extends Record<string, unknown>>(data: T): T => {
-  const next = { ...data };
-  delete next.hasOsobowosc;
-  delete next.hasPamiec;
-  delete next.hasKoncentracja;
-  delete next.hasReakcja;
-  delete next.hasAlzheimer;
-  delete next.hasADHD;
-  return next;
 };
 
 const isAuxiliaryTestType = (type: string | null): type is AuxiliaryTestId =>
@@ -922,7 +973,7 @@ const Footer = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => (
             Niezależna platforma psychometryczna oferująca nowoczesne narzędzia do ewaluacji predyspozycji poznawczych. Profesjonalna analiza struktury inteligencji.
           </p>
         </div>
-        <p className="text-xs mt-8">© 2026 brainmediq Polska. Wszelkie prawa zastrzeżone.</p>
+        <p className="text-xs mt-8">© 2026 Pomocnik Maturalny sp. z o.o. Wszelkie prawa zastrzeżone.</p>
       </div>
       <div>
         <h4 className="text-white font-semibold mb-4">Produkt</h4>
@@ -941,7 +992,7 @@ const Footer = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => (
           <li><Link to="/prywatnosc" className="hover:text-white">Polityka Prywatności</Link></li>
           <li><Link to="/regulamin" className="hover:text-white">Regulamin</Link></li>
           <li>
-            <a href="mailto:kontakt@brainmediq.com" className="hover:text-white">
+            <a href="mailto:kontaktbrainmediq@gmail.com" className="hover:text-white">
               Kontakt
             </a>
           </li>
@@ -1574,42 +1625,45 @@ const TestSession = () => {
   const [state, setState] = useState<TestState | null>(null);
   const [trainingDone, setTrainingDone] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [bankLoading, setBankLoading] = useState(true);
+  const [bankError, setBankError] = useState<string | null>(null);
+  const [scoring, setScoring] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const qCount = QUESTIONS.length;
-
-    const byId = (a: { id: string }, b: { id: string }) => a.id.localeCompare(b.id);
-
-    const easyPool = QUESTIONS.filter(q => q.difficulty <= 4).sort((a, b) => a.difficulty - b.difficulty || byId(a, b));
-    const mediumPool = QUESTIONS.filter(q => q.difficulty >= 5 && q.difficulty <= 7).sort((a, b) => a.difficulty - b.difficulty || byId(a, b));
-    const hardPool = QUESTIONS.filter(q => q.difficulty >= 8).sort((a, b) => a.difficulty - b.difficulty || byId(a, b));
-
-    const takeFromPool = (pool: Question[], count: number) => pool.slice(0, Math.min(count, pool.length));
-
-    const easyPart = takeFromPool(easyPool, 10);
-    const mediumPart = takeFromPool(mediumPool, 10);
-    const hardPart = takeFromPool(hardPool, 10);
-
-    let selectedQuestions: Question[] = [...easyPart, ...mediumPart, ...hardPart];
-
-    if (selectedQuestions.length < qCount) {
-      const usedIds = new Set(selectedQuestions.map(q => q.id));
-      const fallback = QUESTIONS.filter(q => !usedIds.has(q.id)).sort((a, b) => a.difficulty - b.difficulty || byId(a, b));
-      selectedQuestions = selectedQuestions.concat(fallback.slice(0, qCount - selectedQuestions.length));
-    }
-    
-    setState({
-      currentQuestionIndex: 0,
-      answers: new Array(selectedQuestions.length).fill(null),
-      startTime: null,
-      endTime: null,
-      questions: selectedQuestions,
-      isFinished: false,
-      ageBracketId: null,
-    });
-
-    setTimeLeft(14 * 60);
+    let cancelled = false;
+    (async () => {
+      setBankLoading(true);
+      setBankError(null);
+      try {
+        const payload = await fetchIqApi<{ questions: ClientQuestion[] }>('/api/iq-questions');
+        if (cancelled) return;
+        const selectedQuestions = payload.questions;
+        setState({
+          currentQuestionIndex: 0,
+          answers: new Array(selectedQuestions.length).fill(null),
+          startTime: null,
+          endTime: null,
+          questions: selectedQuestions,
+          isFinished: false,
+          ageBracketId: null,
+        });
+        setTimeLeft(14 * 60);
+      } catch (err) {
+        if (!cancelled) {
+          setBankError(
+            err instanceof Error
+              ? err.message
+              : 'Nie udało się załadować pytań. Uruchom npm run dev (frontend + API) i ustaw SCORE_SECRET w .env.local.',
+          );
+        }
+      } finally {
+        if (!cancelled) setBankLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const startRealTest = () => {
@@ -1663,115 +1717,85 @@ const TestSession = () => {
     }
   };
 
-  const finishTest = (finalAnswers?: number[]) => {
-    if (!state) return;
-    
-    const endTime = Date.now();
-    const durationMs = endTime - state.startTime!;
-    
+  const finishTest = async (finalAnswers?: (number | null)[]) => {
+    if (!state || scoring) return;
+
     const results = finalAnswers || state.answers;
-    const stats = calculateStats(state.questions, results, state.ageBracketId);
-    
-    const existingSaved = JSON.parse(localStorage.getItem('iq_results') || '{}');
-    const bracket = getAgeBracketById(state.ageBracketId);
-    
-    // Create new results, explicitly resetting Pro/Max status and old analysis
-    const newResults = {
-      ...existingSaved,
-      stats,
-      ageBracketId: bracket.id,
-      ageBracketLabel: bracket.label,
-      timestamp: Date.now(),
-      isPaid: false,
-      isPro: false,
-      isMax: false
-    };
-    
-    // Remove old analysis if it exists
-    delete (newResults as any).analysis;
-    
-    localStorage.setItem('iq_results', JSON.stringify(newResults));
-    navigate('/wynik');
+    const responses = state.questions.map((q, i) => ({
+      questionId: q.id,
+      answerIndex: results[i] ?? -1,
+    }));
+
+    if (responses.some((r) => r.answerIndex < 0)) {
+      return;
+    }
+
+    setScoring(true);
+    try {
+      const scored = await fetchIqApi<{
+        stats: UserStats;
+        resultToken: string;
+        questionIds: string[];
+      }>('/api/score-iq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ageBracketId: state.ageBracketId,
+          responses,
+        }),
+      });
+
+      const existingSaved = readIqResultsOrEmpty();
+      const bracket = getAgeBracketById(state.ageBracketId);
+
+      const newResults: ReportData = {
+        ...existingSaved,
+        stats: scored.stats,
+        resultToken: scored.resultToken,
+        testQuestionIds: scored.questionIds,
+        ageBracketId: bracket.id,
+        ageBracketLabel: bracket.label,
+        timestamp: Date.now(),
+        isPaid: false,
+        isPro: false,
+        isMax: false,
+      };
+
+      delete (newResults as ReportData & { analysis?: DetailedAnalysis }).analysis;
+
+      writeIqResults(newResults, 'full');
+      navigate('/wynik');
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? err.message
+          : 'Nie udało się obliczyć wyniku na serwerze. Sprawdź połączenie i konfigurację SCORE_SECRET.',
+      );
+    } finally {
+      setScoring(false);
+    }
   };
 
-  const calculateStats = (
-    questions: Question[],
-    answers: (number | null)[],
-    ageBracketId: string | null,
-  ): UserStats => {
-    let rawScore = 0;
-    let maxRawScore = 0;
+  if (bankLoading) {
+    return <div className="p-20 text-center dark:text-white relative z-10">Ładowanie testu…</div>;
+  }
 
-    const domainCorrect: any = {
-      [QuestionType.MATRIX]: 0,
-      [QuestionType.NUMBER_SERIES]: 0,
-      [QuestionType.LOGIC]: 0,
-      [QuestionType.SPATIAL]: 0,
-      [QuestionType.ANALOGY]: 0,
-    };
-    const domainTotal: any = { ...domainCorrect };
-
-    questions.forEach((q, i) => {
-      domainTotal[q.type]++;
-      maxRawScore += q.difficulty; // Waga pytania
-      if (answers[i] === q.correctAnswer) {
-        rawScore += q.difficulty;
-        domainCorrect[q.type]++;
-      }
-    });
-
-    const bracket = getAgeBracketById(ageBracketId);
-
-    // Psychometryczne mapowanie — średnia i rozrzut zależą od zadeklarowanej grupy wiekowej (uproszczona norma).
-    const meanRaw = maxRawScore * bracket.meanRawFactor;
-    const stdDevRaw = maxRawScore * bracket.stdRawFactor;
-
-    // Obliczanie Z-score (ile odchyleń standardowych od średniej)
-    let zScore = (rawScore - meanRaw) / stdDevRaw;
-    
-    // Ograniczenie Z-score do realistycznych wartości (IQ od ~55 do ~148)
-    zScore = Math.max(-3.0, Math.min(3.2, zScore));
-
-    // Obliczanie IQ (Średnia = 100, Odchylenie standardowe = 15)
-    const iqScore = Math.round(100 + (zScore * 15));
-
-    // Obliczanie Percentyla przy użyciu aproksymacji dystrybuanty rozkładu normalnego (CDF)
-    const normalCDF = (x: number) => {
-      const t = 1 / (1 + 0.2316419 * Math.abs(x));
-      const d = 0.3989423 * Math.exp(-x * x / 2);
-      let p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
-      if (x > 0) p = 1 - p;
-      return p;
-    };
-    
-    let percentile = Math.round(normalCDF(zScore) * 1000) / 10;
-    if (percentile > 99.9) percentile = 99.9;
-    if (percentile < 0.1) percentile = 0.1;
-
-    const domainScores: any = {};
-    Object.keys(domainCorrect).forEach(key => {
-      const rawPct = (domainCorrect[key] / (domainTotal[key] || 1)) * 100;
-      // Normalizacja wizualna: 45% (średnia) -> 50% na pasku
-      let uiScore;
-      if (rawPct <= 45) {
-        uiScore = (rawPct / 45) * 50;
-      } else {
-        uiScore = 50 + ((rawPct - 45) / 55) * 50;
-      }
-      domainScores[key] = Math.round(uiScore);
-    });
-
-    return {
-      iqScore,
-      percentile,
-      domainScores,
-      confidenceInterval: [iqScore - 5, iqScore + 5],
-      ageBracketId: bracket.id,
-      ageBracketLabel: bracket.label,
-    };
-  };
+  if (bankError) {
+    return (
+      <div className="relative z-10 mx-auto max-w-lg px-4 py-20 text-center">
+        <p className="text-lg font-semibold text-rose-600 dark:text-rose-400">{bankError}</p>
+        <Link to="/" className="mt-6 inline-block text-blue-600 hover:underline">
+          Wróć na stronę główną
+        </Link>
+      </div>
+    );
+  }
 
   if (!state) return <div className="p-20 text-center dark:text-white relative z-10">Inicjalizacja...</div>;
+
+  if (scoring) {
+    return <div className="p-20 text-center dark:text-white relative z-10">Obliczanie wyniku na serwerze…</div>;
+  }
 
   if (state.ageBracketId === null) {
     return (
@@ -1787,6 +1811,9 @@ const TestSession = () => {
             <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[var(--iq-muted)]">
               Wybierz grupę, do której należysz. Wynik IQ i percentyl zostaną odniesione do uproszczonej normy dla tej grupy (jak w
               standaryzowanych testach z podziałem wiekowym).
+            </p>
+            <p className="mx-auto mt-3 max-w-md text-xs leading-relaxed text-[var(--iq-faint)]">
+              Serwis jest przeznaczony wyłącznie dla osób, które ukończyły 18 lat (zgodnie z regulaminem).
             </p>
           </div>
           <div className="iq-assessment-sheet overflow-hidden">
@@ -2007,9 +2034,8 @@ const Results = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const saved = localStorage.getItem('iq_results');
-    if (saved) {
-      const parsed = JSON.parse(saved);
+    const parsed = readIqResults();
+    if (parsed?.stats) {
       setData(parsed);
       if (parsed.email) setEmail(parsed.email);
       
@@ -2041,8 +2067,7 @@ const Results = () => {
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEmail = e.target.value;
     setEmail(newEmail);
-    const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
-    localStorage.setItem('iq_results', JSON.stringify({ ...saved, email: newEmail }));
+    if (newEmail.includes('@')) touchSessionEmail(newEmail);
   };
 
   if (!data) return null;
@@ -2221,8 +2246,7 @@ const Results = () => {
       <div className="flex flex-col items-center gap-4">
         <button 
           onClick={() => {
-            const s = JSON.parse(localStorage.getItem('iq_results') || '{}');
-            localStorage.setItem('iq_results', JSON.stringify({ ...s, isPaid: true, isPro: false, email: email || 'test@example.com' }));
+            mergeIqResults({ isPaid: true, isPro: false, email: email || 'test@example.com' });
             navigate('/raport');
           }}
           className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold underline underline-offset-4 transition-colors"
@@ -2243,7 +2267,7 @@ const Checkout = () => {
   const typeParam = queryParams.get('type');
   const intentParam = queryParams.get('intent');
   
-  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
+  const saved = readIqResultsOrEmpty();
   const isPro = typeParam === 'pro' || saved.isPro;
 
   useEffect(() => {
@@ -2360,7 +2384,7 @@ const Checkout = () => {
         <!-- Footer -->
         <tr><td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center">
           <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6">
-            © ${year} brainmediq Polska · kontakt@brainmediq.com<br>
+            © ${year} Pomocnik Maturalny sp. z o.o. · kontaktbrainmediq@gmail.com<br>
             Ta wiadomość jest automatycznym potwierdzeniem. Nie odpowiadaj na ten e-mail.
           </p>
         </td></tr>
@@ -2398,7 +2422,7 @@ const Checkout = () => {
         updatedSaved.isMax = typeParam === 'max';
       }
 
-      localStorage.setItem('iq_results', JSON.stringify(stripLegacyAuxiliaryAccessFlags(updatedSaved)));
+      writeIqResults(stripLegacyAuxiliaryAccessFlags(updatedSaved) as ReportData, updatedSaved.stats ? 'full' : 'minimal');
 
       if (email && email.includes('@') && !bypass) {
         await sendConfirmationEmail(email, productName, price);
@@ -2489,10 +2513,24 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
   const emailSentRef = useRef(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('iq_results');
-    if (saved) {
-      const parsed = JSON.parse(saved) as ReportData;
+    const parsed = readIqResults();
+    if (parsed?.stats) {
       if (!parsed.isPaid) { navigate('/platnosc'); return; }
+
+      if (parsed.reportDeliveredAt && !hasFullReportPayload(parsed)) {
+        setData(parsed);
+        setLoading(false);
+        return;
+      }
+
+      const loadReport = async () => {
+        if (parsed.resultToken) {
+          const valid = await verifyStoredIqResult(parsed);
+          if (!valid) {
+            navigate('/test');
+            return;
+          }
+        }
       
       if (parsed.userName) setUserName(parsed.userName);
 
@@ -2501,13 +2539,13 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
           const analysis = await generateDetailedReport(parsed.stats);
           const updatedData = { ...parsed, analysis: analysis || getAnalysisFallback(parsed.stats) };
           setData(updatedData);
-          localStorage.setItem('iq_results', JSON.stringify(updatedData));
+          mergeIqResults(updatedData);
           setTimeout(() => setAnimate(true), 300);
         } catch (e) { 
           console.error(e);
           const withFallback = { ...parsed, analysis: getAnalysisFallback(parsed.stats) };
           setData(withFallback);
-          localStorage.setItem('iq_results', JSON.stringify(withFallback));
+          mergeIqResults(withFallback);
           setTimeout(() => setAnimate(true), 300);
         } finally { 
           setLoading(false); 
@@ -2522,13 +2560,15 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
         setData(parsed);
         fetchReport();
       }
+      };
+
+      loadReport();
     } else navigate('/');
   }, [navigate]);
 
   // Auto-send results email once report is ready and certificate is rendered
   useEffect(() => {
-    if (!loading && data && animate) {
-      // Give certificate element time to render fully in the hidden div
+    if (!loading && data && animate && hasFullReportPayload(data) && !data.reportDeliveredAt) {
       const timer = setTimeout(() => {
         sendResultsEmail(data, userName);
       }, 1500);
@@ -2542,7 +2582,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
     if (data) {
       const updated = { ...data, userName: newName };
       setData(updated);
-      localStorage.setItem('iq_results', JSON.stringify(updated));
+      mergeIqResults(updated);
     }
   };
 
@@ -2578,8 +2618,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
       return;
     }
 
-    const sessionKey = `certEmailSent_${reportData.timestamp}`;
-    if (!force && localStorage.getItem(sessionKey)) return;
+    if (!force && wasCertEmailSent(reportData.timestamp)) return;
     if (!force && emailSentRef.current) return;
     emailSentRef.current = true;
 
@@ -2688,7 +2727,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
         <!-- Footer -->
         <tr><td style="background:#f8fafc;padding:24px 48px;border-top:1px solid #e2e8f0;text-align:center">
           <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6">
-            © ${year} brainmediq Polska · kontakt@brainmediq.com<br>
+            © ${year} Pomocnik Maturalny sp. z o.o. · kontaktbrainmediq@gmail.com<br>
             Ta wiadomość jest automatyczną odpowiedzią. Nie odpowiadaj na ten e-mail.
           </p>
         </td></tr>
@@ -2708,7 +2747,11 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
       });
       setEmailStatus('sent');
       setEmailErrorDetail(null);
-      localStorage.setItem(sessionKey, '1');
+      markCertEmailSent(reportData.timestamp);
+      purgeSensitiveIqResultsAfterReportDelivery({
+        iqScore: reportData.stats.iqScore,
+        percentile: reportData.stats.percentile,
+      });
     } catch (err) {
       setEmailStatus('error');
       setEmailErrorDetail(
@@ -2764,6 +2807,30 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
   };
 
   if (!data) return null;
+
+  if (data.reportDeliveredAt && !hasFullReportPayload(data)) {
+    return (
+      <div className="max-w-2xl mx-auto py-32 px-6 text-center relative z-10">
+        <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-8">
+          <CheckCircle2 className="w-10 h-10" />
+        </div>
+        <h1 className="text-3xl font-bold dark:text-white mb-4">Raport został wysłany</h1>
+        <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-2">
+          Pełny certyfikat i wyniki testu IQ zostały wysłane na Twój adres e-mail.
+          Szczegóły wyniku nie są już przechowywane w tej przeglądarce ze względów bezpieczeństwa.
+        </p>
+        {data.stats?.iqScore ? (
+          <p className="text-sm text-slate-500 dark:text-slate-500 mt-4">
+            Twój wynik IQ: <strong className="text-slate-800 dark:text-slate-200">{data.stats.iqScore}</strong>
+            {data.stats.percentile ? ` · percentyl ${data.stats.percentile}%` : ''}
+          </p>
+        ) : null}
+        <Link to="/" className="mt-10 inline-block text-blue-600 font-semibold hover:underline">
+          Wróć na stronę główną
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -2859,7 +2926,7 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
                     if (data) {
                       const updated = { ...data, email: newEmail };
                       setData(updated);
-                      localStorage.setItem('iq_results', JSON.stringify(updated));
+                      if (newEmail.includes('@')) touchSessionEmail(newEmail);
                     }
                   }} 
                   placeholder="Twój e-mail"
@@ -3074,7 +3141,7 @@ const buildPersonalityInsights = (scores: Record<string, number>) => {
 };
 
 const PersonalityTest = () => {
-  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
+  const saved = readIqResultsOrEmpty();
   const hasAccess = hasAuxiliaryAccess('osobowosc');
 
   const [step, setStep] = useState<'intro' | 'test' | 'calculating' | 'results'>('intro');
@@ -3464,7 +3531,7 @@ const PersonalityTest = () => {
 };
 
 const MemoryTest = () => {
-  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
+  const saved = readIqResultsOrEmpty();
   const hasAccess = hasAuxiliaryAccess('pamiec');
 
   const [step, setStep] = useState<'intro' | 'showing' | 'playing' | 'results'>('intro');
@@ -3760,7 +3827,7 @@ const MemoryTest = () => {
 };
 
 const ConcentrationTest = () => {
-  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
+  const saved = readIqResultsOrEmpty();
   const hasAccess = hasAuxiliaryAccess('koncentracja');
 
   const [step, setStep] = useState<'intro' | 'playing' | 'results'>('intro');
@@ -4067,7 +4134,7 @@ const ConcentrationTest = () => {
 };
 
 const ReactionTest = () => {
-  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
+  const saved = readIqResultsOrEmpty();
   const hasAccess = hasAuxiliaryAccess('reakcja');
 
   const [step, setStep] = useState<'intro' | 'waiting' | 'ready' | 'early' | 'result' | 'finished'>('intro');
@@ -4527,7 +4594,7 @@ const alzheimerQuestions = [
 
 const AlzheimerTest = () => {
   const navigate = useNavigate();
-  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
+  const saved = readIqResultsOrEmpty();
   const hasAccess = hasAuxiliaryAccess('alzheimer');
 
   const [phase, setPhase] = useState<'intro' | 'test' | 'result'>('intro');
@@ -4854,7 +4921,7 @@ const adhdFrequencies = ['Nigdy', 'Rzadko', 'Czasami', 'Często', 'Bardzo częst
 
 const ADHDTest = () => {
   const navigate = useNavigate();
-  const saved = JSON.parse(localStorage.getItem('iq_results') || '{}');
+  const saved = readIqResultsOrEmpty();
   const hasAccess = hasAuxiliaryAccess('adhd');
 
   const [phase, setPhase] = useState<'intro' | 'test' | 'result'>('intro');
@@ -5270,7 +5337,7 @@ const FAQ = () => (
         { q: "Czym różni się wersja Standard od Analizy PRO?", a: "Wersja Standard zawiera wynik punktowy i certyfikat. Analiza PRO to rozszerzony raport badający 5 kluczowych domen poznawczych, Twój percentyl na tle populacji oraz spersonalizowane wskazówki rozwojowe." },
         { q: "Jak i kiedy otrzymam swój wynik?", a: "Wynik zobaczysz na ekranie natychmiast po zakończeniu testu. Pełny dostęp do analizy oraz certyfikat zostaną odblokowane w profilu i wysłane na Twój adres e-mail w ciągu kilku minut od zakupu." },
         { q: "Czy certyfikat jest uznawany oficjalnie?", a: "Nasz test opiera się na uznanych metodach psychometrycznych, jednak certyfikat ma charakter edukacyjno-rozwojowy. Nie zastępuje on diagnozy klinicznej ani oficjalnych testów Mensy." },
-        { q: "Co jeśli nie otrzymałem e-maila z raportem?", a: "Najpierw sprawdź folder SPAM. Jeśli raportu nadal nie ma, skontaktuj się z naszym wsparciem pod adresem kontakt@iq-metric.pl – prześlemy go ponownie niezwłocznie." },
+        { q: "Co jeśli nie otrzymałem e-maila z raportem?", a: "Najpierw sprawdź folder SPAM. Jeśli raportu nadal nie ma, skontaktuj się z naszym wsparciem pod adresem kontaktbrainmediq@gmail.com – prześlemy go ponownie niezwłocznie." },
         { q: "Czy mogę powtórzyć test?", a: "Możesz powtórzyć test, jednak pamiętaj, że efekt uczenia się może sztucznie zawyżyć wynik. Dla rzetelnej oceny zalecamy zachowanie odstępu czasowego." },
         { q: "Jakie metody płatności są dostępne?", a: "Obsługujemy bezpieczne płatności online, w tym BLIK, szybkie przelewy oraz karty płatnicze za pośrednictwem certyfikowanych operatorów." }
       ].map((item, i) => (
@@ -5535,7 +5602,7 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-[1000px]">
             {[
               { t: "Wynik IQ", d: "Wynik na skali ze średnią 100 i odchyleniem standardowym 15; liczony z poprawnych odpowiedzi ważonych trudnością zadania." },
-              { t: "Norma wiekowa", d: "Uproszczony model referencyjny dla wybranej grupy wiekowej (np. 16–24, 25–34) — podstawa percentyla i IQ w raporcie." },
+              { t: "Norma wiekowa", d: "Uproszczony model referencyjny dla wybranej grupy wiekowej (np. 18–24, 25–34) — podstawa percentyla i IQ w raporcie. Dostępne wyłącznie dla osób 18+." },
               { t: "Przedział ufności", d: "Zakres ±5 pkt. IQ wokół wyniku — orientacyjna informacja o możliwym rozrzucie przy powtórzeniu testu." },
               { t: "Inteligencja płynna (Gf)", d: "Zdolność do nowych zadań logicznych i wzorcowych, bez polegania na wiedzy szkolnej." },
               { t: "Percentyl", d: "Odsetek osób w normie wiekowej z wynikiem niższym od Twojego (np. 75% = lepszy niż ok. 3 na 4 osoby w normie)." },
@@ -5745,14 +5812,7 @@ const App = () => {
   }, [darkMode]);
 
   useEffect(() => {
-    const raw = localStorage.getItem('iq_results');
-    if (!raw) return;
-    try {
-      const parsed = stripLegacyAuxiliaryAccessFlags(JSON.parse(raw));
-      localStorage.setItem('iq_results', JSON.stringify(parsed));
-    } catch {
-      /* ignore invalid cache */
-    }
+    migrateIqResultsOnStartup();
   }, []);
 
   const toggleDarkMode = () => setDarkMode(!darkMode);

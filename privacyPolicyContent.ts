@@ -165,11 +165,17 @@ Aby skorzystać z praw, należy skontaktować się z Administratorem pod adresem
 
 ## §12. LOCAL STORAGE
 
-1. Serwis może korzystać z pamięci lokalnej przeglądarki (localStorage), aby przechowywać informacje potrzebne do działania aplikacji, np. wynik testu, wybrany pakiet, adres e-mail do wysyłki, zgodę cookies lub preferencję trybu ciemnego.
+1. Serwis może korzystać z pamięci lokalnej przeglądarki (localStorage) wyłącznie w ograniczonym zakresie: np. tymczasowy podpisany wynik testu IQ przed wysyłką raportu, status zakupu, zgoda cookies lub preferencja trybu ciemnego. Adres e-mail do wysyłki jest trzymany krótkoterminowo i usuwany po wysłaniu wiadomości.
 
-2. Dane zapisane w localStorage pozostają w przeglądarce użytkownika do czasu ich usunięcia przez użytkownika lub aplikację.
+2. Oficjalny wynik testu IQ (wynik punktowy, percentyl, domeny) jest obliczany po stronie serwera na podstawie przesłanych odpowiedzi; klucz poprawnych odpowiedzi nie jest udostępniany w przeglądarce.
 
-3. Użytkownik może wyczyścić localStorage z poziomu ustawień przeglądarki.
+3. Pełne dane wyniku w localStorage mają ograniczony czas ważności (do 24 godzin). Po wysłaniu certyfikatu i raportu na e-mail szczegółowe dane (analiza, token weryfikacji, e-mail, imię na certyfikacie) są automatycznie usuwane z przeglądarki; pozostaje jedynie skrócony status do końca bieżącej sesji (do 2 godzin).
+
+4. Dostęp do płatnych testów pomocniczych jest zapisywany w sessionStorage i znika po zamknięciu karty lub odświeżeniu strony.
+
+5. Użytkownik może wyczyścić localStorage i sessionStorage z poziomu ustawień przeglądarki.
+
+6. Docelowo status zamówienia i wyniki mogą być przechowywane po stronie serwera po zalogowaniu lub identyfikatorze zamówienia — obecnie część stanu pozostaje lokalna ze względu na brak kont użytkownika.
 
 ---
 

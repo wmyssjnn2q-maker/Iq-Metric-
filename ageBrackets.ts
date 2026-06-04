@@ -1,4 +1,4 @@
-/** Przedziały wiekowe do normowania wyniku (uproszczony model referencyjny w obrębie grupy). */
+/** Przedziały wiekowe do normowania wyniku (uproszczony model referencyjny w obrębie grupy). Tylko 18+. */
 export type AgeBracket = {
   id: string;
   label: string;
@@ -9,8 +9,7 @@ export type AgeBracket = {
 };
 
 export const IQ_AGE_BRACKETS: readonly AgeBracket[] = [
-  { id: 'u16', label: 'Poniżej 16 lat', meanRawFactor: 0.44, stdRawFactor: 0.185 },
-  { id: '16-24', label: '16–24 lata', meanRawFactor: 0.47, stdRawFactor: 0.175 },
+  { id: '18-24', label: '18–24 lata', meanRawFactor: 0.47, stdRawFactor: 0.175 },
   { id: '25-34', label: '25–34 lata', meanRawFactor: 0.45, stdRawFactor: 0.18 },
   { id: '35-44', label: '35–44 lata', meanRawFactor: 0.44, stdRawFactor: 0.182 },
   { id: '45-54', label: '45–54 lata', meanRawFactor: 0.42, stdRawFactor: 0.188 },
@@ -20,7 +19,14 @@ export const IQ_AGE_BRACKETS: readonly AgeBracket[] = [
 
 export const DEFAULT_AGE_BRACKET_ID = '25-34';
 
+/** Wcześniejsze wersje serwisu — mapowanie na przedziały zgodne z regulaminem (18+). */
+const LEGACY_AGE_BRACKET_ALIASES: Record<string, string> = {
+  u16: '18-24',
+  '16-24': '18-24',
+};
+
 export function getAgeBracketById(id: string | null | undefined): AgeBracket {
-  const found = IQ_AGE_BRACKETS.find((b) => b.id === id);
+  const normalizedId = id ? (LEGACY_AGE_BRACKET_ALIASES[id] ?? id) : id;
+  const found = IQ_AGE_BRACKETS.find((b) => b.id === normalizedId);
   return found ?? IQ_AGE_BRACKETS.find((b) => b.id === DEFAULT_AGE_BRACKET_ID)!;
 }

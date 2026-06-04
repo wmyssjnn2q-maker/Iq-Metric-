@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 import express from 'express';
 import { Resend } from 'resend';
+import { handleIqQuestionsGet, handleScoreIqPost, handleVerifyIqResultPost } from './lib/iqApiHandlers';
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -31,6 +32,35 @@ function formatResendError(message: string): string {
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
+});
+
+app.get('/api/iq-questions', (_req, res) => {
+  try {
+    res.json(handleIqQuestionsGet());
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Błąd serwera';
+    res.status(500).json({ error: message });
+  }
+});
+
+app.post('/api/score-iq', (req, res) => {
+  try {
+    res.json(handleScoreIqPost(req.body));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Błąd serwera';
+    const status =
+      message.includes('Brak') || message.includes('Nieprawid') || message.includes('Nieznane') ? 400 : 500;
+    res.status(status).json({ error: message });
+  }
+});
+
+app.post('/api/verify-iq-result', (req, res) => {
+  try {
+    res.json(handleVerifyIqResultPost(req.body));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Błąd serwera';
+    res.status(400).json({ error: message, valid: false });
+  }
 });
 
 app.post('/api/send-email', async (req, res) => {
