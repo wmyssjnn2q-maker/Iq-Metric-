@@ -1,8 +1,7 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { QuestionType } from '../types';
 import type { PublicQuestion } from './publicQuestion';
+import sessionPublicJson from '../generated/iq-session-public.json';
+import sessionAnswersJson from '../generated/iq-session-answers.json';
 
 export type IqSessionPublicBundle = {
   questions: PublicQuestion[];
@@ -16,27 +15,16 @@ export type IqSessionAnswerMeta = {
   correctAnswer: number;
 };
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const sessionPublicBundle = sessionPublicJson as IqSessionPublicBundle;
+const sessionAnswersList = sessionAnswersJson as IqSessionAnswerMeta[];
 
-const readJson = <T,>(relativePath: string): T => {
-  const filePath = path.join(rootDir, relativePath);
-  return JSON.parse(readFileSync(filePath, 'utf8')) as T;
-};
-
-let publicBundle: IqSessionPublicBundle | null = null;
 let answerMeta: Map<string, IqSessionAnswerMeta> | null = null;
 
-export const getIqSessionPublicBundle = (): IqSessionPublicBundle => {
-  if (!publicBundle) {
-    publicBundle = readJson<IqSessionPublicBundle>('generated/iq-session-public.json');
-  }
-  return publicBundle;
-};
+export const getIqSessionPublicBundle = (): IqSessionPublicBundle => sessionPublicBundle;
 
 export const getIqSessionAnswerMeta = (): Map<string, IqSessionAnswerMeta> => {
   if (!answerMeta) {
-    const list = readJson<IqSessionAnswerMeta[]>('generated/iq-session-answers.json');
-    answerMeta = new Map(list.map((item) => [item.id, item]));
+    answerMeta = new Map(sessionAnswersList.map((item) => [item.id, item]));
   }
   return answerMeta;
 };

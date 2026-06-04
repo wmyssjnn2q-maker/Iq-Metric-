@@ -1,4 +1,5 @@
 import { isResendConfigured } from '../lib/resendServer';
+import { isScoreSecretConfigured } from '../lib/scoreSecret';
 import { sendJson } from '../lib/apiHttp';
 
 export default async function handler(req: any, res: any) {
@@ -8,5 +9,6 @@ export default async function handler(req: any, res: any) {
   return sendJson(res, 200, {
     ok: true,
     emailConfigured: isResendConfigured(),
+    scoreSigningConfigured: isScoreSecretConfigured(),
   });
 }

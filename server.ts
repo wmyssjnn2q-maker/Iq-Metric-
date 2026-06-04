@@ -8,6 +8,7 @@ import {
   getResendFromName,
   isResendConfigured,
 } from './lib/resendServer';
+import { isScoreSecretConfigured } from './lib/scoreSecret';
 
 ensureResendEnv();
 
@@ -38,7 +39,11 @@ function formatResendError(message: string): string {
 }
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, emailConfigured: isResendConfigured() });
+  res.json({
+    ok: true,
+    emailConfigured: isResendConfigured(),
+    scoreSigningConfigured: isScoreSecretConfigured(),
+  });
 });
 
 app.get('/api/iq-questions', (_req, res) => {

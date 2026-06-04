@@ -1,6 +1,6 @@
 import { calculateIqStats, type IqAnswerResponse } from './iqScoring';
 import { getIqSessionAnswerMeta, getIqSessionPublicBundle } from './iqSessionData';
-import { signIqResult, verifyIqResult } from './resultToken';
+import { signIqResultOptional, verifyIqResult } from './resultToken';
 import type { UserStats } from '../types';
 
 export function handleIqQuestionsGet() {
@@ -36,9 +36,9 @@ export function handleScoreIqPost(body: {
   }
 
   const stats = calculateIqStats(scoringMeta, responses, ageBracketId ?? null);
-  const resultToken = signIqResult(stats, questionIds);
+  const resultToken = signIqResultOptional(stats, questionIds);
 
-  return { stats, resultToken, questionIds };
+  return { stats, resultToken: resultToken ?? null, questionIds };
 }
 
 export function handleVerifyIqResultPost(body: {

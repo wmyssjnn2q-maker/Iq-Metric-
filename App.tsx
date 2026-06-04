@@ -1766,7 +1766,7 @@ const TestSession = () => {
       const newResults: ReportData = {
         ...existingSaved,
         stats: scored.stats,
-        resultToken: scored.resultToken,
+        ...(scored.resultToken ? { resultToken: scored.resultToken } : {}),
         testQuestionIds: scored.questionIds,
         ageBracketId: bracket.id,
         ageBracketLabel: bracket.label,
@@ -1781,10 +1781,11 @@ const TestSession = () => {
       writeIqResults(newResults, 'full');
       navigate('/wynik');
     } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
       alert(
-        err instanceof Error
-          ? err.message
-          : 'Nie udało się obliczyć wyniku na serwerze. Sprawdź połączenie i konfigurację SCORE_SECRET.',
+        msg.includes('SCORE_SECRET')
+          ? 'Wynik nie został zapisany — brak SCORE_SECRET na serwerze. Dodaj zmienną w Vercel (Production) lub .env.local i uruchom npm run dev.'
+          : msg || 'Nie udało się obliczyć wyniku na serwerze. Sprawdź połączenie z API.',
       );
     } finally {
       setScoring(false);

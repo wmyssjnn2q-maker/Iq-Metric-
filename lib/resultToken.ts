@@ -1,15 +1,8 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import type { UserStats } from '../types';
+import { getScoreSecret, isScoreSecretConfigured } from './scoreSecret';
 
 const TOKEN_VERSION = 1;
-
-function getScoreSecret(): string {
-  const secret = process.env.SCORE_SECRET;
-  if (!secret || secret.length < 16) {
-    throw new Error('Brak konfiguracji SCORE_SECRET na serwerze (min. 16 znaków).');
-  }
-  return secret;
-}
 
 function payloadString(stats: UserStats, questionIds: string[]): string {
   return JSON.stringify({
@@ -20,11 +13,21 @@ function payloadString(stats: UserStats, questionIds: string[]): string {
 }
 
 export function signIqResult(stats: UserStats, questionIds: string[]): string {
-  return createHmac('sha256', getScoreSecret()).update(payloadString(stats, questionIds)).digest('base64url');
+  const secret = getScoreSecret();
+  if (!secret) {
+    throw new Error('Brak konfiguracji SCORE_SECRET na serwerze (min. 16 znaków).');
+  }
+  return createHmac('sha256', secret).update(payloadString(stats, questionIds)).digest('base64url');
+}
+
+/** Podpis wyniku — tylko gdy SCORE_SECRET jest ustawiony (Vercel / .env.local). */
+export function signIqResultOptional(stats: UserStats, questionIds: string[]): string | undefined {
+  if (!isScoreSecretConfigured()) return undefined;
+  return signIqResult(stats, questionIds);
 }
 
 export function verifyIqResult(token: string, stats: UserStats, questionIds: string[]): boolean {
-  if (!token) return false;
+  if (!token || !isScoreSecretConfigured()) return false;
   try {
     const expected = signIqResult(stats, questionIds);
     const a = Buffer.from(token);
