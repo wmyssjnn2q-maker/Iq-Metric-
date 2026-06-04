@@ -1,16 +1,10 @@
 import { calculateIqStats, type IqAnswerResponse } from './iqScoring';
-import { getIqQuestionBank, getIqScoringMeta } from './iqQuestionBank';
-import { toPublicQuestion } from './publicQuestion';
-import { selectIqQuestions } from './selectIqQuestions';
+import { getIqSessionAnswerMeta, getIqSessionPublicBundle } from './iqSessionData';
 import { signIqResult, verifyIqResult } from './resultToken';
 import type { UserStats } from '../types';
 
 export function handleIqQuestionsGet() {
-  const selected = selectIqQuestions(getIqQuestionBank());
-  return {
-    questions: selected.map(toPublicQuestion),
-    questionIds: selected.map((q) => q.id),
-  };
+  return getIqSessionPublicBundle();
 }
 
 export function handleScoreIqPost(body: {
@@ -22,7 +16,7 @@ export function handleScoreIqPost(body: {
     throw new Error('Brak odpowiedzi do oceny.');
   }
 
-  const meta = getIqScoringMeta();
+  const meta = getIqSessionAnswerMeta();
   const questionIds: string[] = [];
   const scoringMeta = [];
 

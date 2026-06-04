@@ -1636,8 +1636,15 @@ const TestSession = () => {
       setBankLoading(true);
       setBankError(null);
       try {
-        const payload = await fetchIqApi<{ questions: ClientQuestion[] }>('/api/iq-questions');
-        if (cancelled) return;
+        let payload: { questions: ClientQuestion[] } | null = null;
+        try {
+          payload = await fetchIqApi<{ questions: ClientQuestion[] }>('/api/iq-questions');
+        } catch {
+          const staticRes = await fetch('/iq-session-public.json');
+          if (!staticRes.ok) throw new Error('Błąd serwera (500)');
+          payload = await staticRes.json();
+        }
+        if (cancelled || !payload?.questions?.length) return;
         const selectedQuestions = payload.questions;
         setState({
           currentQuestionIndex: 0,
