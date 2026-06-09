@@ -315,8 +315,31 @@ const verifyStoredIqResult = async (parsed: ReportData): Promise<boolean> => {
   }
 };
 
+/** Vercel odrzuca body > ~4.5 MB — zostawiamy zapas na JSON + HTML. */
+const MAX_EMAIL_ATTACHMENT_BASE64_CHARS = 2_400_000;
+
+const stripOversizedAttachment = (
+  payload: {
+    to: string;
+    subject: string;
+    html: string;
+    attachment?: { filename: string; content: string };
+  },
+  reason: 'size' | '413',
+) => {
+  const note =
+    reason === '413'
+      ? '<p style="margin:16px 0 0;padding:14px 16px;background:#fef3c7;border:1px solid #fde047;border-radius:12px;color:#92400e;font-size:13px;line-height:1.6">Certyfikat PDF nie zmieścił się w limicie wysyłki — pełny wynik masz w aplikacji; certyfikat możesz pobrać z raportu (przycisk PDF).</p>'
+      : '<p style="margin:16px 0 0;padding:14px 16px;background:#fef3c7;border:1px solid #fde047;border-radius:12px;color:#92400e;font-size:13px;line-height:1.6">Certyfikat PDF jest zbyt duży do załącznika — wynik w tej wiadomości jest kompletny; PDF pobierzesz z raportu w aplikacji.</p>';
+  const { attachment: _removed, ...rest } = payload;
+  return { ...rest, html: `${rest.html}${note}` };
+};
+
 const formatEmailSendError = (error: unknown): string => {
   const raw = error instanceof Error ? error.message : '';
+  if (/413|payload too large|entity too large|request entity too large/i.test(raw)) {
+    return 'Plik załącznika (certyfikat PDF) jest za duży dla serwera. Spróbuj ponownie — wyślemy wynik bez PDF albo pobierz certyfikat z raportu.';
+  }
   if (/RESEND_API_KEY|resend_not_configured/i.test(raw)) {
     const host = typeof window !== 'undefined' ? window.location.hostname : '';
     const isLocal = host === 'localhost' || host === '127.0.0.1';
@@ -345,12 +368,20 @@ const postEmailPayload = async (payload: {
 }) => {
   let lastError: string | null = null;
 
+  let payloadToSend = payload;
+  if (
+    payload.attachment &&
+    payload.attachment.content.length > MAX_EMAIL_ATTACHMENT_BASE64_CHARS
+  ) {
+    payloadToSend = stripOversizedAttachment(payload, 'size');
+  }
+
   for (const endpoint of getEmailApiEndpoints()) {
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payloadToSend),
       });
 
       if (res.ok) return;
@@ -359,9 +390,20 @@ const postEmailPayload = async (payload: {
       const message = body?.error || `Błąd serwera (${res.status})`;
       lastError = message;
 
-      // Jeśli endpoint nie istnieje pod tym hostem, próbujemy kolejny.
+      if (res.status === 413 && payloadToSend.attachment) {
+        payloadToSend = stripOversizedAttachment(payloadToSend, '413');
+        const retry = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payloadToSend),
+        });
+        if (retry.ok) return;
+        const retryBody = await retry.json().catch(() => null);
+        lastError = retryBody?.error || `Błąd serwera (${retry.status})`;
+      }
+
       if (res.status === 404) continue;
-      throw new Error(message);
+      throw new Error(lastError);
     } catch (error) {
       lastError = formatEmailSendError(error);
     }
@@ -2625,16 +2667,16 @@ const Report = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
       window.scrollTo(0, 0);
       await new Promise(r => setTimeout(r, 200));
       const canvas = await html2canvas(certificateRef.current, {
-        scale: 2,
+        scale: 1.25,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: 1123,
         windowHeight: 794,
       });
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 0.82);
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-      pdf.addImage(imgData, 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
       const dataUri = pdf.output('datauristring');
       return dataUri.split(',')[1];
     } catch (e) {
