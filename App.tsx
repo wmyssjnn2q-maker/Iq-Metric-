@@ -27,6 +27,7 @@ import {
   hasFullReportPayload,
   stripLegacyAuxiliaryAccessFlags,
 } from './lib/iqResultsStorage';
+import { scoreSessionLocally } from './lib/iqScoringFallback.generated';
 import { Icons, COLORS, Logos } from './constants';
 import { generateDetailedReport, getAnalysisFallback } from './services/geminiService';
 import {
@@ -1747,18 +1748,38 @@ const TestSession = () => {
 
     setScoring(true);
     try {
-      const scored = await fetchIqApi<{
+      const local = scoreSessionLocally(responses, state.ageBracketId);
+      let scored: {
         stats: UserStats;
-        resultToken: string;
+        resultToken: string | null;
         questionIds: string[];
-      }>('/api/score-iq', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ageBracketId: state.ageBracketId,
-          responses,
-        }),
-      });
+      } = {
+        stats: local.stats,
+        resultToken: null,
+        questionIds: local.questionIds,
+      };
+
+      try {
+        const server = await fetchIqApi<{
+          stats: UserStats;
+          resultToken: string | null;
+          questionIds: string[];
+        }>('/api/score-iq', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ageBracketId: state.ageBracketId,
+            responses,
+          }),
+        });
+        scored = {
+          stats: server.stats,
+          resultToken: server.resultToken ?? null,
+          questionIds: server.questionIds,
+        };
+      } catch {
+        /* wynik z lokalnej sesji — API opcjonalne (podpis HMAC) */
+      }
 
       const existingSaved = readIqResultsOrEmpty();
       const bracket = getAgeBracketById(state.ageBracketId);
@@ -1782,11 +1803,7 @@ const TestSession = () => {
       navigate('/wynik');
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
-      alert(
-        msg.includes('SCORE_SECRET')
-          ? 'Wynik nie został zapisany — brak SCORE_SECRET na serwerze. Dodaj zmienną w Vercel (Production) lub .env.local i uruchom npm run dev.'
-          : msg || 'Nie udało się obliczyć wyniku na serwerze. Sprawdź połączenie z API.',
-      );
+      alert(msg || 'Nie udało się obliczyć wyniku. Odśwież stronę i spróbuj ponownie.');
     } finally {
       setScoring(false);
     }

@@ -11,7 +11,14 @@ export default async function handler(req: any, res: any) {
     return sendJson(res, 200, handleScoreIqPost(body));
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Błąd serwera';
-    const status = message.includes('Brak') || message.includes('Nieprawid') || message.includes('Nieznane') ? 400 : 500;
+    const status =
+      message.includes('Brak') ||
+      message.includes('Nieprawid') ||
+      message.includes('Nieznane') ||
+      message.includes('Nie znaleziono')
+        ? 400
+        : 500;
+    console.error('[score-iq]', err);
     return sendJson(res, status, { error: message });
   }
 }
