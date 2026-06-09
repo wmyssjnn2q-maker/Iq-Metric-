@@ -1,5 +1,5 @@
 import { getAgeBracketById } from '../ageBrackets';
-import { QuestionType, type UserStats } from '../types';
+import { QuestionType, type UserStats } from './questionTypes';
 
 export type ScoringQuestionMeta = {
   id: string;

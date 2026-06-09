@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
-import type { UserStats } from '../types';
+import type { UserStats } from './questionTypes';
 import { getScoreSecret, isScoreSecretConfigured } from './scoreSecret';
 
 const TOKEN_VERSION = 1;

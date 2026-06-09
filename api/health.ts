@@ -1,14 +1,19 @@
-import { isResendConfigured } from '../lib/resendServer';
-import { isScoreSecretConfigured } from '../lib/scoreSecret';
-import { sendJson } from '../lib/apiHttp';
-
-export default async function handler(req: any, res: any) {
+export default async function handler(
+  req: { method?: string },
+  res: {
+    status: (code: number) => { json: (body: unknown) => void };
+  },
+) {
   if (req.method !== 'GET') {
-    return sendJson(res, 405, { error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
-  return sendJson(res, 200, {
+
+  const resendKey = process.env.RESEND_API_KEY?.trim() || process.env.RESEND_KEY?.trim();
+  const scoreSecret = process.env.SCORE_SECRET?.trim();
+
+  return res.status(200).json({
     ok: true,
-    emailConfigured: isResendConfigured(),
-    scoreSigningConfigured: isScoreSecretConfigured(),
+    emailConfigured: Boolean(resendKey),
+    scoreSigningConfigured: Boolean(scoreSecret && scoreSecret.length >= 16),
   });
 }

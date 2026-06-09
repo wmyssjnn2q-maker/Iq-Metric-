@@ -1,14 +1,13 @@
-import { handleIqQuestionsGet } from '../lib/iqApiHandlers';
-import { sendJson } from '../lib/apiHttp';
+import { IQ_SESSION_PUBLIC } from '../lib/iqSessionPublic.generated';
 
-export default async function handler(req: any, res: any) {
+export default async function handler(
+  req: { method?: string },
+  res: {
+    status: (code: number) => { json: (body: unknown) => void };
+  },
+) {
   if (req.method !== 'GET') {
-    return sendJson(res, 405, { error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
-  try {
-    return sendJson(res, 200, handleIqQuestionsGet());
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Błąd serwera';
-    return sendJson(res, 500, { error: message });
-  }
+  return res.status(200).json(IQ_SESSION_PUBLIC);
 }

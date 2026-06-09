@@ -1,13 +1,8 @@
 
 import React from 'react';
+import { QuestionType, type UserStats } from './lib/questionTypes';
 
-export enum QuestionType {
-  MATRIX = 'MATRIX',
-  NUMBER_SERIES = 'NUMBER_SERIES',
-  ANALOGY = 'ANALOGY',
-  SPATIAL = 'SPATIAL',
-  LOGIC = 'LOGIC'
-}
+export { QuestionType, type UserStats };
 
 export interface Question {
   id: string;
@@ -33,18 +28,6 @@ export interface TestState {
   isFinished: boolean;
   /** null = użytkownik jeszcze nie wybrał przedziału wiekowego */
   ageBracketId: string | null;
-}
-
-export interface UserStats {
-  iqScore: number;
-  percentile: number;
-  domainScores: {
-    [key in QuestionType]: number;
-  };
-  confidenceInterval: [number, number];
-  /** Przedział wiekowy zadeklarowany przed testem — użyty do normy wyniku */
-  ageBracketId?: string;
-  ageBracketLabel?: string;
 }
 
 export interface DetailedAnalysis {
