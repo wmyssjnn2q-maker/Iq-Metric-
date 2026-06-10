@@ -1,4 +1,4 @@
-import { handleVerifyPurchasePost, type VerifyPurchaseBody } from '../lib/stripeApiHandlers';
+import { handleVerifyPurchasePost, type VerifyPurchaseBody } from './stripe/handlers';
 
 async function readBody(req: { body?: unknown }): Promise<VerifyPurchaseBody> {
   if (req.body) {

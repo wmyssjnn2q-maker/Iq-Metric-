@@ -1,7 +1,7 @@
 import {
   handleCreateCheckoutSessionPost,
   type CreateCheckoutSessionBody,
-} from '../lib/stripeApiHandlers';
+} from './stripe/handlers';
 
 async function readBody(req: { body?: unknown }): Promise<CreateCheckoutSessionBody> {
   if (req.body) {

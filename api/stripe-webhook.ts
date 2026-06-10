@@ -1,6 +1,6 @@
 import type { IncomingMessage } from 'node:http';
-import { readRawBody } from '../lib/readRawBody';
-import { handleStripeWebhookPost } from '../lib/stripeApiHandlers';
+import { readRawBody } from './stripe/readRawBody';
+import { handleStripeWebhookPost } from './stripe/handlers';
 
 export default async function handler(
   req: IncomingMessage & { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> },
