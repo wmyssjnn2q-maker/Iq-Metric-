@@ -1,3 +1,6 @@
+import { getStripePublishableKey, isStripeConfigured } from '../lib/stripeConfig';
+import { isPaymentSigningConfigured } from '../lib/purchaseToken';
+
 export default async function handler(
   req: { method?: string },
   res: {
@@ -15,5 +18,8 @@ export default async function handler(
     ok: true,
     emailConfigured: Boolean(resendKey),
     scoreSigningConfigured: Boolean(scoreSecret && scoreSecret.length >= 16),
+    stripeConfigured: isStripeConfigured(),
+    stripePublishableKey: getStripePublishableKey() ?? null,
+    paymentSigningConfigured: isPaymentSigningConfigured(),
   });
 }

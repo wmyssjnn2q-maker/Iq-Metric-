@@ -43,6 +43,15 @@ import {
 import { CertificateTemplate } from './CertificateTemplate';
 import { REGULAMIN_MARKDOWN } from './regulaminContent';
 import { PRIVACY_POLICY_MARKDOWN } from './privacyPolicyContent';
+import { PaymentCancelPage, PaymentSuccessPage } from './PaymentPages';
+import { createCheckoutSession, fetchPaymentHealth } from './lib/paymentClient';
+import {
+  formatPlnPrice,
+  getPaymentProduct,
+  resolveProductIdFromQuery,
+} from './lib/paymentProducts';
+import { saveCheckoutContext } from './lib/purchaseFulfillment';
+import { verifyIqTestPassword } from './lib/testAccess';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -1631,7 +1640,7 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
                 Dokładny pomiar IQ, oficjalny certyfikat oraz krótkie podsumowanie wyników wysłane na e-mail. Tylko 4,99 PLN.
               </p>
               <Link to="/test" className="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 hover:bg-slate-700 transition-all shadow-xl text-sm relative z-10">
-                <span>Rozpocznij Test</span>
+                <span>Rozpocznij test</span>
               </Link>
             </motion.div>
 
@@ -1655,7 +1664,7 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
                 Kompletny raport: analiza 5 umiejętności, Twoja pozycja na tle innych oraz wskazówki jak ćwiczyć mózg. Wszystko na e-mail.
               </p>
               <Link to="/test" className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center space-x-2 hover:bg-blue-700 transition-all shadow-xl text-sm relative z-10">
-                <span>Rozpocznij Test</span>
+                <span>Rozpocznij test</span>
               </Link>
             </motion.div>
           </div>
@@ -2318,17 +2327,7 @@ const Results = () => {
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-4">
-        <button 
-          onClick={() => {
-            mergeIqResults({ isPaid: true, isPro: false, email: email || 'test@example.com' });
-            navigate('/raport');
-          }}
-          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold underline underline-offset-4 transition-colors"
-        >
-          Tryb programisty: Zobacz raport (skip payment)
-        </button>
-      </div>
+      <div className="flex flex-col items-center gap-4" />
     </div>
   );
 };
@@ -2336,26 +2335,42 @@ const Results = () => {
 const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
+  const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  const [testPassword, setTestPassword] = useState('');
+  const [testPasswordError, setTestPasswordError] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const typeParam = queryParams.get('type');
-  const intentParam = queryParams.get('intent');
+  const intentParam = queryParams.get('intent') as 'unlock' | 'start' | null;
   
   const saved = readIqResultsOrEmpty();
-  const isPro = typeParam === 'pro' || saved.isPro;
+  const productId = resolveProductIdFromQuery(typeParam, { savedIsPro: saved.isPro });
+  const product = getPaymentProduct(productId);
 
   useEffect(() => {
     if (saved.email) setEmail(saved.email);
   }, []);
 
-  let productName = 'Test IQ Standard + Certyfikat';
-  let price = '4,99';
-  
-  if (isPro) {
-    productName = 'Analiza Ekspercka PRO + Certyfikat';
-    price = '9,99';
-  }
+  useEffect(() => {
+    fetchPaymentHealth()
+      .then((health) => setStripeEnabled(Boolean(health.stripeConfigured && health.stripePublishableKey)))
+      .catch(() => setStripeEnabled(false));
+  }, []);
+
+  useEffect(() => {
+    if (product.isIqProduct && !saved.stats) {
+      navigate('/test', { replace: true });
+    }
+  }, [navigate, product.isIqProduct, saved.stats]);
+
+  const checkoutSubtitle = product.isIqProduct
+    ? 'Płatność po teście — odblokowanie raportu i certyfikatu'
+    : 'Finalizacja dostępu do testu';
+
+  const productName = product.name;
+  const price = formatPlnPrice(product.unitAmount);
   
   // Logic: If intent is 'unlock', we go to report. If 'start' or not specified, we go to test.
   // Exception: If they have stats and no intent, they probably just finished and want results.
@@ -2365,28 +2380,16 @@ const Checkout = () => {
   }
 
   if (typeParam === 'osobowosc') {
-    productName = 'Test Osobowości (Big Five)';
-    price = '4,99';
     redirectUrl = '/test-osobowosci';
   } else if (typeParam === 'pamiec') {
-    productName = 'Test Pamięci Przestrzennej';
-    price = '4,99';
     redirectUrl = '/test-pamieci';
   } else if (typeParam === 'koncentracja') {
-    productName = 'Test Koncentracji (Stroop)';
-    price = '4,99';
     redirectUrl = '/test-koncentracji';
   } else if (typeParam === 'reakcja') {
-    productName = 'Test Szybkości Reakcji';
-    price = '4,99';
     redirectUrl = '/test-reakcji';
   } else if (typeParam === 'alzheimer') {
-    productName = 'Test Funkcji Poznawczych';
-    price = '4,99';
     redirectUrl = '/test-funkcji-poznawczych';
   } else if (typeParam === 'adhd') {
-    productName = 'Test ADHD (ASRS)';
-    price = '4,99';
     redirectUrl = '/test-adhd';
   }
 
@@ -2475,36 +2478,52 @@ const Checkout = () => {
     }
   };
 
-  const handlePay = (bypass: boolean = false) => {
+  const handleStripePay = async () => {
+    if (!email.includes('@')) {
+      setPayError('Podaj poprawny adres e-mail przed płatnością.');
+      return;
+    }
+    setPayError(null);
     setLoading(true);
-    setTimeout(async () => {
+    try {
+      saveCheckoutContext({
+        productId,
+        intent: intentParam,
+        resultTimestamp: saved.timestamp ?? null,
+      });
+      const { url } = await createCheckoutSession({
+        productId,
+        email: email.trim().toLowerCase(),
+        intent: intentParam,
+        resultTimestamp: saved.timestamp ?? null,
+      });
+      window.location.href = url;
+    } catch (error) {
       setLoading(false);
-      const updatedSaved = { ...saved, email: email || 'test@example.com' };
-      
-      // If starting a new test, clear old stats
-      if (intentParam === 'start' || !intentParam) {
-        delete updatedSaved.stats;
-        delete updatedSaved.analysis;
-        delete updatedSaved.ageBracketId;
-        delete updatedSaved.ageBracketLabel;
-      }
+      setPayError(error instanceof Error ? error.message : 'Nie udało się uruchomić płatności Stripe.');
+    }
+  };
 
-      if (isAuxiliaryTestType(typeParam)) {
-        grantAuxiliaryAccess(typeParam);
-      } else {
-        updatedSaved.isPaid = true;
-        updatedSaved.isPro = typeParam === 'pro';
-        updatedSaved.isMax = typeParam === 'max';
-      }
-
-      writeIqResults(stripLegacyAuxiliaryAccessFlags(updatedSaved) as ReportData, updatedSaved.stats ? 'full' : 'minimal');
-
-      if (email && email.includes('@') && !bypass) {
-        await sendConfirmationEmail(email, productName, price);
-      }
-
-      navigate(redirectUrl);
-    }, 1500);
+  const handleTestPasswordAccess = () => {
+    if (!product.isIqProduct) return;
+    if (!saved.stats) {
+      setTestPasswordError('Najpierw ukończ test IQ.');
+      return;
+    }
+    if (!verifyIqTestPassword(testPassword)) {
+      setTestPasswordError('Nieprawidłowe hasło dostępu testowego.');
+      return;
+    }
+    setTestPasswordError(null);
+    const updated = {
+      ...saved,
+      isPaid: true,
+      isPro: product.id === 'iq_pro',
+      isMax: product.id === 'iq_max',
+      email: email || saved.email,
+    };
+    writeIqResults(stripLegacyAuxiliaryAccessFlags(updated) as ReportData, 'full');
+    navigate('/raport');
   };
 
   return (
@@ -2513,7 +2532,7 @@ const Checkout = () => {
         <div className="p-10 md:p-14">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold mb-2 dark:text-white">{productName}</h2>
-            <p className="text-slate-500 dark:text-slate-400">Finalizacja dostępu do testu</p>
+            <p className="text-slate-500 dark:text-slate-400">{checkoutSubtitle}</p>
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/20 p-8 rounded-3xl mb-10 border border-slate-100 dark:border-slate-800">
@@ -2530,7 +2549,7 @@ const Checkout = () => {
           
           <div className="space-y-6">
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Adres E-mail (opcjonalnie)</label>
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Adres E-mail</label>
               <input 
                 type="email" 
                 value={email}
@@ -2542,8 +2561,8 @@ const Checkout = () => {
 
             <div className="grid grid-cols-1 gap-4">
               <button 
-                onClick={() => handlePay(false)}
-                disabled={loading || !email.includes('@')}
+                onClick={() => handleStripePay()}
+                disabled={loading || !stripeEnabled || !email.includes('@')}
                 className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/30 hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center justify-center"
               >
                 {loading ? (
@@ -2553,16 +2572,49 @@ const Checkout = () => {
                 )}
               </button>
 
-              <button 
-                onClick={() => handlePay(true)}
-                className="w-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 py-4 rounded-2xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center justify-center"
-              >
-                Kontynuuj bez płatności (Dostęp Testowy)
-              </button>
+              {!stripeEnabled && (
+                <p className="text-sm text-amber-700 dark:text-amber-400 text-center bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl px-4 py-3">
+                  Płatności Stripe nie są jeszcze skonfigurowane na serwerze. Dodaj klucze w Vercel i zrób redeploy.
+                </p>
+              )}
+
+              {payError && (
+                <p className="text-sm text-red-600 text-center">{payError}</p>
+              )}
+
+              {product.isIqProduct && saved.stats && (
+                <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/30 p-5 space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Dostęp testowy</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Tylko do testów wewnętrznych — odblokowuje raport bez płatności Stripe.
+                  </p>
+                  <input
+                    type="password"
+                    value={testPassword}
+                    onChange={(e) => {
+                      setTestPassword(e.target.value);
+                      setTestPasswordError(null);
+                    }}
+                    placeholder="Hasło dostępu testowego"
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-blue-500 dark:text-white text-sm"
+                  />
+                  {testPasswordError && (
+                    <p className="text-xs text-red-600">{testPasswordError}</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleTestPasswordAccess}
+                    disabled={!testPassword.trim()}
+                    className="w-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl font-bold text-sm hover:bg-slate-300 dark:hover:bg-slate-600 transition-all disabled:opacity-50"
+                  >
+                    Wejdź na raport (hasło)
+                  </button>
+                </div>
+              )}
             </div>
 
             <p className="text-[10px] text-slate-400 text-center leading-relaxed">
-              Płatność jest bezpieczna i szyfrowana. Wyniki zostaną wysłane na podany adres e-mail.
+              Płatność obsługiwana przez Stripe (karta, BLIK, Przelewy24). Po opłaceniu wrócisz automatycznie do aplikacji.
             </p>
           </div>
         </div>
@@ -5729,7 +5781,7 @@ const PurchaseModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
           
           <div className="flex flex-col gap-4">
             <Link to="/test" onClick={onClose} className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all">
-              Rozpocznij Test IQ
+              Rozpocznij test IQ
             </Link>
             <button onClick={onClose} className="text-slate-500 font-bold text-sm hover:text-slate-700 transition-colors">Wróć później</button>
           </div>
@@ -5903,6 +5955,8 @@ const App = () => {
             <Route path="/test" element={<TestSession />} />
             <Route path="/wynik" element={<Results />} />
             <Route path="/platnosc" element={<Checkout />} />
+            <Route path="/platnosc/sukces" element={<PaymentSuccessPage />} />
+            <Route path="/platnosc/anulowano" element={<PaymentCancelPage />} />
             <Route path="/raport" element={<Report openPurchaseModal={() => setIsPurchaseModalOpen(true)} />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/metoda" element={<AboutMethod openPurchaseModal={() => setIsPurchaseModalOpen(true)} />} />

@@ -51,8 +51,14 @@ export interface ReportData {
   isMax?: boolean;
   /** HMAC wyniku z serwera — weryfikacja przed raportem / płatnością */
   resultToken?: string;
+  /** Podpis zakupu z serwera (Stripe) — weryfikacja uprawnień */
+  purchaseToken?: string;
+  /** ID sesji Stripe Checkout po udanej płatności */
+  stripeSessionId?: string;
   /** ID pytań z danej sesji (do weryfikacji podpisu) */
   testQuestionIds?: string[];
+  /** E-mail użytkownika (zapisany przy checkout / wysyłce wyniku) */
+  email?: string;
   /** Duplikat dla starszych zapisów w localStorage — preferuj stats.ageBracket* */
   ageBracketId?: string;
   ageBracketLabel?: string;

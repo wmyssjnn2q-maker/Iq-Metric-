@@ -4,17 +4,45 @@ import express from 'express';
 import { Resend } from 'resend';
 import { handleIqQuestionsGet, handleScoreIqPost, handleVerifyIqResultPost } from './lib/iqApiHandlers';
 import {
+  handleCreateCheckoutSessionPost,
+  handleStripeWebhookPost,
+  handleVerifyPurchasePost,
+} from './lib/stripeApiHandlers';
+import { readRawBody } from './lib/readRawBody';
+import {
   ensureResendEnv,
   getResendApiKey,
   getResendFromEmail,
   getResendFromName,
   isResendConfigured,
 } from './lib/resendServer';
+import { isPaymentSigningConfigured } from './lib/purchaseToken';
 import { isScoreSecretConfigured } from './lib/scoreSecret';
+import {
+  getStripePublishableKey,
+  isStripeConfigured,
+} from './lib/stripeConfig';
 
 ensureResendEnv();
 
 const app = express();
+
+/** Stripe webhook wymaga surowego body — przed express.json(). */
+app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : await readRawBody(req);
+    const signature = req.headers['stripe-signature'];
+    const sig = Array.isArray(signature) ? signature[0] : signature;
+    const result = await handleStripeWebhookPost(rawBody, sig);
+    res.json(result);
+  } catch (err) {
+    const status = typeof err === 'object' && err !== null && 'status' in err ? Number((err as { status: number }).status) : 500;
+    const message = err instanceof Error ? err.message : 'Błąd serwera';
+    console.error('[Stripe webhook]', message);
+    res.status(status >= 400 && status < 600 ? status : 500).json({ error: message });
+  }
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -45,6 +73,9 @@ app.get('/api/health', (_req, res) => {
     ok: true,
     emailConfigured: isResendConfigured(),
     scoreSigningConfigured: isScoreSecretConfigured(),
+    stripeConfigured: isStripeConfigured(),
+    stripePublishableKey: getStripePublishableKey() ?? null,
+    paymentSigningConfigured: isPaymentSigningConfigured(),
   });
 });
 
@@ -74,6 +105,35 @@ app.post('/api/verify-iq-result', (req, res) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Błąd serwera';
     res.status(400).json({ error: message, valid: false });
+  }
+});
+
+app.post('/api/create-checkout-session', async (req, res) => {
+  if (!isStripeConfigured()) {
+    return res.status(503).json({
+      error: 'Stripe nie jest skonfigurowany.',
+      code: 'stripe_not_configured',
+    });
+  }
+  try {
+    res.json(await handleCreateCheckoutSessionPost(req.body));
+  } catch (err) {
+    const status = typeof err === 'object' && err !== null && 'status' in err ? Number((err as { status: number }).status) : 500;
+    const message = err instanceof Error ? err.message : 'Błąd serwera';
+    res.status(status >= 400 && status < 600 ? status : 500).json({ error: message });
+  }
+});
+
+app.post('/api/verify-purchase', async (req, res) => {
+  if (!isStripeConfigured()) {
+    return res.status(503).json({ error: 'Stripe nie jest skonfigurowany.', code: 'stripe_not_configured' });
+  }
+  try {
+    res.json(await handleVerifyPurchasePost(req.body));
+  } catch (err) {
+    const status = typeof err === 'object' && err !== null && 'status' in err ? Number((err as { status: number }).status) : 500;
+    const message = err instanceof Error ? err.message : 'Błąd serwera';
+    res.status(status >= 400 && status < 600 ? status : 500).json({ error: message });
   }
 });
 
