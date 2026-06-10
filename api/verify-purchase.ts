@@ -1,6 +1,4 @@
-type VerifyPurchaseBody = {
-  sessionId?: string;
-};
+import { handleVerifyPurchasePost, type VerifyPurchaseBody } from '../lib/stripeApiHandlers';
 
 async function readBody(req: { body?: unknown }): Promise<VerifyPurchaseBody> {
   if (req.body) {
@@ -29,7 +27,6 @@ export default async function handler(
   }
 
   try {
-    const { handleVerifyPurchasePost } = await import('../lib/stripeApiHandlers');
     const body = await readBody(req);
     const result = await handleVerifyPurchasePost(body);
     return res.status(200).json(result);

@@ -5,7 +5,14 @@
   ],
   "functions": {
     "api/stripe-webhook.ts": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "lib/**"
+    },
+    "api/create-checkout-session.ts": {
+      "includeFiles": "lib/**"
+    },
+    "api/verify-purchase.ts": {
+      "includeFiles": "lib/**"
     }
   }
 }

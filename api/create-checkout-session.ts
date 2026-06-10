@@ -1,10 +1,7 @@
-type CreateCheckoutSessionBody = {
-  productId?: string;
-  email?: string;
-  intent?: string | null;
-  resultTimestamp?: number | null;
-  origin?: string;
-};
+import {
+  handleCreateCheckoutSessionPost,
+  type CreateCheckoutSessionBody,
+} from '../lib/stripeApiHandlers';
 
 async function readBody(req: { body?: unknown }): Promise<CreateCheckoutSessionBody> {
   if (req.body) {
@@ -37,9 +34,8 @@ export default async function handler(
   }
 
   try {
-    const { handleCreateCheckoutSessionPost } = await import('../lib/stripeApiHandlers');
     const body = await readBody(req);
-    const result = await handleCreateCheckoutSessionPost(body as Parameters<typeof handleCreateCheckoutSessionPost>[0]);
+    const result = await handleCreateCheckoutSessionPost(body);
     return res.status(200).json(result);
   } catch (err) {
     const status = typeof err === 'object' && err !== null && 'status' in err ? Number((err as { status: number }).status) : 500;
