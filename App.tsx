@@ -975,8 +975,14 @@ const IQWorldMap = () => {
 
 const CONTACT_EMAIL = 'kontaktbrainmediq@gmail.com';
 
-const openContactEmail = () => {
-  window.location.href = `mailto:${CONTACT_EMAIL}`;
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
 };
 
 const Header = ({ darkMode, toggleDarkMode, openPurchaseModal }: { darkMode: boolean; toggleDarkMode: () => void; openPurchaseModal: () => void }) => (
@@ -5542,22 +5548,13 @@ const ContactPage = () => {
                 <p className="text-lg font-semibold text-slate-900 dark:text-white">{CONTACT_EMAIL}</p>
               </div>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={openContactEmail}
-                className="flex-1 rounded-xl bg-blue-600 px-6 py-4 font-bold text-white transition-all hover:bg-blue-700"
-              >
-                Wyślij e-mail
-              </button>
-              <button
-                type="button"
-                onClick={handleCopyEmail}
-                className="flex-1 rounded-xl border border-slate-300 bg-white px-6 py-4 font-bold text-slate-700 transition-all hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                {copied ? 'Skopiowano!' : 'Kopiuj adres'}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleCopyEmail}
+              className="w-full rounded-xl border border-slate-300 bg-white px-6 py-4 font-bold text-slate-700 transition-all hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              {copied ? 'Skopiowano!' : 'Kopiuj adres e-mail'}
+            </button>
           </div>
 
           <div className="rounded-2xl border border-slate-200 p-6 dark:border-slate-700">
@@ -6143,6 +6140,7 @@ const App = () => {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300 relative">
         <BackgroundMotif />
         <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} openPurchaseModal={() => setIsPurchaseModalOpen(true)} />
