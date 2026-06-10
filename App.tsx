@@ -51,14 +51,14 @@ import {
   resolveProductIdFromQuery,
 } from './lib/paymentProducts';
 import { saveCheckoutContext } from './lib/purchaseFulfillment';
-import { verifyIqTestPassword } from './lib/testAccess';
+import { verifyTestAccessPassword } from './lib/testAccess';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
 // --- DECORATIVE COMPONENTS ---
 
 const BackgroundMotif = () => (
-  <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden no-print select-none opacity-60 dark:opacity-30">
+  <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden no-print select-none opacity-60 dark:opacity-30 [&_*]:pointer-events-none">
     {/* Subtle Grid Pattern */}
     <div className="absolute inset-0 dot-grid opacity-50"></div>
     
@@ -973,6 +973,12 @@ const IQWorldMap = () => {
 
 // --- COMPONENTS ---
 
+const CONTACT_EMAIL = 'kontaktbrainmediq@gmail.com';
+
+const openContactEmail = () => {
+  window.location.href = `mailto:${CONTACT_EMAIL}`;
+};
+
 const Header = ({ darkMode, toggleDarkMode, openPurchaseModal }: { darkMode: boolean; toggleDarkMode: () => void; openPurchaseModal: () => void }) => (
   <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
     <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -1005,12 +1011,13 @@ const Header = ({ darkMode, toggleDarkMode, openPurchaseModal }: { darkMode: boo
             </Link>
           </div>
           <Link to="/faq" className="hover:text-blue-600 dark:hover:text-blue-400">FAQ</Link>
+          <Link to="/kontakt" className="hover:text-blue-600 dark:hover:text-blue-400">Kontakt</Link>
         </nav>
         <div className="flex items-center space-x-4">
           <button 
             onClick={toggleDarkMode}
             className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors"
-            title={darkMode ? "Przełącz na tryb jasny" : "Przełącz na tryb ciemny"}
+            aria-label={darkMode ? 'Przełącz na tryb jasny' : 'Przełącz na tryb ciemny'}
           >
             <div className="w-5 h-5">{darkMode ? <Icons.Sun /> : <Icons.Moon />}</div>
           </button>
@@ -1044,6 +1051,7 @@ const Footer = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => (
             <Link to="/inne-testy" className="hover:text-white">Inne testy</Link>
           </li>
           <li><Link to="/faq" className="hover:text-white">FAQ</Link></li>
+          <li><Link to="/kontakt" className="hover:text-white">Kontakt</Link></li>
         </ul>
       </div>
       <div>
@@ -1051,11 +1059,6 @@ const Footer = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => (
         <ul className="space-y-2 text-sm">
           <li><Link to="/prywatnosc" className="hover:text-white">Polityka Prywatności</Link></li>
           <li><Link to="/regulamin" className="hover:text-white">Regulamin</Link></li>
-          <li>
-            <a href="mailto:kontaktbrainmediq@gmail.com" className="hover:text-white">
-              Kontakt
-            </a>
-          </li>
         </ul>
       </div>
     </div>
@@ -2513,26 +2516,39 @@ const Checkout = () => {
   };
 
   const handleTestPasswordAccess = () => {
-    if (!product.isIqProduct) return;
-    if (!saved.stats) {
-      setTestPasswordError('Najpierw ukończ test IQ.');
-      return;
-    }
-    if (!verifyIqTestPassword(testPassword)) {
+    if (!verifyTestAccessPassword(testPassword)) {
       setTestPasswordError('Nieprawidłowe hasło dostępu testowego.');
       return;
     }
-    setTestPasswordError(null);
-    const updated = {
-      ...saved,
-      isPaid: true,
-      isPro: product.id === 'iq_pro',
-      isMax: product.id === 'iq_max',
-      email: email || saved.email,
-    };
-    writeIqResults(stripLegacyAuxiliaryAccessFlags(updated) as ReportData, 'full');
-    navigate('/raport');
+
+    if (product.isIqProduct) {
+      if (!saved.stats) {
+        setTestPasswordError('Najpierw ukończ test IQ.');
+        return;
+      }
+      setTestPasswordError(null);
+      const updated = {
+        ...saved,
+        isPaid: true,
+        isPro: product.id === 'iq_pro',
+        isMax: product.id === 'iq_max',
+        email: email || saved.email,
+      };
+      writeIqResults(stripLegacyAuxiliaryAccessFlags(updated) as ReportData, 'full');
+      navigate('/raport');
+      return;
+    }
+
+    if (product.auxiliaryTestId) {
+      setTestPasswordError(null);
+      grantAuxiliaryAccess(product.auxiliaryTestId);
+      navigate(redirectUrl);
+    }
   };
+
+  const showTestPasswordAccess = product.isIqProduct
+    ? Boolean(saved.stats)
+    : Boolean(product.auxiliaryTestId);
 
   return (
     <div className="max-w-2xl mx-auto py-24 px-6 relative z-10">
@@ -2596,11 +2612,11 @@ const Checkout = () => {
                 <p className="text-sm text-red-600 text-center">{payError}</p>
               )}
 
-              {product.isIqProduct && saved.stats && (
+              {showTestPasswordAccess && (
                 <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/30 p-5 space-y-3">
                   <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Dostęp testowy</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Tylko do testów wewnętrznych — odblokowuje raport bez płatności Stripe.
+                    Tylko do testów wewnętrznych — odblokowuje {product.isIqProduct ? 'raport' : 'test'} bez płatności Stripe.
                   </p>
                   <input
                     type="password"
@@ -2621,7 +2637,7 @@ const Checkout = () => {
                     disabled={!testPassword.trim()}
                     className="w-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl font-bold text-sm hover:bg-slate-300 dark:hover:bg-slate-600 transition-all disabled:opacity-50"
                   >
-                    Wejdź na raport (hasło)
+                    {product.isIqProduct ? 'Wejdź na raport (hasło)' : 'Odblokuj test (hasło)'}
                   </button>
                 </div>
               )}
@@ -5491,6 +5507,83 @@ const FAQ = () => (
   </div>
 );
 
+const ContactPage = () => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(CONTACT_EMAIL);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <div className="relative z-10 mx-auto max-w-3xl px-6 py-24 md:py-32">
+      <div className="rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-800 dark:bg-slate-900 md:p-12">
+        <p className="mb-3 text-[11px] font-black uppercase tracking-[0.25em] text-blue-600">Kontakt</p>
+        <h1 className="mb-4 text-4xl font-bold tracking-tight text-slate-900 dark:text-white md:text-5xl">
+          Napisz do nas
+        </h1>
+        <p className="mb-10 text-lg leading-relaxed text-slate-600 dark:text-slate-400">
+          Masz pytanie o test, płatność, raport lub reklamację? Odpowiadamy na wiadomości e-mail w możliwie krótkim czasie.
+        </p>
+
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-800/50">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white">
+                <Mail size={22} />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">E-mail</p>
+                <p className="text-lg font-semibold text-slate-900 dark:text-white">{CONTACT_EMAIL}</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={openContactEmail}
+                className="flex-1 rounded-xl bg-blue-600 px-6 py-4 font-bold text-white transition-all hover:bg-blue-700"
+              >
+                Wyślij e-mail
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyEmail}
+                className="flex-1 rounded-xl border border-slate-300 bg-white px-6 py-4 font-bold text-slate-700 transition-all hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                {copied ? 'Skopiowano!' : 'Kopiuj adres'}
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 p-6 dark:border-slate-700">
+            <h2 className="mb-3 text-lg font-bold text-slate-900 dark:text-white">Operator serwisu</h2>
+            <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              <strong>Pomocnik Maturalny sp. z o.o.</strong><br />
+              Aleje Jerozolimskie 93, 02-001 Warszawa<br />
+              KRS: 0001217891 · NIP: 7011295238
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-6 dark:border-blue-900/40 dark:bg-blue-950/20">
+            <h2 className="mb-2 text-base font-bold text-slate-900 dark:text-white">W czym możemy pomóc?</h2>
+            <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+              <li>• brak e-maila z raportem lub certyfikatem</li>
+              <li>• problem z płatnością Stripe</li>
+              <li>• reklamacje i odstąpienie od umowy</li>
+              <li>• pytania o wynik testu lub metodologię</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- ABOUT METHOD PAGE ---
 
 const METHOD_SECTIONS = [
@@ -5505,8 +5598,8 @@ const METHOD_SECTIONS = [
 
 const scrollToMethodSection = (id: string, setActive: (id: string) => void) => {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  window.history.replaceState(null, '', `#${id}`);
   setActive(id);
+  window.history.replaceState(null, '', '/metoda');
 };
 
 const MethodSection = ({
@@ -5567,6 +5660,7 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
         element.scrollIntoView({ behavior: 'smooth' });
         setActiveSection(id);
       }
+      window.history.replaceState(null, '', '/metoda');
     }
   }, [location]);
 
@@ -6062,6 +6156,7 @@ const App = () => {
             <Route path="/platnosc/anulowano" element={<PaymentCancelPage />} />
             <Route path="/raport" element={<Report openPurchaseModal={() => setIsPurchaseModalOpen(true)} />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/kontakt" element={<ContactPage />} />
             <Route path="/metoda" element={<AboutMethod openPurchaseModal={() => setIsPurchaseModalOpen(true)} />} />
             <Route path="/inne-testy" element={<OtherTests />} />
             <Route path="/test-osobowosci" element={<PersonalityTest />} />
