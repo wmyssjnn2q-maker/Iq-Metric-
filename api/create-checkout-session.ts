@@ -1,14 +1,21 @@
-import {
-  handleCreateCheckoutSessionPost,
-  type CreateCheckoutSessionBody,
-} from '../lib/stripeApiHandlers';
-import { isStripeConfigured } from '../lib/stripeConfig';
+type CreateCheckoutSessionBody = {
+  productId?: string;
+  email?: string;
+  intent?: string | null;
+  resultTimestamp?: number | null;
+  origin?: string;
+};
 
 async function readBody(req: { body?: unknown }): Promise<CreateCheckoutSessionBody> {
   if (req.body) {
     return typeof req.body === 'string' ? JSON.parse(req.body) : (req.body as CreateCheckoutSessionBody);
   }
   return {};
+}
+
+function isStripeConfigured(): boolean {
+  const key = process.env.STRIPE_SECRET_KEY?.trim();
+  return Boolean(key && /^sk_(test|live)_/.test(key));
 }
 
 export default async function handler(
@@ -30,8 +37,9 @@ export default async function handler(
   }
 
   try {
+    const { handleCreateCheckoutSessionPost } = await import('../lib/stripeApiHandlers');
     const body = await readBody(req);
-    const result = await handleCreateCheckoutSessionPost(body);
+    const result = await handleCreateCheckoutSessionPost(body as Parameters<typeof handleCreateCheckoutSessionPost>[0]);
     return res.status(200).json(result);
   } catch (err) {
     const status = typeof err === 'object' && err !== null && 'status' in err ? Number((err as { status: number }).status) : 500;

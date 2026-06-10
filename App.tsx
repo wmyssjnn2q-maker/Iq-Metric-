@@ -2336,6 +2336,7 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [stripeSetupIssue, setStripeSetupIssue] = useState<'missing' | 'api' | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
   const [testPassword, setTestPassword] = useState('');
   const [testPasswordError, setTestPasswordError] = useState<string | null>(null);
@@ -2355,8 +2356,15 @@ const Checkout = () => {
 
   useEffect(() => {
     fetchPaymentHealth()
-      .then((health) => setStripeEnabled(Boolean(health.stripeConfigured && health.stripePublishableKey)))
-      .catch(() => setStripeEnabled(false));
+      .then((health) => {
+        const ok = Boolean(health.stripeConfigured && health.stripePublishableKey);
+        setStripeEnabled(ok);
+        setStripeSetupIssue(ok ? null : 'missing');
+      })
+      .catch(() => {
+        setStripeEnabled(false);
+        setStripeSetupIssue('api');
+      });
   }, []);
 
   useEffect(() => {
@@ -2572,9 +2580,15 @@ const Checkout = () => {
                 )}
               </button>
 
-              {!stripeEnabled && (
+              {!stripeEnabled && stripeSetupIssue === 'missing' && (
                 <p className="text-sm text-amber-700 dark:text-amber-400 text-center bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl px-4 py-3">
-                  Płatności Stripe nie są jeszcze skonfigurowane na serwerze. Dodaj klucze w Vercel i zrób redeploy.
+                  Płatności Stripe nie są skonfigurowane na serwerze. W Vercel dodaj <strong>STRIPE_SECRET_KEY</strong> i <strong>STRIPE_PUBLISHABLE_KEY</strong> (Production), potem redeploy.
+                </p>
+              )}
+
+              {!stripeEnabled && stripeSetupIssue === 'api' && (
+                <p className="text-sm text-amber-700 dark:text-amber-400 text-center bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-2xl px-4 py-3">
+                  Nie udało się sprawdzić konfiguracji Stripe (błąd API). Odśwież stronę za chwilę — jeśli problem wraca, zrób redeploy na Vercel.
                 </p>
               )}
 

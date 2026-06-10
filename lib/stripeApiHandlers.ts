@@ -93,7 +93,7 @@ export async function handleCreateCheckoutSessionPost(
   const product = getPaymentProduct(productId);
   const intent = body.intent ?? null;
   const origin = body.origin?.replace(/\/$/, '') || getAppOrigin();
-  const stripe = getStripe();
+  const stripe = await getStripe();
 
   const successUrl = `${origin}/platnosc/sukces?session_id={CHECKOUT_SESSION_ID}`;
   const cancelType = productId === 'iq_standard' ? 'standard' : productId;
@@ -133,7 +133,7 @@ export async function handleVerifyPurchasePost(body: VerifyPurchaseBody): Promis
     throw Object.assign(new Error('Brak lub nieprawidłowy sessionId.'), { status: 400 });
   }
 
-  const stripe = getStripe();
+  const stripe = await getStripe();
   const session = await stripe.checkout.sessions.retrieve(sessionId, {
     expand: ['line_items'],
   });
@@ -204,7 +204,7 @@ export async function handleStripeWebhookPost(
     throw Object.assign(new Error('Brak nagłówka stripe-signature.'), { status: 400 });
   }
 
-  const stripe = getStripe();
+  const stripe = await getStripe();
   const event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
 
   if (event.type === 'checkout.session.completed') {

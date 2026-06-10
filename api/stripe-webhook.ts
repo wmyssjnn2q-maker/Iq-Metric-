@@ -1,6 +1,15 @@
 import type { IncomingMessage } from 'node:http';
-import { handleStripeWebhookPost } from '../lib/stripeApiHandlers';
-import { readRawBody } from '../lib/readRawBody';
+
+async function readRawBody(req: IncomingMessage & { body?: unknown }): Promise<Buffer> {
+  if (Buffer.isBuffer(req.body)) return req.body;
+  if (typeof req.body === 'string') return Buffer.from(req.body);
+
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}
 
 export default async function handler(
   req: IncomingMessage & { method?: string; body?: unknown; headers?: Record<string, string | string[] | undefined> },
@@ -13,6 +22,7 @@ export default async function handler(
   }
 
   try {
+    const { handleStripeWebhookPost } = await import('../lib/stripeApiHandlers');
     const rawBody = await readRawBody(req);
     const signatureHeader = req.headers?.['stripe-signature'];
     const signature = Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader;

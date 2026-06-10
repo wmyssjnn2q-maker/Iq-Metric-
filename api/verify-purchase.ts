@@ -1,11 +1,17 @@
-import { handleVerifyPurchasePost, type VerifyPurchaseBody } from '../lib/stripeApiHandlers';
-import { isStripeConfigured } from '../lib/stripeConfig';
+type VerifyPurchaseBody = {
+  sessionId?: string;
+};
 
 async function readBody(req: { body?: unknown }): Promise<VerifyPurchaseBody> {
   if (req.body) {
     return typeof req.body === 'string' ? JSON.parse(req.body) : (req.body as VerifyPurchaseBody);
   }
   return {};
+}
+
+function isStripeConfigured(): boolean {
+  const key = process.env.STRIPE_SECRET_KEY?.trim();
+  return Boolean(key && /^sk_(test|live)_/.test(key));
 }
 
 export default async function handler(
@@ -19,13 +25,11 @@ export default async function handler(
   }
 
   if (!isStripeConfigured()) {
-    return res.status(503).json({
-      error: 'Stripe nie jest skonfigurowany.',
-      code: 'stripe_not_configured',
-    });
+    return res.status(503).json({ error: 'Stripe nie jest skonfigurowany.', code: 'stripe_not_configured' });
   }
 
   try {
+    const { handleVerifyPurchasePost } = await import('../lib/stripeApiHandlers');
     const body = await readBody(req);
     const result = await handleVerifyPurchasePost(body);
     return res.status(200).json(result);
