@@ -1,8 +1,8 @@
 export const PRIVACY_POLICY_MARKDOWN = `# POLITYKA PRYWATNOŚCI SERWISU BRAINMEDIQ.COM
 
-**Wersja:** 1.0  
+**Wersja:** 1.1  
 **Data wejścia w życie:** 2 czerwca 2026  
-**Ostatnia aktualizacja:** 2 czerwca 2026
+**Ostatnia aktualizacja:** 10 czerwca 2026
 
 ---
 
@@ -27,7 +27,7 @@ W zależności od sposobu korzystania z Serwisu możemy przetwarzać:
 - **dane identyfikacyjne** – np. imię i nazwisko podane do certyfikatu;
 - **dane kontaktowe** – np. adres e-mail użyty do wysłania wyniku, raportu lub certyfikatu;
 - **dane dotyczące testu** – odpowiedzi, wynik punktowy, percentyl, wyniki domenowe, wybrany przedział wiekowy oraz czas ukończenia testu;
-- **dane płatnicze** – informacje o statusie płatności, typie zakupionego pakietu i potwierdzeniu transakcji;
+- **dane płatnicze** – status płatności, kwota, waluta, typ zakupionego pakietu, identyfikator sesji/transakcji Stripe oraz adres e-mail podany przy checkout; **Administrator nie przechowuje pełnych danych karty płatniczej**;
 - **dane techniczne** – adres IP, typ urządzenia, typ przeglądarki, system operacyjny, przybliżone logi techniczne i informacje o błędach;
 - **dane cookies** – identyfikatory plików cookies i podobnych technologii;
 - **dane dobrowolnie przekazane** – treść wiadomości wysłanych przez formularz kontaktowy lub e-mail.
@@ -79,15 +79,21 @@ Dane przetwarzamy na podstawie:
 
 ---
 
-## §6. PŁATNOŚCI
+## §6. PŁATNOŚCI (STRIPE)
 
-1. Płatności mogą być obsługiwane przez zewnętrznego operatora płatności, np. Stripe, PayU, Przelewy24 lub innego dostawcę wskazanego w Serwisie.
+1. Płatności w Serwisie obsługuje **Stripe** (Stripe Payments Europe, Ltd. — dla użytkowników z Europejskiego Obszaru Gospodarczego — oraz podmioty powiązane ze Stripe, Inc., 354 Oyster Point Blvd, South San Francisco, CA 94080, USA).
 
-2. Administrator nie przechowuje pełnych danych karty płatniczej ani danych dostępowych do bankowości elektronicznej.
+2. Płatność odbywa się przez **Stripe Checkout** — po kliknięciu „Zapłać” Użytkownik jest przekierowywany na bezpieczną stronę Stripe, gdzie może wybrać m.in. **kartę płatniczą**, **BLIK** lub **Przelewy24 (P24)** (w zależności od dostępności w Stripe).
 
-3. Operator płatności przetwarza dane zgodnie z własną polityką prywatności i regulaminem.
+3. **Administrator nie przechowuje** pełnych numerów kart płatniczych, kodów CVV/CVC ani haseł do bankowości elektronicznej. Te dane wprowadzane są wyłącznie na stronie Stripe.
 
-4. Administrator może przechowywać informacje o statusie płatności, kwocie, rodzaju pakietu i identyfikatorze transakcji w zakresie niezbędnym do wykonania usługi i rozliczeń.
+4. Stripe przetwarza m.in.: dane identyfikacyjne i kontaktowe podane przy płatności (np. e-mail), dane transakcyjne, informacje o wybranej metodzie płatności oraz — w przypadku płatności kartą — dane karty w zakresie niezbędnym do autoryzacji transakcji, zgodnie z własną polityką prywatności: https://stripe.com/privacy (dostępna także po polsku: https://stripe.com/pl/privacy).
+
+5. Administrator otrzymuje od Stripe jedynie informacje niezbędne do **realizacji usługi**, np. czy płatność została zaksięgowana, kwotę, walutę, identyfikator sesji Stripe (session_id) oraz adres e-mail podany przy checkout.
+
+6. Podstawą prawną przetwarzania danych płatniczych jest **art. 6 ust. 1 lit. b RODO** (wykonanie umowy) oraz — po stronie Stripe — własne podstawy prawne tego operatora jako niezależnego administratora danych płatniczych.
+
+7. W przypadku zwrotu środków (np. odstąpienie od umowy lub reklamacja uznana przez Operatora) zwrot może być realizowany za pośrednictwem Stripe na tę samą metodę płatności, z której Użytkownik skorzystał, o ile jest to technicznie możliwe.
 
 ---
 
@@ -95,9 +101,9 @@ Dane przetwarzamy na podstawie:
 
 Dane mogą być przekazywane:
 
-- dostawcom hostingu i infrastruktury technicznej;
-- dostawcom poczty e-mail i narzędzi do wysyłki wiadomości;
-- operatorom płatności;
+- **Stripe Payments Europe, Ltd.** oraz podmiotom powiązanym ze Stripe, Inc. — w celu obsługi płatności online (Stripe Checkout, karty, BLIK, Przelewy24);
+- dostawcom hostingu i infrastruktury technicznej (np. Vercel);
+- dostawcom poczty e-mail i narzędzi do wysyłki wiadomości (np. Resend);
 - dostawcom narzędzi analitycznych;
 - dostawcom usług AI lub automatycznego generowania treści raportu, jeśli są wykorzystywani;
 - biuru rachunkowemu, doradcom prawnym lub podatkowym;
@@ -109,9 +115,11 @@ Administrator korzysta wyłącznie z podmiotów, które zapewniają odpowiedni p
 
 ## §8. PRZEKAZYWANIE DANYCH POZA EOG
 
-1. Niektóre narzędzia wykorzystywane przez Serwis mogą wiązać się z przekazywaniem danych poza Europejski Obszar Gospodarczy.
+1. Korzystanie z **Stripe** oraz niektórych dostawców infrastruktury (np. hosting, poczta, narzędzia AI) może wiązać się z przekazywaniem danych poza Europejski Obszar Gospodarczy, w tym do **Stanów Zjednoczonych**.
 
-2. W takim przypadku Administrator stosuje odpowiednie zabezpieczenia wymagane przez RODO, w szczególności standardowe klauzule umowne lub inne mechanizmy legalizujące transfer danych.
+2. Stripe stosuje mechanizmy zgodne z RODO, w tym **Standardowe Klauzule Umowne (SCC)** oraz — w stosownych przypadkach — certyfikację w ramach EU–US Data Privacy Framework. Szczegóły opisuje polityka prywatności Stripe: https://stripe.com/privacy.
+
+3. Administrator stosuje odpowiednie zabezpieczenia wymagane przez RODO także w odniesieniu do pozostałych podmiotów przetwarzających dane w imieniu Administratora.
 
 ---
 
@@ -155,7 +163,7 @@ Aby skorzystać z praw, należy skontaktować się z Administratorem pod adresem
    - obsługi sesji testu i wyników;
    - poprawy bezpieczeństwa;
    - analityki i rozwoju Serwisu;
-   - obsługi płatności.
+   - obsługi płatności (Stripe Checkout);
 
 3. Użytkownik może zarządzać plikami cookies z poziomu ustawień przeglądarki.
 

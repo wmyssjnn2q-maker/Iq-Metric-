@@ -1,8 +1,8 @@
 export const REGULAMIN_MARKDOWN = `# REGULAMIN SERWISU BRAINMEDIQ.COM
 
-**Wersja:** 1.0  
+**Wersja:** 1.1  
 **Data wejścia w życie:** 2 czerwca 2026  
-**Ostatnia aktualizacja:** 2 czerwca 2026
+**Ostatnia aktualizacja:** 10 czerwca 2026
 
 ---
 
@@ -88,17 +88,27 @@ Na potrzeby niniejszego Regulaminu przyjmuje się następujące definicje:
 
 ## §6. PŁATNOŚCI
 
-1. Serwis może oferować zarówno bezpłatne, jak i płatne Usługi. Aktualna oferta cenowa dostępna jest na stronie www.brainmediq.com/cennik.
+1. Serwis oferuje płatne Usługi w modelu **jednorazowej opłaty** za wybrany pakiet (np. wynik Standard lub Analiza PRO) albo za dostęp do wybranych testów pomocniczych. Aktualne ceny są widoczne w Serwisie przy finalizacji zakupu (strona płatności po ukończeniu testu IQ lub przed rozpoczęciem testów pomocniczych).
 
-2. Wszystkie płatności za Usługi płatne mają charakter **jednorazowy** — są pobierane w momencie zakupu danej Usługi lub Testu i nie wiążą się z żadnymi cyklicznymi opłatami.
+2. Wszystkie płatności za Usługi płatne mają charakter **jednorazowy** — są pobierane w momencie zakupu danej Usługi lub Testu i **nie wiążą się z żadnymi cyklicznymi opłatami** ani subskrypcją.
 
-3. Płatności realizowane są za pośrednictwem [OPERATOR PŁATNOŚCI, np. PayU / Stripe / Przelewy24], zgodnie z regulaminem tego operatora.
+3. Płatności w Serwisie realizowane są za pośrednictwem **Stripe** (Stripe Payments Europe, Ltd. dla użytkowników z EOG oraz podmioty powiązane ze Stripe, Inc. — łącznie: „Stripe”), za pośrednictwem bezpiecznej bramki **Stripe Checkout**.
 
-4. Ceny podane w Serwisie są cenami brutto (zawierają podatek VAT), wyrażonymi w złotych polskich (PLN).
+4. Dostępne metody płatności mogą obejmować w szczególności: **karty płatnicze** (Visa, Mastercard i inne obsługiwane przez Stripe), **BLIK** oraz **Przelewy24 (P24)**, w zależności od aktualnej konfiguracji Stripe i wyboru Użytkownika w formularzu płatności. Operator nie gwarantuje stałej dostępności każdej metody — ostateczny wybór metod zależy od Stripe.
 
-5. Po pomyślnym opłaceniu zamówienia Użytkownik otrzymuje potwierdzenie transakcji na adres e-mail powiązany z Kontem.
+5. Po kliknięciu „Zapłać” Użytkownik jest przekierowywany na stronę Stripe Checkout, gdzie dokonuje płatności. Po pomyślnym opłaceniu Użytkownik wraca do Serwisu, a dostęp do zakupionej Usługi zostaje aktywowany.
 
-6. Operator zastrzega sobie prawo do zmiany cennika. Zmiana cennika nie wpływa na zakupione już Usługi.
+6. Ceny podane w Serwisie są cenami **brutto** (zawierają podatek VAT, jeśli ma zastosowanie), wyrażonymi w **złotych polskich (PLN)**.
+
+7. Po pomyślnym opłaceniu zamówienia Użytkownik otrzymuje **potwierdzenie transakcji** od Stripe na adres e-mail podany przy płatności. Operator może dodatkowo wysłać potwierdzenie zakupu z Serwisu.
+
+8. Operator **nie przechowuje** pełnych danych karty płatniczej Użytkownika — dane te wprowadzane są wyłącznie na stronie Stripe i przetwarzane zgodnie z regulaminem oraz polityką prywatności Stripe.
+
+9. W sprawach technicznych dotyczących samej transakcji (np. nieudane obciążenie, zwrot na kartę) obowiązują zasady Stripe. Reklamacje dotyczące **treści Usługi** (wynik, raport, certyfikat) należy kierować do Operatora zgodnie z §8.
+
+10. Operator zastrzega sobie prawo do zmiany cennika. Zmiana cennika nie wpływa na Usługi już opłacone przez Użytkownika.
+
+11. Regulamin Stripe oraz informacje o przetwarzaniu danych płatniczych są dostępne na stronie: https://stripe.com/pl/legal oraz https://stripe.com/privacy.
 
 ---
 
@@ -110,7 +120,7 @@ Na potrzeby niniejszego Regulaminu przyjmuje się następujące definicje:
 
 3. Aby skorzystać z prawa odstąpienia, Użytkownik powinien poinformować Operatora drogą e-mail na adres kontaktbrainmediq@gmail.com, składając jednoznaczne oświadczenie o odstąpieniu. Można skorzystać z wzoru formularza stanowiącego Załącznik nr 1 do niniejszego Regulaminu.
 
-4. W przypadku skutecznego odstąpienia Operator zwraca Użytkownikowi dokonane płatności niezwłocznie, nie później niż w terminie 14 dni od dnia otrzymania oświadczenia o odstąpieniu, przy użyciu takiego samego sposobu zapłaty, jakiego użył Użytkownik.
+4. W przypadku skutecznego odstąpienia Operator zwraca Użytkownikowi dokonane płatności niezwłocznie, nie później niż w terminie 14 dni od dnia otrzymania oświadczenia o odstąpieniu, przy użyciu takiego samego sposobu zapłaty, jakiego użył Użytkownik (w praktyce zwrot realizowany jest za pośrednictwem Stripe na rachunek/kartę, z której dokonano płatności).
 
 ---
 

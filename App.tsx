@@ -132,7 +132,7 @@ const FloatingThematicIcons = () => {
   ];
 
   return (
-    <div className="absolute inset-0 overflow-hidden">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {icons.map((item, i) => (
         <motion.div
           key={`icon-${i}`}
@@ -5493,8 +5493,70 @@ const FAQ = () => (
 
 // --- ABOUT METHOD PAGE ---
 
+const METHOD_SECTIONS = [
+  { id: 'co-mierzymy', title: 'Co mierzy ten test?', short: 'Co mierzymy' },
+  { id: 'format-czas', title: 'Format i czas', short: 'Format' },
+  { id: 'jak-liczymy', title: 'Jak liczymy wynik', short: 'Obliczenia' },
+  { id: 'percentyl', title: 'Interpretacja percentyli', short: 'Percentyl' },
+  { id: 'analiza-pro', title: 'Analiza PRO', short: 'PRO' },
+  { id: 'nie-diagnoza', title: 'To nie jest diagnoza', short: 'Zastrzeżenie' },
+  { id: 'slownik', title: 'Słownik pojęć', short: 'Słownik' },
+] as const;
+
+const scrollToMethodSection = (id: string, setActive: (id: string) => void) => {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  window.history.replaceState(null, '', `#${id}`);
+  setActive(id);
+};
+
+const MethodSection = ({
+  id,
+  index,
+  title,
+  children,
+  variant = 'default',
+}: {
+  id: string;
+  index: number;
+  title: string;
+  children: React.ReactNode;
+  variant?: 'default' | 'warning';
+}) => (
+  <section id={id} className="scroll-mt-28">
+    <div
+      className={
+        variant === 'warning'
+          ? 'rounded-[2rem] border border-red-200 bg-red-50 p-8 md:p-10 dark:border-red-900/40 dark:bg-red-950/20'
+          : 'rounded-[2rem] border border-slate-200 bg-white p-8 md:p-10 shadow-sm dark:border-slate-800 dark:bg-slate-900'
+      }
+    >
+      <div className="mb-6 flex items-start gap-4">
+        <span
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-black ${
+            variant === 'warning'
+              ? 'bg-red-600 text-white'
+              : 'bg-blue-600 text-white'
+          }`}
+        >
+          {index}
+        </span>
+        <h2
+          className={`text-2xl font-bold leading-tight md:text-3xl ${
+            variant === 'warning'
+              ? 'text-red-900 dark:text-red-300'
+              : 'text-slate-900 dark:text-white'
+          }`}
+        >
+          {title}
+        </h2>
+      </div>
+      {children}
+    </div>
+  </section>
+);
+
 const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
-  const [activeSection, setActiveSection] = useState("");
+  const [activeSection, setActiveSection] = useState(METHOD_SECTIONS[0].id);
   const location = useLocation();
 
   useEffect(() => {
@@ -5508,208 +5570,239 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
     }
   }, [location]);
 
-  const sections = [
-    { id: "co-mierzymy", title: "1. Co mierzy ten test?" },
-    { id: "format-czas", title: "2. Format i czas" },
-    { id: "jak-liczymy", title: "3. Jak liczymy wynik" },
-    { id: "percentyl", title: "4. Interpretacja percentyli" },
-    { id: "analiza-pro", title: "5. Analiza PRO" },
-    { id: "nie-diagnoza", title: "6. To nie jest diagnoza" },
-    { id: "slownik", title: "7. Słownik pojęć" }
-  ];
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        const id = visible[0]?.target?.id;
+        if (id) setActiveSection(id);
+      },
+      { rootMargin: '-15% 0px -55% 0px', threshold: [0.1, 0.35, 0.6] },
+    );
+
+    METHOD_SECTIONS.forEach((section) => {
+      const element = document.getElementById(section.id);
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const navButtonClass = (id: string) =>
+    `w-full rounded-xl px-4 py-3 text-left text-sm transition-all ${
+      activeSection === id
+        ? 'bg-blue-600 font-bold text-white shadow-md'
+        : 'font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+    }`;
 
   return (
-    <div className="max-w-[1440px] mx-auto px-6 py-24 flex flex-col md:flex-row gap-20 relative z-10">
-      {/* Sidebar TOC */}
-      <aside className="md:w-80 shrink-0 md:sticky md:top-28 h-fit hidden md:block">
-        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">Nawigacja metodologii</h4>
-        <nav className="space-y-2">
-          {sections.map(s => (
-            <a 
-              key={s.id} 
-              href={`#${s.id}`}
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth' });
-                window.history.pushState(null, '', `#${s.id}`);
-                setActiveSection(s.id);
-              }}
-              className={`block text-sm py-3.5 px-6 rounded-2xl transition-all ${activeSection === s.id ? 'bg-blue-600 text-white font-bold shadow-lg' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+    <div className="relative z-10 mx-auto max-w-[1200px] px-6 py-16 md:py-24">
+      {/* Hero */}
+      <header className="mb-12 text-center md:mb-16">
+        <p className="mb-4 text-[11px] font-black uppercase tracking-[0.3em] text-blue-600">Metodologia</p>
+        <h1 className="mb-5 text-4xl font-bold tracking-tight text-slate-900 dark:text-white md:text-5xl">
+          Jak działa test IQ
+        </h1>
+        <p className="mx-auto max-w-2xl text-lg leading-relaxed text-slate-600 dark:text-slate-400">
+          Przejrzysty opis tego, co mierzymy, jak liczymy wynik i jak interpretować raport — bez żargonu naukowego.
+        </p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          {[
+            { label: '19 zadań', icon: <Grid3X3 size={16} /> },
+            { label: '14 minut', icon: <Clock size={16} /> },
+            { label: '5 domen', icon: <BrainCircuit size={16} /> },
+            { label: 'Skala IQ 100 ± 15', icon: <BarChart3 size={16} /> },
+          ].map((item) => (
+            <span
+              key={item.label}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
             >
-              {s.title}
-            </a>
+              <span className="text-blue-600">{item.icon}</span>
+              {item.label}
+            </span>
           ))}
-        </nav>
-      </aside>
+        </div>
+      </header>
 
-      {/* Full Content Area */}
-      <article className="flex-1 space-y-32">
-        <div id="co-mierzymy" className="scroll-mt-32">
-          <h2 className="text-4xl font-bold mb-8 dark:text-white">Co mierzy ten test?</h2>
-          <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg max-w-prose">
+      {/* Mobile nav — buttons zamiast linków, bez podglądu URL w pasku statusu */}
+      <nav className="mb-10 flex gap-2 overflow-x-auto pb-2 md:hidden">
+        {METHOD_SECTIONS.map((section, index) => (
+          <button
+            key={section.id}
+            type="button"
+            onClick={() => scrollToMethodSection(section.id, setActiveSection)}
+            className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all ${
+              activeSection === section.id
+                ? 'bg-blue-600 text-white'
+                : 'border border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+            }`}
+          >
+            {index + 1}. {section.short}
+          </button>
+        ))}
+      </nav>
+
+      <div className="flex flex-col gap-10 md:flex-row md:gap-14">
+        {/* Sidebar */}
+        <aside className="hidden md:block md:w-72 md:shrink-0">
+          <div className="sticky top-28 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h4 className="mb-4 px-2 text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">
+              Spis treści
+            </h4>
+            <nav className="space-y-1">
+              {METHOD_SECTIONS.map((section, index) => (
+                <button
+                  key={section.id}
+                  type="button"
+                  onClick={() => scrollToMethodSection(section.id, setActiveSection)}
+                  className={navButtonClass(section.id)}
+                >
+                  <span className="mr-2 opacity-60">{index + 1}.</span>
+                  {section.title}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </aside>
+
+        {/* Content */}
+        <article className="min-w-0 flex-1 space-y-8">
+          <MethodSection id="co-mierzymy" index={1} title="Co mierzy ten test?">
+          <p className="text-base leading-relaxed text-slate-600 dark:text-slate-400 md:text-lg">
             Badanie koncentruje się na <strong>inteligencji płynnej (Gf)</strong> — zdolności do rozwiązywania nowych problemów, wykrywania reguł i pracy na abstrakcyjnych wzorach. Nie sprawdzamy wiedzy szkolnej, języka obcego ani zapamiętanych definicji; liczy się spostrzegawczość, logika i tempo analizy.
           </p>
-          <p className="mt-4 text-slate-600 dark:text-slate-400 leading-relaxed text-lg max-w-prose">
+          <p className="mt-4 text-base leading-relaxed text-slate-600 dark:text-slate-400 md:text-lg">
             Wynik w raporcie rozkładamy na <strong>pięć domen poznawczych</strong>: matryce logiczne, ciągi liczbowe, analogie, wyobraźnię przestrzenną oraz rozumowanie logiczne. Dzięki temu widać nie tylko wynik ogólny IQ, ale też obszary relatywnie mocniejsze i słabsze w tym konkretnym teście.
           </p>
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-[900px]">
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
             {[
               { t: 'Wzorce i reguły', d: 'Matryce i układy symboli — wykrywanie zmian w wierszach, kolumnach i sekwencjach.' },
               { t: 'Myślenie bez słów', d: 'Zadania wizualne i liczbowe, bez wiedzy ogólnej ani języka obcego.' },
               { t: 'Sprawność pod czasem', d: 'Limit czasu pozwala ocenić nie tylko poprawność, ale też tempo pracy.' },
             ].map(item => (
-              <div key={item.t} className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div key={item.t} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50">
                 <h4 className="mb-2 font-bold text-slate-900 dark:text-white">{item.t}</h4>
                 <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">{item.d}</p>
               </div>
             ))}
           </div>
-        </div>
+          </MethodSection>
 
-        <div id="format-czas" className="scroll-mt-32">
-          <h2 className="text-4xl font-bold mb-8 dark:text-white">Format i czas</h2>
-          <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-10 max-w-prose">
+          <MethodSection id="format-czas" index={2} title="Format i czas">
+          <p className="mb-6 text-base leading-relaxed text-slate-600 dark:text-slate-400 md:text-lg">
             Badanie obejmuje krótką część instruktażową oraz właściwą serię 19 zadań wykonywanych pod limitem czasowym. W każdym zadaniu obowiązuje jedna poprawna odpowiedź wynikająca ze wzorca w układzie.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[800px]">
-            <div className="p-8 bg-white dark:bg-slate-900 border rounded-3xl border-blue-200 shadow-sm">
-              <h4 className="font-bold text-lg mb-3">Struktura testu</h4>
-              <p className="text-sm text-slate-500 leading-relaxed">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-6 dark:border-blue-800 dark:bg-blue-950/20">
+              <h4 className="mb-2 font-bold text-slate-900 dark:text-white">Struktura testu</h4>
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                 Seria liczy <strong>19 zadań</strong> z pięciu typów: matryce, ciągi liczbowe, analogie, układy przestrzenne i rozumowanie logiczne. Zadania różnią się poziomem trudności; w matrycach pole do uzupełnienia wskazane jest w prawym dolnym rogu.
               </p>
             </div>
-            <div className="p-8 bg-white dark:bg-slate-900 border rounded-3xl shadow-sm">
-              <h4 className="font-bold text-lg mb-3">Limit czasu (14 min)</h4>
-              <p className="text-sm text-slate-500 leading-relaxed">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-800/50">
+              <h4 className="mb-2 font-bold text-slate-900 dark:text-white">Limit czasu (14 min)</h4>
+              <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                 Czas przeznaczony na całość serii to <strong>14 minut</strong> (średnio ok. 45 s na zadanie). Odliczanie rozpoczyna się po części instruktażowej; wynik wyliczany jest z odpowiedzi udzielonych do zakończenia badania.
               </p>
             </div>
           </div>
-          <p className="mt-8 text-sm text-slate-500 dark:text-slate-400 max-w-prose leading-relaxed">
+          <p className="mt-6 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
             Przed testem prosimy o wybór <strong>przedziału wiekowego</strong>. Służy on do odniesienia wyniku IQ i percentyla do uproszczonej normy dla danej grupy — tak jak w standaryzowanych badaniach z podziałem wiekowym.
           </p>
-        </div>
+          </MethodSection>
 
-        <div id="jak-liczymy" className="scroll-mt-32">
-          <h2 className="text-4xl font-bold mb-8 dark:text-white">Jak liczymy wynik</h2>
-          <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-12 max-w-prose">
+          <MethodSection id="jak-liczymy" index={3} title="Jak liczymy wynik">
+          <p className="mb-6 text-base leading-relaxed text-slate-600 dark:text-slate-400 md:text-lg">
             Wynik nie jest prostą informacją „ile odpowiedzi było poprawnych”. Liczymy go na podstawie poprawności, trudności zadań oraz rozkładu wyników przyjętego dla skali IQ:
           </p>
-          <ul className="list-disc pl-6 text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-12 max-w-prose space-y-4">
-            <li><strong>Wynik surowy:</strong> suma punktów za poprawne odpowiedzi, ważona trudnością zadania (trudniejsze pytania mają większą wagę).</li>
-            <li><strong>Norma wiekowa:</strong> przed testem wybierasz przedział wiekowy; na jego podstawie wynik jest porównywany z modelem referencyjnym dla tej grupy.</li>
-            <li><strong>Skala IQ:</strong> wynik surowy przeliczamy na skalę ze średnią 100 i odchyleniem standardowym 15 (model zbliżony do testów psychometrycznych).</li>
-            <li><strong>Percentyl:</strong> pokazuje, jaki odsetek osób w przyjętej normie uzyskał wynik niższy od Twojego.</li>
-            <li><strong>Profil domen:</strong> osobno liczymy wynik procentowy w pięciu kategoriach zadań — to podstawa raportu i planu rozwoju.</li>
-            <li><strong>Przedział ufności 95%:</strong> wąski zakres wokół wyniku IQ (w raporcie ±5 punktów) — przy powtórzeniu badania w podobnych warunkach wynik zwykle mieści się w tym przedziale, co jest typowe dla pomiarów skalowych.</li>
+          <ul className="mb-8 space-y-3 text-base leading-relaxed text-slate-600 dark:text-slate-400">
+            <li className="flex gap-3"><CheckCircle2 size={18} className="mt-1 shrink-0 text-blue-600" /><span><strong>Wynik surowy:</strong> suma punktów za poprawne odpowiedzi, ważona trudnością zadania.</span></li>
+            <li className="flex gap-3"><CheckCircle2 size={18} className="mt-1 shrink-0 text-blue-600" /><span><strong>Norma wiekowa:</strong> wynik porównywany z modelem referencyjnym dla wybranej grupy wiekowej.</span></li>
+            <li className="flex gap-3"><CheckCircle2 size={18} className="mt-1 shrink-0 text-blue-600" /><span><strong>Skala IQ:</strong> przeliczenie na skalę ze średnią 100 i odchyleniem standardowym 15.</span></li>
+            <li className="flex gap-3"><CheckCircle2 size={18} className="mt-1 shrink-0 text-blue-600" /><span><strong>Percentyl:</strong> odsetek osób w normie z wynikiem niższym od Twojego.</span></li>
+            <li className="flex gap-3"><CheckCircle2 size={18} className="mt-1 shrink-0 text-blue-600" /><span><strong>Profil domen:</strong> wynik procentowy w pięciu kategoriach zadań.</span></li>
+            <li className="flex gap-3"><CheckCircle2 size={18} className="mt-1 shrink-0 text-blue-600" /><span><strong>Przedział ufności 95%:</strong> zakres ±5 pkt. IQ wokół wyniku w raporcie.</span></li>
           </ul>
-          
           <ScoreGenerationInfographic />
-          
-          <p className="text-base text-slate-500 leading-relaxed italic mt-12 max-w-prose">
+          <p className="mt-8 text-sm italic leading-relaxed text-slate-500 dark:text-slate-400">
             Schemat przedstawia uproszczony przepływ: odpowiedzi → punkty ważone trudnością → wynik IQ → percentyl i raport. Wynik opiera się na modelu psychometrycznym i odzwierciedla poziom w tym badaniu; nie zastępuje oceny przeprowadzonej przez psychologa w warunkach klinicznych.
           </p>
-        </div>
+          </MethodSection>
 
-        <div id="percentyl" className="scroll-mt-32">
-          <h2 className="text-4xl font-bold mb-8 dark:text-white">Interpretacja percentyli</h2>
-          <div className="flex flex-col md:flex-row gap-12 items-start">
-            <div className="flex-1 space-y-6">
-              <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg max-w-prose">
+          <MethodSection id="percentyl" index={4} title="Interpretacja percentyli">
+          <div className="flex flex-col items-start gap-8 md:flex-row">
+            <div className="flex-1 space-y-5">
+              <p className="text-base leading-relaxed text-slate-600 dark:text-slate-400 md:text-lg">
                 Percentyl tłumaczy wynik IQ na prostszy język: pokazuje, ile osób w <strong>wybranej normie wiekowej</strong> uzyskało wynik niższy od Twojego. Ta sama liczba IQ może oznaczać inny percentyl u innej grupy wiekowej — dlatego w raporcie podajemy obie informacje.
               </p>
-              <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <h4 className="font-bold mb-4 flex items-center gap-2">
+              <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-5 dark:border-blue-900/40 dark:bg-blue-950/30">
+                <h4 className="mb-3 flex items-center gap-2 font-bold text-slate-800 dark:text-slate-100">
                   <Info className="text-blue-600" size={20} />
-                  Przykład interpretacji:
+                  Przykład interpretacji
                 </h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                   Przy wyniku IQ 115 i percentylu <strong>84%</strong> w grupie „25–34 lata” oznacza to, że w tej normie około 84% osób uzyskało wynik niższy. To porównanie w obrębie zadeklarowanej grupy, nie diagnoza kliniczna ani ranking „na zawsze”.
                 </p>
               </div>
             </div>
-            <div className="md:w-80 w-full p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem] flex flex-col items-center text-center">
-               <div className="w-16 h-16 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-                  <Percent size={32} />
+            <div className="flex w-full flex-col items-center rounded-2xl border-2 border-dashed border-slate-200 p-6 text-center md:w-80 dark:border-slate-700">
+               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg">
+                  <Percent size={28} />
                </div>
-               <h4 className="font-bold text-xl mb-2">Skala percentylowa</h4>
-               <p className="mb-5 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 px-1">
-                 Percentyl to nie wynik IQ — pokazuje, jaki <strong className="text-slate-600 dark:text-slate-300">odsetek osób w normie</strong> uzyskał wynik niższy od Twojego.
+               <h4 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">Skala percentylowa</h4>
+               <p className="mb-5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                 Percentyl pokazuje, jaki <strong className="text-slate-600 dark:text-slate-300">odsetek osób w normie</strong> uzyskał wynik niższy od Twojego.
                </p>
                <div className="w-full space-y-4">
-                  <div>
-                    <div className="flex justify-between text-xs px-2 mb-1.5">
-                      <span className="text-slate-500">Wybitny</span>
-                      <span className="font-bold text-blue-700 dark:text-blue-300">≥ 98. percentyl</span>
+                  {[
+                    { label: 'Wybitny', range: '≥ 98. percentyl', width: '98%', color: 'bg-blue-600', hint: 'Lepszy wynik niż ok. 98 na 100 osób w grupie' },
+                    { label: 'Wysoki', range: '75–97. percentyl', width: '86%', color: 'bg-blue-400', hint: 'Wyżej niż większość osób w normie' },
+                    { label: 'Typowy zakres', range: '25–74. percentyl', width: '50%', color: 'bg-slate-300 dark:bg-slate-600', hint: 'W środkowej części rozkładu w grupie' },
+                    { label: 'Niższy', range: '< 25. percentyl', width: '24%', color: 'bg-slate-200 dark:bg-slate-700', hint: 'Poniżej dolnej ćwiartki normy' },
+                  ].map((row) => (
+                    <div key={row.label}>
+                      <div className="mb-1.5 flex justify-between px-1 text-xs">
+                        <span className="text-slate-500">{row.label}</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-300">{row.range}</span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div className={`h-full ${row.color}`} style={{ width: row.width }} />
+                      </div>
+                      <p className="mt-1 px-1 text-left text-[10px] text-slate-400">{row.hint}</p>
                     </div>
-                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-600 w-[98%]" title="Górne 2% normy" />
-                    </div>
-                    <p className="mt-1 px-2 text-left text-[10px] text-slate-400">Lepszy wynik niż ok. 98 na 100 osób w grupie</p>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs px-2 mb-1.5">
-                      <span className="text-slate-500">Wysoki</span>
-                      <span className="font-bold text-blue-600 dark:text-blue-400">75–97. percentyl</span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-400 w-[86%]" />
-                    </div>
-                    <p className="mt-1 px-2 text-left text-[10px] text-slate-400">Wyżej niż większość osób w normie</p>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs px-2 mb-1.5">
-                      <span className="text-slate-500">Typowy zakres</span>
-                      <span className="font-bold text-slate-600 dark:text-slate-300">25–74. percentyl</span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-slate-300 dark:bg-slate-600 w-[50%]" />
-                    </div>
-                    <p className="mt-1 px-2 text-left text-[10px] text-slate-400">W środkowej części rozkładu w grupie</p>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs px-2 mb-1.5">
-                      <span className="text-slate-500">Niższy</span>
-                      <span className="font-bold text-slate-500">&lt; 25. percentyl</span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-slate-200 dark:bg-slate-700 w-[24%]" />
-                    </div>
-                    <p className="mt-1 px-2 text-left text-[10px] text-slate-400">Poniżej dolnej ćwiartki normy</p>
-                  </div>
+                  ))}
                </div>
             </div>
           </div>
-        </div>
+          </MethodSection>
 
-        <div id="analiza-pro" className="scroll-mt-32">
-          <h2 className="text-4xl font-bold mb-8 dark:text-white">Analiza PRO</h2>
-          <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-6 max-w-prose">
-            W brainmediq dostępne są dwa poziomy raportu po teście IQ. <strong>Pakiet Standard</strong> obejmuje wynik IQ, percentyl, spersonalizowane podsumowanie (mocne strony, obszary do rozwoju, kariera, cechy) oraz certyfikat PDF na e-mail.
+          <MethodSection id="analiza-pro" index={5} title="Analiza PRO">
+          <p className="mb-4 text-base leading-relaxed text-slate-600 dark:text-slate-400 md:text-lg">
+            W brainmediq dostępne są dwa poziomy raportu po teście IQ. <strong>Pakiet Standard</strong> obejmuje wynik IQ, percentyl, spersonalizowane podsumowanie oraz certyfikat PDF na e-mail.
           </p>
-          <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg mb-10 max-w-prose">
-            <strong>Analiza PRO</strong> dodaje rozszerzone zakładki raportu: szczegółowy profil pięciu domen z wykresami, dedykowaną interpretację percentyla oraz <strong>plan rozwoju w 5 krokach</strong> ułożony od najsłabszej do najmocniejszej domeny w Twoim teście.
+          <p className="mb-6 text-base leading-relaxed text-slate-600 dark:text-slate-400 md:text-lg">
+            <strong>Analiza PRO</strong> dodaje profil pięciu domen z wykresami, dedykowaną interpretację percentyla oraz <strong>plan rozwoju w 5 krokach</strong> ułożony od najsłabszej do najmocniejszej domeny.
           </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
             {[
               { t: "Profil 5 domen", d: "Wyniki procentowe w matrycach, logice, analogiach, przestrzeni i ciągach — z poziomami: do ćwiczeń, średni, wysoki." },
               { t: "Percentyl i norma", d: "Wizualizacja pozycji w populacji z uwzględnieniem zadeklarowanej grupy wiekowej." },
-              { t: "Plan rozwoju", d: "Pięć kroków dopasowanych do Twoich wyników domenowych — kolejność i treść zmieniają się po każdym teście." }
+              { t: "Plan rozwoju", d: "Pięć kroków dopasowanych do Twoich wyników domenowych." }
             ].map(item => (
-              <div key={item.t} className="p-8 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-[2.5rem]">
-                <h4 className="font-bold text-blue-600 dark:text-blue-400 mb-3">{item.t}</h4>
-                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{item.d}</p>
+              <div key={item.t} className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5 dark:border-blue-800 dark:bg-blue-950/20">
+                <h4 className="mb-2 font-bold text-blue-600 dark:text-blue-400">{item.t}</h4>
+                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">{item.d}</p>
               </div>
             ))}
           </div>
-
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800">
-            <h4 className="text-xl font-bold mb-6 dark:text-white">Standard vs Analiza PRO</h4>
-            <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
-              Oba pakiety zawierają wynik IQ, certyfikat PDF i podsumowanie dopasowane do wyniku testu. PRO rozszerza raport o wizualny profil domen, osobną zakładkę percentyla oraz szczegółowy plan ćwiczeń — przydatne, gdy chcesz wiedzieć nie tylko „ile”, ale <em>w czym</em> wypadasz najlepiej i co ćwiczyć w pierwszej kolejności.
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-800/50">
+            <h4 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">Standard vs Analiza PRO</h4>
+            <p className="mb-5 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              Oba pakiety zawierają wynik IQ, certyfikat PDF i podsumowanie dopasowane do wyniku testu. PRO rozszerza raport o wizualny profil domen, osobną zakładkę percentyla oraz szczegółowy plan ćwiczeń.
             </p>
-            <ul className="space-y-4">
+            <ul className="space-y-3">
               {[
                 'Wizualny profil 5 domen z paskami wyniku (%)',
                 'Osobna zakładka percentyla z normą dla Twojej grupy wiekowej',
@@ -5718,29 +5811,23 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
                 'Propozycje kariery i cech dopasowanych do wyników domen',
                 'Pełna analiza wszystkich 5 domen poznawczych',
               ].map((item) => (
-                <li key={item} className="flex items-center gap-4 text-blue-600 font-bold">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg">
-                    <Icons.Check className="h-5 w-5" />
-                  </div>
-                  <span className="text-sm md:text-base">{item}</span>
+                <li key={item} className="flex items-start gap-3 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-blue-600" />
+                  <span>{item}</span>
                 </li>
               ))}
             </ul>
           </div>
-        </div>
+          </MethodSection>
 
-        <div id="nie-diagnoza" className="scroll-mt-32">
-          <div className="bg-red-50 dark:bg-red-900/10 p-12 md:p-16 rounded-[4rem] border border-red-100 dark:border-red-900/40 max-w-[1000px]">
-            <h2 className="text-3xl font-bold mb-6 text-red-900 dark:text-red-400">To nie jest diagnoza kliniczna</h2>
-            <p className="text-lg text-red-800 dark:text-red-400/80 leading-relaxed max-w-prose">
-              Pomiar wykonany przez serwis <BrandName className="text-lg" /> ma charakter edukacyjny i rozwojowy. Nie zastępuje profesjonalnej diagnozy psychologicznej, badania klinicznego ani oficjalnych testów prowadzonych przez psychologa. Na wynik mogą wpływać m.in. zmęczenie, stres, pośpiech, jakość ekranu i warunki wykonywania testu.
+          <MethodSection id="nie-diagnoza" index={6} title="To nie jest diagnoza kliniczna" variant="warning">
+            <p className="text-base leading-relaxed text-red-800 dark:text-red-300/90 md:text-lg">
+              Pomiar wykonany przez serwis <BrandName className="text-base" /> ma charakter edukacyjny i rozwojowy. Nie zastępuje profesjonalnej diagnozy psychologicznej, badania klinicznego ani oficjalnych testów prowadzonych przez psychologa. Na wynik mogą wpływać m.in. zmęczenie, stres, pośpiech, jakość ekranu i warunki wykonywania testu.
             </p>
-          </div>
-        </div>
+          </MethodSection>
 
-        <div id="slownik" className="scroll-mt-32">
-          <h2 className="text-4xl font-bold mb-12 dark:text-white">Słownik pojęć</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-[1000px]">
+          <MethodSection id="slownik" index={7} title="Słownik pojęć">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {[
               { t: "Wynik IQ", d: "Wynik na skali ze średnią 100 i odchyleniem standardowym 15; liczony z poprawnych odpowiedzi ważonych trudnością zadania." },
               { t: "Norma wiekowa", d: "Uproszczony model referencyjny dla wybranej grupy wiekowej (np. 18–24, 25–34) — podstawa percentyla i IQ w raporcie. Dostępne wyłącznie dla osób 18+." },
@@ -5750,23 +5837,25 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
               { t: "Domena poznawcza", d: "Jedna z pięciu kategorii zadań: matryce, ciągi, analogie, przestrzeń lub logika — wynik w % z tego testu." },
               { t: "Plan rozwoju", d: "Pięć kroków ćwiczeń ułożonych od najsłabszej do najmocniejszej domeny w Twoim wyniku (zakładka PRO)." }
             ].map(i => (
-              <div key={i.t} className="p-8 border border-slate-100 dark:border-slate-800 rounded-3xl">
-                <h5 className="font-bold text-blue-600 mb-2 text-lg">{i.t}</h5>
-                <p className="text-sm text-slate-500 leading-relaxed">{i.d}</p>
+              <div key={i.t} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50">
+                <h5 className="mb-1 font-bold text-blue-600 dark:text-blue-400">{i.t}</h5>
+                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">{i.d}</p>
               </div>
             ))}
           </div>
-        </div>
+          </MethodSection>
 
-        <div className="text-center py-20">
-          <button 
-            onClick={openPurchaseModal}
-            className="bg-blue-600 text-white px-16 py-6 rounded-3xl font-bold shadow-2xl hover:bg-blue-700 transition-all text-xl"
-          >
-            Rozpocznij test
-          </button>
-        </div>
-      </article>
+          <div className="py-8 text-center">
+            <button
+              type="button"
+              onClick={openPurchaseModal}
+              className="rounded-2xl bg-blue-600 px-12 py-5 text-lg font-bold text-white shadow-xl transition-all hover:bg-blue-700"
+            >
+              Rozpocznij test
+            </button>
+          </div>
+        </article>
+      </div>
     </div>
   );
 };
