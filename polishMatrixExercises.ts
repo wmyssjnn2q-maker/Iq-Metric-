@@ -747,9 +747,10 @@ export const buildExercise35 = () => {
   };
 };
 
+/** Kolory zgodne z paletą brainmediq (blue-600 / slate). */
 const suitColor = {
-  red: '#ef0000',
-  dark: '#3f3f3f',
+  primary: '#2563eb',
+  muted: '#475569',
 } as const;
 
 const suitHeart = (color: keyof typeof suitColor) =>
@@ -766,32 +767,33 @@ const suitClub = (color: keyof typeof suitColor) =>
 
 export const buildExercise36 = () => {
   const cells = [
-    suitHeart('red'), suitClub('dark'), suitDiamond('red'),
-    suitSpade('dark'), suitDiamond('red'), suitSpade('dark'),
-    suitClub('dark'), suitHeart('red'), suitClub('dark'),
+    suitHeart('primary'), suitClub('muted'), suitDiamond('primary'),
+    suitSpade('muted'), suitDiamond('primary'), suitSpade('muted'),
+    suitClub('muted'), suitHeart('primary'), suitClub('muted'),
   ];
   const correct = cells[8];
   return {
     cells,
     missingIndex: 8 as const,
     innerOptions: [
-      suitHeart('dark'),
-      suitDiamond('red'),
-      suitSpade('dark'),
-      suitHeart('red'),
-      suitSpade('red'),
-      suitClub('dark'),
+      suitHeart('muted'),
+      suitDiamond('primary'),
+      suitSpade('muted'),
+      suitHeart('primary'),
+      suitSpade('primary'),
+      suitClub('muted'),
     ].filter((s) => s !== correct),
     explanation:
-      'Układ symboli kart powtarza się według wierszy: w dolnym wierszu po treflu i kierze ponownie występuje trefl. Brakujące pole to czarny trefl.',
+      'Układ symboli kart powtarza się według wierszy: w dolnym wierszu po treflu i kierze ponownie występuje trefl. Brakujące pole to trefl w ciemnym odcieniu.',
     content: 'Wybierz odpowiedź',
   };
 };
 
 const bowlingBall = (tone: 'dark' | 'light', dots: 'topLeft' | 'bottomRight' | 'center', shine: 'left' | 'right' | 'none') => {
-  const fill = tone === 'dark' ? '#4a4a4a' : '#ffffff';
-  const stroke = tone === 'dark' ? '#4a4a4a' : '#4a4a4a';
-  const dotFill = tone === 'dark' ? '#ffffff' : '#4a4a4a';
+  const fill = tone === 'dark' ? '#2563eb' : '#eff6ff';
+  const stroke = tone === 'dark' ? '#1d4ed8' : '#2563eb';
+  const dotFill = tone === 'dark' ? '#dbeafe' : '#2563eb';
+  const shineStroke = tone === 'dark' ? '#93c5fd' : '#bfdbfe';
   const dotSets: Record<typeof dots, [number, number][]> = {
     topLeft: [[40, 34], [53, 34], [40, 48]],
     bottomRight: [[48, 58], [61, 58], [61, 72]],
@@ -799,9 +801,9 @@ const bowlingBall = (tone: 'dark' | 'light', dots: 'topLeft' | 'bottomRight' | '
   };
   const shinePath =
     shine === 'left'
-      ? '<path d="M25 38 C20 50 21 62 28 72" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>'
+      ? `<path d="M25 38 C20 50 21 62 28 72" fill="none" stroke="${shineStroke}" stroke-width="3" stroke-linecap="round" opacity="0.9"/>`
       : shine === 'right'
-        ? '<path d="M75 38 C80 50 79 62 72 72" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>'
+        ? `<path d="M75 38 C80 50 79 62 72 72" fill="none" stroke="${shineStroke}" stroke-width="3" stroke-linecap="round" opacity="0.9"/>`
         : '';
   return (
     `<circle cx="50" cy="50" r="34" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>` +
@@ -829,7 +831,7 @@ export const buildExercise37 = () => {
       bowlingBall('dark', 'center', 'right'),
     ].filter((s) => s !== correct),
     explanation:
-      'Kolumny zachowują kolor kul: ciemna, jasna, ciemna. Wiersze zmieniają położenie trzech otworów: góra, dół, środek. Brakujące pole to ciemna kula z otworami w środku i połyskiem po prawej.',
+      'Kolumny zachowują kolor kul: ciemnoniebieska, jasnoniebieska, ciemnoniebieska. Wiersze zmieniają położenie trzech otworów: góra, dół, środek. Brakujące pole to ciemnoniebieska kula z otworami w środku i połyskiem po prawej.',
     content: 'Wybierz odpowiedź',
   };
 };
@@ -848,5 +850,332 @@ export const buildExercise38 = () => {
     explanation:
       'W każdym wierszu liczba środkowa jest sumą lewej i prawej: 1 + 3 = 4, 2 + 4 = 6, więc 5 + 2 = 7. Brakuje liczby 2.',
     content: 'Uzupełnij brakującą liczbę',
+  };
+};
+
+// --- ĆWICZENIA 40–50 (rozszerzenie banku do 30 zadań) ---
+
+/** Ćwiczenie 40: kolumny to wielokrotności — ×1, ×2, ×3 wartości z pierwszej kolumny. */
+export const buildExercise40 = () => {
+  const rows = [
+    [2, 4, 6],
+    [3, 6, 9],
+    [4, 8, 12],
+  ];
+  const cells = rows.flat().map(numberTile);
+  const correct = cells[8];
+  return {
+    cells,
+    missingIndex: 8 as const,
+    innerOptions: [10, 11, 14, 9, 16].map(numberTile).filter((s) => s !== correct),
+    explanation:
+      'W każdym wierszu druga liczba to podwojenie pierwszej, a trzecia — potrojenie: 4 × 3 = 12.',
+    content: 'Uzupełnij brakującą liczbę',
+  };
+};
+
+const sizedCircle = (r: number) => `<circle cx="50" cy="50" r="${r}" fill="none" stroke="currentColor" stroke-width="${sw}"/>`;
+const sizedSquare = (s: number) =>
+  `<rect x="${50 - s / 2}" y="${50 - s / 2}" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${sw}"/>`;
+const sizedTriangle = (h: number) =>
+  `<polygon points="50,${(52 - h * 0.55).toFixed(1)} ${(50 + h * 0.5).toFixed(1)},${(52 + h * 0.45).toFixed(1)} ${(50 - h * 0.5).toFixed(1)},${(52 + h * 0.45).toFixed(1)}" fill="none" stroke="currentColor" stroke-width="${sw}"/>`;
+
+/** Ćwiczenie 41: wiersz = kształt, w kolumnach rozmiar rośnie: mały → średni → duży. */
+export const buildExercise41 = () => {
+  const cells = [
+    sizedCircle(10), sizedCircle(17), sizedCircle(24),
+    sizedSquare(20), sizedSquare(34), sizedSquare(48),
+    sizedTriangle(22), sizedTriangle(37), sizedTriangle(52),
+  ];
+  const correct = cells[8];
+  return {
+    cells,
+    missingIndex: 8 as const,
+    innerOptions: [
+      sizedTriangle(37),
+      sizedTriangle(22),
+      sizedCircle(24),
+      sizedSquare(48),
+      sizedSquare(34),
+    ].filter((s) => s !== correct),
+    explanation:
+      'W każdym wierszu ten sam kształt powiększa się od lewej do prawej; brakuje największego trójkąta.',
+    content: 'Wybierz odpowiedź',
+  };
+};
+
+type Seg42 = 'h' | 'v' | 'd' | 'b';
+const seg42 = (which: Seg42) => {
+  const map: Record<Seg42, string> = {
+    h: `<line x1="25" y1="50" x2="75" y2="50" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round"/>`,
+    v: `<line x1="50" y1="25" x2="50" y2="75" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round"/>`,
+    d: `<line x1="28" y1="72" x2="72" y2="28" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round"/>`,
+    b: `<line x1="28" y1="28" x2="72" y2="72" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round"/>`,
+  };
+  return map[which];
+};
+const segSet42 = (segs: Seg42[]) => segs.map(seg42).join('');
+
+/** Ćwiczenie 42: trzecia kolumna = różnica symetryczna (XOR) linii z kolumn 1 i 2. */
+export const buildExercise42 = () => {
+  const cells = [
+    segSet42(['h', 'v']), segSet42(['v', 'd']), segSet42(['h', 'd']),
+    segSet42(['v', 'b']), segSet42(['h', 'v', 'b']), segSet42(['h']),
+    segSet42(['h', 'd', 'b']), segSet42(['d']), segSet42(['h', 'b']),
+  ];
+  const correct = cells[8];
+  return {
+    cells,
+    missingIndex: 8 as const,
+    innerOptions: [
+      segSet42(['d', 'b']),
+      segSet42(['h', 'd']),
+      segSet42(['v', 'b']),
+      segSet42(['h', 'v']),
+      segSet42(['b']),
+    ].filter((s) => s !== correct),
+    explanation:
+      'W trzecim polu wiersza zostają tylko te linie, które występują dokładnie w jednym z dwóch pierwszych pól (różnica symetryczna) — tu: pozioma i ukośna w lewo.',
+    content: 'Wybierz odpowiedź',
+  };
+};
+
+const mirrorV = (s: string) => `<g transform="translate(100,0) scale(-1,1)">${s}</g>`;
+const mirrorH = (s: string) => `<g transform="translate(0,100) scale(1,-1)">${s}</g>`;
+
+const flagTriangle =
+  `<line x1="38" y1="26" x2="38" y2="74" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round"/>` +
+  `<polygon points="38,26 66,34 38,42" fill="currentColor"/>`;
+const flagRect =
+  `<line x1="38" y1="26" x2="38" y2="74" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round"/>` +
+  `<rect x="38" y="28" width="24" height="14" fill="currentColor"/>`;
+const flagCircle =
+  `<line x1="38" y1="26" x2="38" y2="74" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round"/>` +
+  `<circle cx="58" cy="34" r="8" fill="currentColor"/>`;
+
+/** Ćwiczenie 43: kolumna 2 to odbicie lustrzane w pionie, kolumna 3 — odbicie w poziomie. */
+export const buildExercise43 = () => {
+  const bases = [flagTriangle, flagRect, flagCircle];
+  const cells = bases.flatMap((b) => [b, mirrorV(b), mirrorH(b)]);
+  const correct = cells[8];
+  return {
+    cells,
+    missingIndex: 8 as const,
+    innerOptions: [
+      mirrorV(flagCircle),
+      flagCircle,
+      mirrorH(flagRect),
+      mirrorH(mirrorV(flagCircle)),
+      mirrorH(flagTriangle),
+    ].filter((s) => s !== correct),
+    explanation:
+      'Druga kolumna to lustrzane odbicie pierwszej względem osi pionowej, a trzecia — względem osi poziomej. Brakuje chorągiewki z kołem odbitej w poziomie (koło na dole).',
+    content: 'Wybierz odpowiedź',
+  };
+};
+
+/** Ćwiczenie 44: trzecia liczba to iloczyn dwóch pierwszych. */
+export const buildExercise44 = () => {
+  const rows = [
+    [2, 3, 6],
+    [3, 4, 12],
+    [4, 5, 20],
+  ];
+  const cells = rows.flat().map(numberTile);
+  const correct = cells[8];
+  return {
+    cells,
+    missingIndex: 8 as const,
+    innerOptions: [16, 18, 24, 9, 15].map(numberTile).filter((s) => s !== correct),
+    explanation: 'W każdym wierszu trzecia liczba to iloczyn dwóch pierwszych: 4 × 5 = 20.',
+    content: 'Uzupełnij brakującą liczbę',
+  };
+};
+
+const countShapes45 = (shape: 'circle' | 'square' | 'triangle', count: 1 | 2 | 3) => {
+  const xs = count === 1 ? [50] : count === 2 ? [38, 62] : [30, 50, 70];
+  const one = (x: number) =>
+    shape === 'circle'
+      ? `<circle cx="${x}" cy="50" r="8" fill="none" stroke="currentColor" stroke-width="${sw}"/>`
+      : shape === 'square'
+        ? `<rect x="${x - 7.5}" y="42.5" width="15" height="15" fill="none" stroke="currentColor" stroke-width="${sw}"/>`
+        : `<polygon points="${x},41 ${x + 8.5},58 ${x - 8.5},58" fill="none" stroke="currentColor" stroke-width="${sw}"/>`;
+  return xs.map(one).join('');
+};
+
+/** Ćwiczenie 45: podwójny kwadrat łaciński — liczba figur i ich kształt niezależnie po wierszach/kolumnach. */
+export const buildExercise45 = () => {
+  const shapes: Array<'circle' | 'square' | 'triangle'> = ['circle', 'square', 'triangle'];
+  const cells: string[] = [];
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      const count = (((r + c) % 3) + 1) as 1 | 2 | 3;
+      const shape = shapes[(r + 2 * c) % 3];
+      cells.push(countShapes45(shape, count));
+    }
+  }
+  const correct = cells[8];
+  return {
+    cells,
+    missingIndex: 8 as const,
+    innerOptions: [
+      countShapes45('circle', 3),
+      countShapes45('circle', 1),
+      countShapes45('square', 2),
+      countShapes45('triangle', 2),
+      countShapes45('square', 3),
+    ].filter((s) => s !== correct),
+    explanation:
+      'Liczba figur oraz ich kształt tworzą niezależne kwadraty łacińskie: w każdym wierszu i kolumnie występują liczności 1, 2, 3 oraz trzy kształty. Brakuje dwóch kół.',
+    content: 'Wybierz odpowiedź',
+  };
+};
+
+const spokes46 = (hours: number[]) => circleOutline + hours.map((h) => lineTo(h / 12)).join('');
+
+/** Ćwiczenie 46: trzecia kolumna = promienie z kolumny 1 minus promienie z kolumny 2. */
+export const buildExercise46 = () => {
+  const cells = [
+    spokes46([0, 3, 6, 9]), spokes46([3, 9]), spokes46([0, 6]),
+    spokes46([1.5, 4.5, 7.5, 10.5]), spokes46([4.5]), spokes46([1.5, 7.5, 10.5]),
+    spokes46([0, 1.5, 3, 4.5, 6]), spokes46([1.5, 4.5]), spokes46([0, 3, 6]),
+  ];
+  const correct = cells[8];
+  return {
+    cells,
+    missingIndex: 8 as const,
+    innerOptions: [
+      spokes46([0, 6]),
+      spokes46([3, 6]),
+      spokes46([0, 3]),
+      spokes46([0, 4.5, 6]),
+      spokes46([1.5, 3, 6]),
+    ].filter((s) => s !== correct),
+    explanation:
+      'Trzecie pole wiersza zawiera promienie z pierwszego pola po usunięciu promieni z drugiego: zostają kierunki 12:00, 3:00 i 6:00.',
+    content: 'Wybierz odpowiedź',
+  };
+};
+
+const arrowDot47 = (angleDeg: number, dotOpposite = true) => {
+  const rad = (angleDeg * Math.PI) / 180;
+  const tipX = 50 + 30 * Math.sin(rad);
+  const tipY = 50 - 30 * Math.cos(rad);
+  const dotAngle = dotOpposite ? rad + Math.PI : rad;
+  const dotX = 50 + 26 * Math.sin(dotAngle);
+  const dotY = 50 - 26 * Math.cos(dotAngle);
+  return (
+    lineWithArrow(50, 50, Number(tipX.toFixed(2)), Number(tipY.toFixed(2))) +
+    `<circle cx="${dotX.toFixed(2)}" cy="${dotY.toFixed(2)}" r="4" fill="currentColor"/>`
+  );
+};
+
+/** Ćwiczenie 47: strzałka obraca się o 45° w każdej kolumnie (start wiersza +90°), kropka zawsze naprzeciw grotu. */
+export const buildExercise47 = () => {
+  const cells: string[] = [];
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      cells.push(arrowDot47(90 * r + 45 * c));
+    }
+  }
+  const correct = cells[8];
+  return {
+    cells,
+    missingIndex: 8 as const,
+    innerOptions: [
+      arrowDot47(225),
+      arrowDot47(315),
+      arrowDot47(270, false),
+      arrowDot47(90),
+      arrowDot47(180),
+    ].filter((s) => s !== correct),
+    explanation:
+      'W każdym wierszu strzałka obraca się o 45° w prawo, a kolejne wiersze zaczynają o 90° dalej; kropka leży zawsze po przeciwnej stronie niż grot. Brakuje strzałki skierowanej w lewo (270°) z kropką po prawej.',
+    content: 'Wybierz odpowiedź',
+  };
+};
+
+const ringDots48 = (n: number) => {
+  let out = circleOutline;
+  for (let i = 0; i < n; i++) {
+    out += dotAt(i * (12 / n) / 12);
+  }
+  return out;
+};
+
+/** Ćwiczenie 48: liczba kropek w trzeciej kolumnie = suma kropek z dwóch pierwszych pól. */
+export const buildExercise48 = () => {
+  const cells = [
+    ringDots48(1), ringDots48(2), ringDots48(3),
+    ringDots48(2), ringDots48(2), ringDots48(4),
+    ringDots48(3), ringDots48(2), ringDots48(5),
+  ];
+  const correct = cells[8];
+  return {
+    cells,
+    missingIndex: 8 as const,
+    innerOptions: [
+      ringDots48(4),
+      ringDots48(6),
+      ringDots48(3),
+      ringDots48(7),
+      ringDots48(2),
+    ].filter((s) => s !== correct),
+    explanation:
+      'Liczba kropek w trzecim polu wiersza jest sumą kropek z dwóch pierwszych pól: 3 + 2 = 5.',
+    content: 'Wybierz odpowiedź',
+  };
+};
+
+/** Ćwiczenie 49: trzecia liczba = kwadrat pierwszej minus druga. */
+export const buildExercise49 = () => {
+  const rows = [
+    [3, 2, 7],
+    [4, 5, 11],
+    [5, 6, 19],
+  ];
+  const cells = rows.flat().map(numberTile);
+  const correct = cells[8];
+  return {
+    cells,
+    missingIndex: 8 as const,
+    innerOptions: [17, 21, 18, 23, 20].map(numberTile).filter((s) => s !== correct),
+    explanation:
+      'W każdym wierszu trzecia liczba to kwadrat pierwszej pomniejszony o drugą: 5² − 6 = 19.',
+    content: 'Uzupełnij brakującą liczbę',
+  };
+};
+
+const pennant50 = (angleDeg: number, mirrored = false) => {
+  const inner =
+    `<line x1="50" y1="50" x2="50" y2="22" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round"/>` +
+    `<polygon points="50,22 68,28 52,38" fill="currentColor"/>` +
+    `<circle cx="50" cy="50" r="3.5" fill="currentColor"/>`;
+  const body = mirrored ? `<g transform="translate(100,0) scale(-1,1)">${inner}</g>` : inner;
+  return `<g transform="rotate(${angleDeg} 50 50)">${body}</g>`;
+};
+
+/** Ćwiczenie 50: chorągiewka obraca się o 135° w każdej kolumnie; wiersze startują o 30° dalej. */
+export const buildExercise50 = () => {
+  const cells: string[] = [];
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      cells.push(pennant50(30 * r + 135 * c));
+    }
+  }
+  const correct = cells[8];
+  return {
+    cells,
+    missingIndex: 8 as const,
+    innerOptions: [
+      pennant50(315),
+      pennant50(0),
+      pennant50(285),
+      pennant50(330, true),
+      pennant50(195),
+    ].filter((s) => s !== correct),
+    explanation:
+      'W każdym wierszu figura obraca się o 135° zgodnie ze wskazówkami zegara, a kolejne wiersze zaczynają obrócone o 30°. Brakuje chorągiewki obróconej o 330°.',
+    content: 'Wybierz odpowiedź',
   };
 };

@@ -1,15 +1,13 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useInView } from 'motion/react';
 import { Users, Grid3X3, Target, Zap, ArrowRight, Search, Cpu, Dna, Lightbulb, Atom, LayoutDashboard, TrendingUp, ShieldCheck, Briefcase, Layout, BarChart3, Globe, Rocket, Award, BadgeCheck, Fingerprint, Star, ArrowUpCircle, CheckCircle2, Brain, Percent, Info, PieChart, BrainCircuit, Activity, Trophy, AreaChart, ClipboardList, Check, Clock, Sun, Moon, AlertTriangle, Lock, Mail, Layers, LayoutGrid, Eye, Gauge, ClipboardCheck, SlidersHorizontal, Heart } from 'lucide-react';
 import { BrowserRouter, Routes, Route, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
-import { 
-  ComposableMap, 
-  Geographies, 
-  Geography, 
-  Marker,
-  Sphere,
-  Graticule
+import {
+  ComposableMap,
+  Geographies,
+  Geography,
+  Marker
 } from "react-simple-maps";
 import { TestState, QuestionType, UserStats, ReportData, DetailedAnalysis, ClientQuestion } from './types';
 import { IQ_AGE_BRACKETS, getAgeBracketById } from './ageBrackets';
@@ -29,6 +27,7 @@ import {
 } from './lib/iqResultsStorage';
 import { scoreSessionLocally } from './lib/iqScoringFallback.generated';
 import { Icons, COLORS, Logos } from './constants';
+import { TEST_ART } from './testIllustrations';
 import { generateDetailedReport, getAnalysisFallback } from './services/geminiService';
 import {
   DOMAIN_ITEMS,
@@ -54,6 +53,7 @@ import { saveCheckoutContext } from './lib/purchaseFulfillment';
 import { verifyTestAccessPassword } from './lib/testAccess';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { ScrollBrain } from './ScrollBrain';
 
 // --- DECORATIVE COMPONENTS ---
 
@@ -816,33 +816,53 @@ const BellCurveInfographic = () => (
 
 const geoUrl = "https://unpkg.com/world-atlas@2.0.2/countries-110m.json";
 
+const IQ_MAP_COUNTRIES = [
+  { name: "Hong Kong", median: 108, code: "HK", flag: "🇭🇰", geoName: null, coordinates: [114.1694, 22.3193] },
+  { name: "Singapur", median: 107, code: "SG", flag: "🇸🇬", geoName: null, coordinates: [103.8198, 1.3521] },
+  { name: "Korea Południowa", median: 106, code: "KR", flag: "🇰🇷", geoName: "South Korea", coordinates: [127.7669, 35.9078] },
+  { name: "Japonia", median: 105, code: "JP", flag: "🇯🇵", geoName: "Japan", coordinates: [138.2529, 36.2048] },
+  { name: "Niemcy", median: 102, code: "DE", flag: "🇩🇪", geoName: "Germany", coordinates: [10.4515, 51.1657] },
+  { name: "Włochy", median: 102, code: "IT", flag: "🇮🇹", geoName: "Italy", coordinates: [12.5674, 41.8719] },
+  { name: "Kanada", median: 101, code: "CA", flag: "🇨🇦", geoName: "Canada", coordinates: [-106.3468, 56.1304] },
+  { name: "Finlandia", median: 101, code: "FI", flag: "🇫🇮", geoName: "Finland", coordinates: [25.7482, 61.9241] },
+  { name: "Polska", median: 99, code: "PL", flag: "🇵🇱", geoName: "Poland", coordinates: [19.1451, 51.9194] },
+  { name: "USA", median: 98, code: "US", flag: "🇺🇸", geoName: "United States of America", coordinates: [-95.7129, 37.0902] },
+  { name: "Australia", median: 99, code: "AU", flag: "🇦🇺", geoName: "Australia", coordinates: [133.7751, -25.2744] },
+  { name: "Nowa Zelandia", median: 100, code: "NZ", flag: "🇳🇿", geoName: "New Zealand", coordinates: [174.8860, -40.9006] },
+  { name: "Brazylia", median: 87, code: "BR", flag: "🇧🇷", geoName: "Brazil", coordinates: [-51.9253, -14.2350] },
+  { name: "Argentyna", median: 87, code: "AR", flag: "🇦🇷", geoName: "Argentina", coordinates: [-63.6167, -38.4161] },
+  { name: "Chile", median: 90, code: "CL", flag: "🇨🇱", geoName: "Chile", coordinates: [-71.5430, -35.6751] },
+  { name: "Egipt", median: 76, code: "EG", flag: "🇪🇬", geoName: "Egypt", coordinates: [30.8025, 26.8206] },
+  { name: "RPA", median: 77, code: "ZA", flag: "🇿🇦", geoName: "South Africa", coordinates: [22.9375, -30.5595] },
+  { name: "Maroko", median: 72, code: "MA", flag: "🇲🇦", geoName: "Morocco", coordinates: [-7.0926, 31.7917] },
+  { name: "Nigeria", median: 69, code: "NG", flag: "🇳🇬", geoName: "Nigeria", coordinates: [8.6753, 9.0820] },
+];
+
+// Kraje z bazy podświetlone na mapie (nazwy zgodne z world-atlas 110m)
+const IQ_MAP_HIGHLIGHTED = new Set(
+  IQ_MAP_COUNTRIES.map((c) => c.geoName).filter(Boolean) as string[]
+);
+
+// Kolejność pojawiania się znaczników: fala zachód → wschód
+const IQ_MAP_MARKER_ORDER = [...IQ_MAP_COUNTRIES]
+  .sort((a, b) => a.coordinates[0] - b.coordinates[0])
+  .map((c) => c.code);
+
 const IQWorldMap = () => {
-  const countries = [
-    { name: "Hong Kong", median: 108, code: "HK", coordinates: [114.1694, 22.3193] },
-    { name: "Singapur", median: 107, code: "SG", coordinates: [103.8198, 1.3521] },
-    { name: "Korea Południowa", median: 106, code: "KR", coordinates: [127.7669, 35.9078] },
-    { name: "Japonia", median: 105, code: "JP", coordinates: [138.2529, 36.2048] },
-    { name: "Niemcy", median: 102, code: "DE", coordinates: [10.4515, 51.1657] },
-    { name: "Włochy", median: 102, code: "IT", coordinates: [12.5674, 41.8719] },
-    { name: "Kanada", median: 101, code: "CA", coordinates: [-106.3468, 56.1304] },
-    { name: "Finlandia", median: 101, code: "FI", coordinates: [25.7482, 61.9241] },
-    { name: "Polska", median: 99, code: "PL", coordinates: [19.1451, 51.9194] },
-    { name: "USA", median: 98, code: "US", coordinates: [-95.7129, 37.0902] },
-    { name: "Australia", median: 99, code: "AU", coordinates: [133.7751, -25.2744] },
-    { name: "Nowa Zelandia", median: 100, code: "NZ", coordinates: [174.8860, -40.9006] },
-    { name: "Brazylia", median: 87, code: "BR", coordinates: [-51.9253, -14.2350] },
-    { name: "Argentyna", median: 87, code: "AR", coordinates: [-63.6167, -38.4161] },
-    { name: "Chile", median: 90, code: "CL", coordinates: [-71.5430, -35.6751] },
-    { name: "Egipt", median: 76, code: "EG", coordinates: [30.8025, 26.8206] },
-    { name: "RPA", median: 77, code: "ZA", coordinates: [22.9375, -30.5595] },
-    { name: "Maroko", median: 72, code: "MA", coordinates: [-7.0926, 31.7917] },
-    { name: "Nigeria", median: 69, code: "NG", coordinates: [8.6753, 9.0820] },
-  ];
+  const countries = IQ_MAP_COUNTRIES;
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInView = useInView(mapRef, { once: true, margin: '-15% 0px' });
 
   return (
     <section className="py-24 bg-slate-50 dark:bg-slate-950 relative overflow-hidden z-10">
       <div className="max-w-[1440px] mx-auto px-6 sm:px-12">
-        <div className="text-center mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-10%' }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="text-center mb-16"
+        >
           <div className="inline-flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
             Globalne Statystyki
           </div>
@@ -853,98 +873,137 @@ const IQWorldMap = () => {
           <p className="text-lg text-slate-600 dark:text-slate-400 mb-10 leading-relaxed max-w-2xl mx-auto">
             Nasza baza danych jest stale aktualizowana o wyniki tysięcy użytkowników z całego globu. Zobacz, jak wypadają inne kraje.
           </p>
-        </div>
+        </motion.div>
 
         <div className="flex flex-col xl:flex-row items-stretch gap-12">
           {/* Countries List */}
           <div className="w-full xl:w-1/3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4 xl:max-h-[600px] xl:overflow-y-auto xl:pr-4 custom-scrollbar">
             {countries.map((c, i) => (
-              <div key={i} className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-colors">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-blue-600/40 uppercase mb-1">{c.code}</span>
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors">{c.name}</span>
+              <motion.div
+                key={c.code}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.4, delay: (i % 8) * 0.04 }}
+                className="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm group hover:border-blue-200 dark:hover:border-blue-900 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl leading-none" aria-hidden="true">{c.flag}</span>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-blue-600/40 uppercase">{c.code}</span>
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors">{c.name}</span>
+                    </div>
+                  </div>
+                  <span className="text-2xl font-black text-blue-600">{c.median}</span>
                 </div>
-                <span className="text-2xl font-black text-blue-600">{c.median}</span>
-              </div>
+                <div className="mt-3 h-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div
+                    style={{ width: `${Math.round(((c.median - 60) / 50) * 100)}%` }}
+                    className="h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-500"
+                  />
+                </div>
+              </motion.div>
             ))}
           </div>
 
           {/* Large Map Container */}
-          <div className="w-full xl:w-2/3 relative">
+          <motion.div
+            ref={mapRef}
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-10%' }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+            className="w-full xl:w-2/3 relative"
+          >
             <div className="h-full min-h-[500px] bg-white dark:bg-slate-900 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-2xl p-4 md:p-8 relative overflow-hidden group">
               <div className="absolute inset-0 opacity-5 dot-grid pointer-events-none"></div>
-              
+
               <div className="w-full h-full flex items-center justify-center min-h-[400px]">
                 <ComposableMap
                   projectionConfig={{
-                    scale: 145,
+                    scale: 160,
+                    center: [12, 10],
                   }}
                   width={800}
-                  height={400}
+                  height={420}
                   style={{
                     width: "100%",
                     height: "auto",
                   }}
                 >
-                  <Sphere stroke="#E4E7EB" strokeWidth={0.5} id="sphere" fill="#F8FAFC" className="dark:fill-slate-900/50 dark:stroke-slate-800" />
-                  <Graticule stroke="#E4E7EB" strokeWidth={0.5} className="dark:stroke-slate-800/80" />
                   <Geographies geography={geoUrl}>
                     {({ geographies }) =>
                       geographies && geographies.length > 0 ? (
-                        geographies.map((geo) => (
-                          <Geography
-                            key={geo.rsmKey}
-                            geography={geo}
-                            fill="#D1D5DB"
-                            stroke="#9CA3AF"
-                            strokeWidth={0.5}
-                            style={{
-                              default: { outline: "none" },
-                              hover: { fill: "#9CA3AF", outline: "none" },
-                              pressed: { fill: "#6B7280", outline: "none" },
-                            }}
-                            className="dark:fill-slate-700 dark:stroke-slate-600 dark:hover:fill-slate-600 transition-colors duration-300"
-                          />
-                        ))
+                        geographies
+                          .filter((geo) => geo.properties.name !== 'Antarctica')
+                          .map((geo) => {
+                            const highlighted = IQ_MAP_HIGHLIGHTED.has(geo.properties.name);
+                            return (
+                              <Geography
+                                key={geo.rsmKey}
+                                geography={geo}
+                                fill={highlighted ? "#BFDBFE" : "#E2E8F0"}
+                                stroke="#FFFFFF"
+                                strokeWidth={0.75}
+                                style={{
+                                  default: { outline: "none" },
+                                  hover: { outline: "none" },
+                                  pressed: { outline: "none" },
+                                }}
+                                className={`transition-colors duration-300 dark:stroke-slate-900 ${
+                                  highlighted
+                                    ? "dark:fill-blue-900/80 hover:fill-blue-200 dark:hover:fill-blue-800"
+                                    : "dark:fill-slate-800 hover:fill-slate-300 dark:hover:fill-slate-700"
+                                }`}
+                              />
+                            );
+                          })
                       ) : (
                         <text x="400" y="200" textAnchor="middle" className="fill-slate-400 text-xs italic">Ładowanie mapy świata...</text>
                       )
                     }
                   </Geographies>
-                  {countries.map(({ name, coordinates, median }) => (
-                    <Marker key={name} coordinates={coordinates as [number, number]}>
-                      <g className="cursor-pointer group/marker">
-                        {/* Outer glow */}
-                        <circle r={14} fill="#2563EB" opacity={0.15} className="animate-pulse" />
-                        {/* Ping animation */}
-                        <circle r={10} fill="#2563EB" opacity={0.2} className="animate-ping" />
-                        {/* Main dot */}
-                        <circle r={5} fill="#2563EB" stroke="#fff" strokeWidth={2} className="shadow-lg" />
-                        
-                        <title>{name}: {median}</title>
-                        
-                        {/* Custom Tooltip on Marker */}
-                        <g className="opacity-0 group-hover/marker:opacity-100 transition-all duration-300 pointer-events-none translate-y-2 group-hover/marker:translate-y-0">
-                          <rect
-                            x={-85}
-                            y={-42}
-                            width={170}
-                            height={32}
-                            rx={16}
-                            fill="#1E293B"
-                            className="shadow-xl"
-                          />
-                          <text
-                            y={-22}
-                            textAnchor="middle"
-                            style={{ fontFamily: "Inter, system-ui", fill: "#fff", fontSize: "11px", fontWeight: "800" }}
-                          >
-                            {name}: {median}
-                          </text>
-                        </g>
-                      </g>
-                    </Marker>
-                  ))}
+                  {countries.map(({ name, code, coordinates, median }) => {
+                    const wave = IQ_MAP_MARKER_ORDER.indexOf(code);
+                    return (
+                      <Marker key={name} coordinates={coordinates as [number, number]}>
+                        <motion.g
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={mapInView ? { scale: 1, opacity: 1 } : {}}
+                          transition={{ delay: 0.25 + wave * 0.07, type: 'spring', stiffness: 260, damping: 18 }}
+                          className="cursor-pointer group/marker"
+                        >
+                          {/* Soft glow */}
+                          <circle r={11} fill="#3B82F6" opacity={0.18} className="animate-pulse dark:opacity-30" />
+                          {/* Main dot */}
+                          <circle r={4.5} fill="#2563EB" stroke="#fff" strokeWidth={1.5} className="dark:fill-blue-400 dark:stroke-slate-900" />
+
+                          <title>{name}: {median}</title>
+
+                          {/* Custom Tooltip on Marker */}
+                          <g className="opacity-0 group-hover/marker:opacity-100 transition-all duration-300 pointer-events-none translate-y-2 group-hover/marker:translate-y-0">
+                            <rect
+                              x={-85}
+                              y={-42}
+                              width={170}
+                              height={32}
+                              rx={16}
+                              fill="#1E293B"
+                              className="shadow-xl"
+                            />
+                            <text
+                              y={-22}
+                              textAnchor="middle"
+                              style={{ fontFamily: "Inter, system-ui", fill: "#fff", fontSize: "11px", fontWeight: "800" }}
+                            >
+                              {name}: {median}
+                            </text>
+                          </g>
+                        </motion.g>
+                      </Marker>
+                    );
+                  })}
                 </ComposableMap>
               </div>
 
@@ -955,7 +1014,10 @@ const IQWorldMap = () => {
 
               <div className="absolute bottom-10 right-12 flex items-center space-x-8 pointer-events-none">
                  <div className="flex items-center space-x-3">
-                   <div className="w-3 h-3 bg-blue-600 rounded-full animate-ping"></div>
+                   <span className="relative flex w-3 h-3">
+                     <span className="absolute inline-flex w-full h-full bg-blue-600 rounded-full opacity-75 animate-ping"></span>
+                     <span className="relative inline-flex w-3 h-3 bg-blue-600 rounded-full"></span>
+                   </span>
                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Live Feed</span>
                  </div>
                  <div className="flex items-center space-x-3">
@@ -964,7 +1026,7 @@ const IQWorldMap = () => {
                  </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
@@ -1027,7 +1089,7 @@ const Header = ({ darkMode, toggleDarkMode, openPurchaseModal }: { darkMode: boo
           >
             <div className="w-5 h-5">{darkMode ? <Icons.Sun /> : <Icons.Moon />}</div>
           </button>
-          <button onClick={openPurchaseModal} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full text-sm font-semibold transition-all shadow-md hover:shadow-lg">
+          <button onClick={openPurchaseModal} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2 rounded-full text-sm font-semibold transition-all shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35">
             Rozpocznij Test IQ
           </button>
         </div>
@@ -1037,7 +1099,8 @@ const Header = ({ darkMode, toggleDarkMode, openPurchaseModal }: { darkMode: boo
 );
 
 const Footer = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => (
-  <footer className="bg-slate-900 text-slate-400 py-12 px-4 no-print border-t border-slate-800 relative z-10">
+  <footer className="bg-slate-900 text-slate-400 py-12 px-4 no-print relative z-10">
+    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/60 to-transparent"></div>
     <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
       <div className="col-span-1 md:col-span-2">
         <div className="mb-4">
@@ -1418,7 +1481,7 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
             </div>
             <h1 className="text-6xl md:text-8xl font-bold tracking-tight mb-8 text-slate-900 dark:text-white leading-[0.95] max-w-[12ch]">
               Poznaj swój <br />
-              <span className="text-blue-600 dark:text-blue-400 bg-clip-text">Poziom Intelektualny</span>
+              <span className="bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500 dark:from-blue-400 dark:via-indigo-400 dark:to-cyan-400 bg-clip-text text-transparent">Poziom Intelektualny</span>
             </h1>
             <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mb-12 leading-relaxed">
               Sprawdź możliwości swojego mózgu i poznaj swoje mocne strony. Twój spersonalizowany raport będzie gotowy natychmiast po zakończeniu testu.
@@ -1427,11 +1490,11 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
               <button
                 type="button"
                 onClick={openPurchaseModal}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-5 rounded-2xl text-lg font-bold shadow-2xl shadow-blue-200 dark:shadow-none hover:scale-105 transition-all text-center"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-12 py-5 rounded-2xl text-lg font-bold shadow-2xl shadow-blue-500/30 dark:shadow-blue-900/40 hover:scale-105 hover:shadow-blue-500/40 transition-all text-center"
               >
                 Rozpocznij Test IQ
               </button>
-              <Link to="/metoda" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 px-12 py-5 rounded-2xl text-lg font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-center">
+              <Link to="/metoda" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-800 px-12 py-5 rounded-2xl text-lg font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 hover:shadow-lg hover:shadow-slate-200/60 dark:hover:shadow-none transition-all text-center">
                 Metodologia
               </Link>
             </div>
@@ -1447,6 +1510,9 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
           </motion.div>
         </div>
       </section>
+
+      {/* Scrollytelling: rysujący się mózg */}
+      <ScrollBrain />
 
       {/* Features */}
       <section className="bg-white dark:bg-slate-900/50 py-24 border-y border-slate-100 dark:border-slate-800 relative z-10">
@@ -1478,9 +1544,9 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="group p-2 hover:translate-y-[-8px] transition-transform duration-500"
+                className="group p-8 rounded-[2rem] bg-slate-50/60 dark:bg-slate-900/40 border border-transparent hover:border-blue-200/70 dark:hover:border-blue-900/60 hover:bg-white dark:hover:bg-slate-900 hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-2 transition-all duration-500"
               >
-                <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-[2rem] flex items-center justify-center mb-8 group-hover:rotate-6 transition-transform shadow-sm">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-[2rem] flex items-center justify-center mb-8 group-hover:rotate-6 group-hover:scale-105 transition-transform shadow-lg shadow-blue-500/25">
                   <div className="w-10 h-10">{f.icon}</div>
                 </div>
                 <h3 className="text-2xl font-bold mb-4 dark:text-white">{f.title}</h3>
@@ -1587,15 +1653,15 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
               className="flex space-x-8 whitespace-nowrap px-8 py-4 transform-gpu"
             >
               {[
-                { id: 'osobowosc', title: 'Test Osobowości', icon: <Layers />, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', link: '/test-osobowosci', desc: 'Odkryj swój profil psychologiczny i dominujące cechy charakteru.' },
-                { id: 'pamiec', title: 'Test Pamięci', icon: <LayoutGrid />, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', link: '/test-pamieci', desc: 'Sprawdź pojemność swojej pamięci roboczej i zdolność zapamiętywania.' },
-                { id: 'koncentracja', title: 'Test Koncentracji', icon: <Eye />, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', link: '/test-koncentracji', desc: 'Zmierz swoją odporność na dystraktory i zdolność skupienia uwagi.' },
-                { id: 'reakcja', title: 'Szybkość Reakcji', icon: <Gauge />, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', link: '/test-reakcji', desc: 'Zbadaj swój czas reakcji na bodźce wzrokowe w milisekundach.' },
+                { id: 'osobowosc', title: 'Test Osobowości', icon: TEST_ART.osobowosc, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', link: '/test-osobowosci', desc: 'Odkryj swój profil psychologiczny i dominujące cechy charakteru.' },
+                { id: 'pamiec', title: 'Test Pamięci', icon: TEST_ART.pamiec, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', link: '/test-pamieci', desc: 'Sprawdź pojemność swojej pamięci roboczej i zdolność zapamiętywania.' },
+                { id: 'koncentracja', title: 'Test Koncentracji', icon: TEST_ART.koncentracja, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', link: '/test-koncentracji', desc: 'Zmierz swoją odporność na dystraktory i zdolność skupienia uwagi.' },
+                { id: 'reakcja', title: 'Szybkość Reakcji', icon: TEST_ART.reakcja, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', link: '/test-reakcji', desc: 'Zbadaj swój czas reakcji na bodźce wzrokowe w milisekundach.' },
                 // Duplicate for loop
-                { id: 'osobowosc-2', title: 'Test Osobowości', icon: <Layers />, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', link: '/test-osobowosci', desc: 'Odkryj swój profil psychologiczny i dominujące cechy charakteru.' },
-                { id: 'pamiec-2', title: 'Test Pamięci', icon: <LayoutGrid />, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', link: '/test-pamieci', desc: 'Sprawdź pojemność swojej pamięci roboczej i zdolność zapamiętywania.' },
-                { id: 'koncentracja-2', title: 'Test Koncentracji', icon: <Eye />, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', link: '/test-koncentracji', desc: 'Zmierz swoją odporność na dystraktory i zdolność skupienia uwagi.' },
-                { id: 'reakcja-2', title: 'Szybkość Reakcji', icon: <Gauge />, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', link: '/test-reakcji', desc: 'Zbadaj swój czas reakcji na bodźce wzrokowe w milisekundach.' },
+                { id: 'osobowosc-2', title: 'Test Osobowości', icon: TEST_ART.osobowosc, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20', link: '/test-osobowosci', desc: 'Odkryj swój profil psychologiczny i dominujące cechy charakteru.' },
+                { id: 'pamiec-2', title: 'Test Pamięci', icon: TEST_ART.pamiec, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', link: '/test-pamieci', desc: 'Sprawdź pojemność swojej pamięci roboczej i zdolność zapamiętywania.' },
+                { id: 'koncentracja-2', title: 'Test Koncentracji', icon: TEST_ART.koncentracja, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20', link: '/test-koncentracji', desc: 'Zmierz swoją odporność na dystraktory i zdolność skupienia uwagi.' },
+                { id: 'reakcja-2', title: 'Szybkość Reakcji', icon: TEST_ART.reakcja, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20', link: '/test-reakcji', desc: 'Zbadaj swój czas reakcji na bodźce wzrokowe w milisekundach.' },
               ].map((test, idx) => (
                 <Link 
                   key={`${test.id}-${idx}`}
@@ -1603,7 +1669,7 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
                   className="flex-shrink-0 w-[340px] bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-300 group/card relative overflow-hidden transform-gpu"
                 >
                   <div className={`w-16 h-16 rounded-2xl ${test.bg} ${test.color} flex items-center justify-center mb-8 group-hover/card:scale-105 transition-transform duration-300`}>
-                    <div className="w-8 h-8">{test.icon}</div>
+                    <div className="w-11 h-11">{test.icon}</div>
                   </div>
                   <h4 className="text-2xl font-bold dark:text-white mb-3 tracking-tight">{test.title}</h4>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 whitespace-normal leading-relaxed">{test.desc}</p>
@@ -1639,7 +1705,7 @@ const Home = ({ openPurchaseModal }: { openPurchaseModal: () => void }) => {
               className="bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-xl dark:shadow-none flex flex-col relative overflow-hidden"
             >
               <div className="flex flex-wrap gap-2 mb-8 justify-center items-start content-start relative z-10 h-auto md:h-32 mt-4">
-                {["19 pytań", "Wynik + Certyfikat", "Wysyłka na e-mail"].map(tag => (
+                {["30 pytań", "Wynik + Certyfikat", "Wysyłka na e-mail"].map(tag => (
                   <span key={tag} className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-bold px-4 py-1.5 rounded-full uppercase tracking-widest">{tag}</span>
                 ))}
               </div>
@@ -1724,7 +1790,7 @@ const TestSession = () => {
           isFinished: false,
           ageBracketId: null,
         });
-        setTimeLeft(14 * 60);
+        setTimeLeft(20 * 60);
       } catch (err) {
         if (!cancelled) {
           setBankError(
@@ -1952,7 +2018,7 @@ const TestSession = () => {
               Przed rozpoczęciem
             </h2>
             <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[var(--iq-muted)]">
-              Za chwilę rozpoczniesz właściwy test: 19 zadań logicznych z limitem 14 minut. Upewnij się, że masz spokojne miejsce i skupienie.
+              Za chwilę rozpoczniesz właściwy test: 30 zadań logicznych z limitem 20 minut. Upewnij się, że masz spokojne miejsce i skupienie.
             </p>
           </div>
           <div className="iq-assessment-sheet overflow-hidden">
@@ -5362,7 +5428,7 @@ const OtherTests = () => {
       title: 'Test Osobowości',
       price: '4,99 PLN',
       desc: 'Poznaj swój unikalny profil psychologiczny oparty na modelu Wielkiej Piątki (Big Five).',
-      icon: <Layers className="w-full h-full" />,
+      icon: TEST_ART.osobowosc,
       color: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400',
       status: 'Dostępny',
       link: '/test-osobowosci',
@@ -5373,7 +5439,7 @@ const OtherTests = () => {
       title: 'Test Pamięci Przestrzennej',
       price: '4,99 PLN',
       desc: 'Sprawdź pojemność swojej pamięci krótkotrwałej i roboczej w serii interaktywnych zadań.',
-      icon: <LayoutGrid className="w-full h-full" />,
+      icon: TEST_ART.pamiec,
       color: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
       status: 'Dostępny',
       link: '/test-pamieci',
@@ -5384,7 +5450,7 @@ const OtherTests = () => {
       title: 'Test Koncentracji',
       price: '4,99 PLN',
       desc: 'Zmierz swoją zdolność do utrzymania uwagi i ignorowania dystraktorów.',
-      icon: <Eye className="w-full h-full" />,
+      icon: TEST_ART.koncentracja,
       color: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
       status: 'Dostępny',
       link: '/test-koncentracji',
@@ -5395,7 +5461,7 @@ const OtherTests = () => {
       title: 'Szybkość Reakcji',
       price: '4,99 PLN',
       desc: 'Zbadaj swój czas reakcji na bodźce wzrokowe i słuchowe w milisekundach.',
-      icon: <Gauge className="w-full h-full" />,
+      icon: TEST_ART.reakcja,
       color: 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400',
       status: 'Dostępny',
       link: '/test-reakcji',
@@ -5406,7 +5472,7 @@ const OtherTests = () => {
       title: 'Test Funkcji Poznawczych',
       price: '4,99 PLN',
       desc: 'Zbadaj orientację, pamięć, uwagę i język. Test inspirowany metodologią MMSE/SAGE. Wyłącznie cel edukacyjny.',
-      icon: <ClipboardCheck className="w-full h-full" />,
+      icon: TEST_ART.alzheimer,
       color: 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400',
       status: 'Dostępny',
       link: '/test-funkcji-poznawczych',
@@ -5418,7 +5484,7 @@ const OtherTests = () => {
       title: 'Test ADHD (ASRS)',
       price: '4,99 PLN',
       desc: 'Kwestionariusz przesiewowy oparty na skali WHO ASRS v1.1. Wyłącznie cel edukacyjny.',
-      icon: <SlidersHorizontal className="w-full h-full" />,
+      icon: TEST_ART.adhd,
       color: 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
       status: 'Dostępny',
       link: '/test-adhd',
@@ -5452,8 +5518,8 @@ const OtherTests = () => {
         {tests.map(test => (
           <div key={test.id} className="bg-white dark:bg-slate-900 p-12 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm transition-all group flex flex-col hover:shadow-xl">
             <div className="flex justify-between items-start mb-8">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${test.color}`}>
-                <div className="w-8 h-8">{test.icon}</div>
+              <div className={`w-20 h-20 rounded-3xl flex items-center justify-center ${test.color}`}>
+                <div style={{ width: '3.25rem', height: '3.25rem' }}>{test.icon}</div>
               </div>
               <span className={`text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest ${test.status === 'Dostępny' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
                 {test.status}
@@ -5496,7 +5562,7 @@ const FAQ = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
       {[
         { q: "Czy test jest w pełni anonimowy?", a: "Tak, Twoje dane osobowe nie są wymagane do rozpoczęcia testu. Adres e-mail prosimy podać jedynie w celu przesłania gotowego raportu i certyfikatu po zakończeniu badania." },
-        { q: "Ile trwa test i ile ma pytań?", a: "Czas trwania i liczba pytań zależą od wybranego badania. Standardowy test IQ oraz Analiza PRO składają się z 19 zadań opartych na matrycach i wzorcach logicznych (ok. 12-14 min). Inne testy specjalistyczne, jak test osobowości (15 pytań) czy testy szybkości reakcji, mają własne, krótsze ramy czasowe." },
+        { q: "Ile trwa test i ile ma pytań?", a: "Czas trwania i liczba pytań zależą od wybranego badania. Standardowy test IQ oraz Analiza PRO składają się z 30 zadań opartych na matrycach i wzorcach logicznych (ok. 18-20 min). Inne testy specjalistyczne, jak test osobowości (15 pytań) czy testy szybkości reakcji, mają własne, krótsze ramy czasowe." },
         { q: "Czym różni się wersja Standard od Analizy PRO?", a: "Wersja Standard zawiera wynik punktowy i certyfikat. Analiza PRO to rozszerzony raport badający 5 kluczowych domen poznawczych, Twój percentyl na tle populacji oraz spersonalizowane wskazówki rozwojowe." },
         { q: "Jak i kiedy otrzymam swój wynik?", a: "Wynik zobaczysz na ekranie natychmiast po zakończeniu testu. Pełny dostęp do analizy oraz certyfikat zostaną odblokowane w profilu i wysłane na Twój adres e-mail w ciągu kilku minut od zakupu." },
         { q: "Czy certyfikat jest uznawany oficjalnie?", a: "Nasz test opiera się na uznanych metodach psychometrycznych, jednak certyfikat ma charakter edukacyjno-rozwojowy. Nie zastępuje on diagnozy klinicznej ani oficjalnych testów Mensy." },
@@ -5701,8 +5767,8 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           {[
-            { label: '19 zadań', icon: <Grid3X3 size={16} /> },
-            { label: '14 minut', icon: <Clock size={16} /> },
+            { label: '30 zadań', icon: <Grid3X3 size={16} /> },
+            { label: '20 minut', icon: <Clock size={16} /> },
             { label: '5 domen', icon: <BrainCircuit size={16} /> },
             { label: 'Skala IQ 100 ± 15', icon: <BarChart3 size={16} /> },
           ].map((item) => (
@@ -5783,19 +5849,19 @@ const AboutMethod = ({ openPurchaseModal }: { openPurchaseModal: () => void }) =
 
           <MethodSection id="format-czas" index={2} title="Format i czas">
           <p className="mb-6 text-base leading-relaxed text-slate-600 dark:text-slate-400 md:text-lg">
-            Badanie obejmuje krótką część instruktażową oraz właściwą serię 19 zadań wykonywanych pod limitem czasowym. W każdym zadaniu obowiązuje jedna poprawna odpowiedź wynikająca ze wzorca w układzie.
+            Badanie obejmuje krótką część instruktażową oraz właściwą serię 30 zadań wykonywanych pod limitem czasowym. W każdym zadaniu obowiązuje jedna poprawna odpowiedź wynikająca ze wzorca w układzie.
           </p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-6 dark:border-blue-800 dark:bg-blue-950/20">
               <h4 className="mb-2 font-bold text-slate-900 dark:text-white">Struktura testu</h4>
               <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-                Seria liczy <strong>19 zadań</strong> z pięciu typów: matryce, ciągi liczbowe, analogie, układy przestrzenne i rozumowanie logiczne. Zadania różnią się poziomem trudności; w matrycach pole do uzupełnienia wskazane jest w prawym dolnym rogu.
+                Seria liczy <strong>30 zadań</strong> z pięciu typów: matryce, ciągi liczbowe, analogie, układy przestrzenne i rozumowanie logiczne. Zadania różnią się poziomem trudności; w matrycach pole do uzupełnienia wskazane jest w prawym dolnym rogu.
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-800/50">
               <h4 className="mb-2 font-bold text-slate-900 dark:text-white">Limit czasu (14 min)</h4>
               <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-                Czas przeznaczony na całość serii to <strong>14 minut</strong> (średnio ok. 45 s na zadanie). Odliczanie rozpoczyna się po części instruktażowej; wynik wyliczany jest z odpowiedzi udzielonych do zakończenia badania.
+                Czas przeznaczony na całość serii to <strong>20 minut</strong> (średnio ok. 40 s na zadanie). Odliczanie rozpoczyna się po części instruktażowej; wynik wyliczany jest z odpowiedzi udzielonych do zakończenia badania.
               </p>
             </div>
           </div>
@@ -5970,7 +6036,7 @@ const PurchaseModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
           </div>
           <h2 className="text-3xl font-bold mb-4 dark:text-white">Gotowy na wyzwanie?</h2>
           <p className="text-slate-500 dark:text-slate-400 mb-10 leading-relaxed">
-            Test trwa około 12-14 minut i składa się z 19 zadań logicznych. Upewnij się, że masz chwilę spokoju i nikt Ci nie będzie przeszkadzał.
+            Test trwa około 18-20 minut i składa się z 30 zadań logicznych. Upewnij się, że masz chwilę spokoju i nikt Ci nie będzie przeszkadzał.
           </p>
           
           <div className="flex flex-col gap-4">

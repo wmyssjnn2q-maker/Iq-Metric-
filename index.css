@@ -1,8 +1,73 @@
 /* Global styles */
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Zaznaczanie tekstu w kolorze marki */
+::selection {
+  background: rgba(37, 99, 235, 0.18);
+  color: inherit;
+}
+.dark ::selection {
+  background: rgba(96, 165, 250, 0.28);
+}
+
+/* Spójny, subtelny pasek przewijania całej strony */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+/* Czytelny focus dla klawiatury (dostępność) */
+:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.dark :focus-visible {
+  outline-color: #60a5fa;
+}
+
+/* Delikatniejsze nagłówki display */
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 .custom-scrollbar::-webkit-scrollbar {

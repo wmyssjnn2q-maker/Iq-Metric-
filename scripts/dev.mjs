@@ -24,7 +24,7 @@ const tsxBin = path.join(projectRoot, 'node_modules/tsx/dist/cli.mjs');
 
 const commands = [
   ['api', node, [tsxBin, path.join(projectRoot, 'server.ts')]],
-  ['vite', node, [viteBin, '--host', '127.0.0.1', '--port', '3000']],
+  ['vite', node, [viteBin, '--host', '0.0.0.0', '--port', '3000']],
 ];
 
 const children = commands.map(([name, command, args]) => {
@@ -62,5 +62,5 @@ function shutdown(code = 0) {
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
 
-console.log('[dev] Frontend: http://127.0.0.1:3000/');
+console.log('[dev] Frontend: http://127.0.0.1:3000/ (also on your LAN IP, port 3000)');
 console.log('[dev] API:      http://127.0.0.1:3002/');
